@@ -1,320 +1,357 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>民宿入住指南</title>
-  <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
   <style>
-    :root {
-      --bg-color: #0d0d0f;
-      --card-bg: #1a1a1d;
-      --primary: #4a7bee;
-      --text-main: #ffffff;
-      --text-sub: #aaaaaa;
-    }
-
-    body {
-      font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--bg-color);
-      color: var(--text-main);
-      margin: 0;
-      padding: 20px;
-      line-height: 1.6;
-    }
-
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-    }
-
-    /* --- 编辑模式样式 (生成器) --- */
-    #editor-mode {
-      display: none; /* 默认隐藏，JS控制显示 */
-    }
-    
-    .input-card {
-      background: var(--card-bg);
-      padding: 25px;
-      border-radius: 16px;
-      border: 1px solid #333;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-    }
-
-    label {
-      display: block;
-      margin-top: 15px;
-      color: var(--text-sub);
-      font-size: 14px;
-      font-weight: bold;
-    }
-
-    input, textarea {
-      width: 100%;
-      padding: 12px;
-      margin-top: 8px;
-      background: #252528;
-      border: 1px solid #444;
-      border-radius: 8px;
-      color: #fff;
-      box-sizing: border-box;
-      font-size: 15px;
-    }
-
-    button.generate-btn {
-      width: 100%;
-      padding: 16px;
-      margin-top: 30px;
-      background: var(--primary);
-      border: none;
-      border-radius: 8px;
-      color: #fff;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    #qr-result {
-      margin-top: 30px;
-      text-align: center;
-      padding: 20px;
-      background: #fff;
-      border-radius: 12px;
-      display: none;
-    }
-    #qr-result p { color: #333; margin-bottom: 10px; }
-
-    /* --- 访客模式样式 (展示页) --- */
-    #guest-mode {
-      display: none; /* 默认隐藏 */
-    }
-
-    .guest-header {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    .guest-header h1 { margin: 0; font-size: 24px; }
-    .guest-header p { color: var(--text-sub); margin-top: 5px; }
-
-    .info-section {
-      background: var(--card-bg);
-      padding: 20px;
-      border-radius: 12px;
-      margin-bottom: 15px;
-      border: 1px solid #333;
-    }
-
-    .info-title {
-      font-size: 18px;
-      font-weight: bold;
-      color: var(--primary);
-      display: flex;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-    .info-title i { margin-right: 8px; }
-
-    .info-content {
-      font-size: 15px;
-      white-space: pre-wrap; /* 保留换行 */
-      color: #ddd;
-    }
-
-    /* 复制按钮样式 */
-    .copy-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #252528;
-      padding: 10px 15px;
-      border-radius: 8px;
-      margin-top: 8px;
-    }
-    .copy-btn {
-      background: rgba(74, 123, 238, 0.2);
-      color: #4a7bee;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 12px;
-      cursor: pointer;
-    }
-    .copy-btn:active { background: rgba(74, 123, 238, 0.4); }
-
-    /* 底部按钮 */
-    .footer-btn {
-      text-align: center;
-      margin-top: 40px;
-    }
-    .footer-btn a {
-      color: #666;
-      text-decoration: none;
-      font-size: 12px;
-    }
+    :root { --bg: #111113; --card: #1a1a1d; --blue: #4a7bee; --text: #fff; --sub: #999; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); padding: 16px; line-height: 1.6; }
+    .container { max-width: 500px; margin: 0 auto; }
+    h1 { text-align: center; font-size: 22px; margin-bottom: 20px; }
+    .card { background: var(--card); border-radius: 16px; padding: 20px; border: 1px solid #333; margin-bottom: 16px; }
+    label { display: block; color: var(--sub); font-size: 13px; font-weight: 600; margin-top: 16px; }
+    label:first-child { margin-top: 0; }
+    input, textarea, select { width: 100%; padding: 12px; margin-top: 8px; background: #252528; border: 1px solid #444; border-radius: 10px; color: #fff; font-size: 15px; }
+    textarea { resize: none; height: 80px; }
+    .btn { width: 100%; padding: 14px; margin-top: 20px; background: var(--blue); border: none; border-radius: 10px; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; }
+    .btn:disabled { background: #555; }
+    .upload-area { margin-top: 8px; padding: 16px; background: #252528; border: 2px dashed #444; border-radius: 10px; text-align: center; color: var(--sub); cursor: pointer; }
+    .upload-area:hover { border-color: var(--blue); }
+    .img-preview { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .img-preview .img-item { position: relative; }
+    .img-preview img { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; }
+    .img-preview .del { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; background: #e53935; border-radius: 50%; border: none; color: #fff; font-size: 14px; cursor: pointer; line-height: 18px; }
+    #qr-result { display: none; background: #fff; border-radius: 16px; padding: 24px; text-align: center; margin-top: 20px; }
+    #qr-result p { color: #333; margin: 0; }
+    #qrcode { display: flex; justify-content: center; margin: 16px 0; }
+    .url-box { background: #f0f0f0; padding: 10px; border-radius: 8px; margin-top: 12px; word-break: break-all; font-size: 12px; color: #666; }
+    .copy-url { margin-top: 10px; padding: 10px 20px; background: var(--blue); border: none; border-radius: 8px; color: #fff; cursor: pointer; }
+    /* 访客模式 */
+    .guest-header { text-align: center; margin-bottom: 24px; }
+    .guest-header h1 { margin-bottom: 6px; }
+    .guest-header p { color: var(--sub); font-size: 14px; }
+    .info-section { background: var(--card); border-radius: 14px; padding: 16px; margin-bottom: 12px; border: 1px solid #333; }
+    .info-title { color: var(--blue); font-weight: 600; font-size: 15px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .info-content { color: #ddd; white-space: pre-wrap; font-size: 14px; }
+    .copy-row { display: flex; justify-content: space-between; align-items: center; background: #252528; padding: 10px 14px; border-radius: 10px; margin-bottom: 8px; }
+    .copy-row:last-child { margin-bottom: 0; }
+    .copy-row span { color: #aaa; font-size: 14px; }
+    .copy-row b { color: #fff; }
+    .copy-btn { background: rgba(74,123,238,0.2); color: var(--blue); border: none; padding: 6px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+    .copy-btn.copied { background: #4caf50; color: #fff; }
+    .img-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; }
+    .img-grid img { width: 100%; border-radius: 10px; cursor: pointer; }
+    .footer-link { text-align: center; margin-top: 30px; }
+    .footer-link a { color: #666; font-size: 13px; text-decoration: none; }
+    /* 状态页 */
+    .status-page { min-height: 80vh; display: flex; align-items: center; justify-content: center; }
+    .status-box { background: var(--card); border-radius: 20px; padding: 40px; text-align: center; max-width: 320px; }
+    .status-box .icon { font-size: 56px; margin-bottom: 16px; }
+    .status-box h2 { font-size: 20px; margin-bottom: 8px; }
+    .status-box p { color: var(--sub); margin-bottom: 24px; font-size: 14px; }
+    /* 图片预览弹窗 */
+    .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; }
+    .modal img { max-width: 95%; max-height: 90%; border-radius: 8px; }
+    .modal.show { display: flex; }
   </style>
 </head>
 <body>
 
 <div class="container">
-
-  <div id="editor-mode">
-    <h1 style="text-align:center">🛠️ 入住卡生成器</h1>
-    <div class="input-card">
+  <!-- 编辑模式 -->
+  <div id="editor-mode" style="display:none">
+    <h1>🛠️ 入住卡生成器</h1>
+    <div class="card">
       <label>🏠 房源名称</label>
-      <input id="in_room" placeholder="例如：海景大床房 A01" value="宿栖新宿A">
+      <input id="in_room" value="宿栖新宿A" placeholder="例如：海景大床房 A01">
 
-      <label>📶 WiFi 名称 (SSID)</label>
-      <input id="in_wifi_ssid" placeholder="WiFi名称" value="Su_Guest_Wifi">
+      <label>📶 WiFi 名称</label>
+      <input id="in_ssid" value="Su_Guest_Wifi">
 
       <label>🔑 WiFi 密码</label>
-      <input id="in_wifi_pwd" placeholder="WiFi密码" value="88888888">
+      <input id="in_pwd" value="88888888">
 
       <label>🚪 入住/开门方式</label>
-      <textarea id="in_checkin" rows="3">大门密码：1234#
+      <textarea id="in_checkin">大门密码：1234#
 进门后左转，钥匙在鞋柜上的密码盒里（密码0000）。</textarea>
 
+      <label>📷 图片指引（最多5张，每张≤500KB）</label>
+      <div class="upload-area" onclick="document.getElementById('file-input').click()">+ 点击上传图片</div>
+      <input type="file" id="file-input" accept="image/*" multiple style="display:none" onchange="handleUpload(this)">
+      <div class="img-preview" id="img-preview"></div>
+
       <label>📝 其他注意事项</label>
-      <textarea id="in_extra" rows="3">退房时间 12:00。
+      <textarea id="in_extra">退房时间 12:00。
 请勿在室内吸烟。</textarea>
 
-      <button class="generate-btn" onclick="generateQR()">生成网页跳转二维码</button>
+      <label>⏰ 有效期</label>
+      <select id="in_days">
+        <option value="3">3天</option>
+        <option value="7" selected>7天</option>
+        <option value="14">14天</option>
+        <option value="30">30天</option>
+        <option value="90">90天</option>
+      </select>
+
+      <button class="btn" id="gen-btn" onclick="generateCard()">生成入住卡二维码</button>
     </div>
 
     <div id="qr-result">
-      <p><b>手机扫码测试</b></p>
-      <div id="qrcode-container" style="display:flex;justify-content:center;"></div>
-      <p style="font-size:12px; color:#666; margin-top:10px;">
-        * 此二维码指向本页面的“展示模式”<br>
-        信息已加密存储在二维码链接中
-      </p>
+      <p><b>📱 扫码查看入住指南</b></p>
+      <div id="qrcode"></div>
+      <p style="font-size:12px;color:#888;margin-top:8px">支持：手机相机 / 支付宝 / 抖音等</p>
+      <div class="url-box" id="url-box"></div>
+      <button class="copy-url" onclick="copyUrl()">复制链接</button>
     </div>
   </div>
 
-
-  <div id="guest-mode">
+  <!-- 访客模式 -->
+  <div id="guest-mode" style="display:none">
     <div class="guest-header">
-      <h1 id="view_room">房源名称</h1>
+      <h1 id="v_room"></h1>
       <p>欢迎入住，以下是您的入住指南</p>
     </div>
 
     <div class="info-section">
-      <div class="info-title"><i class="ri-wifi-line"></i> WiFi 连接</div>
-      
+      <div class="info-title">📶 WiFi 连接</div>
       <div class="copy-row">
-        <span>名称: <b id="view_ssid" style="color:#fff"></b></span>
-        <button class="copy-btn" onclick="copyText('view_ssid')">复制</button>
+        <span>名称: <b id="v_ssid"></b></span>
+        <button class="copy-btn" onclick="copyText(this,'v_ssid')">复制</button>
       </div>
       <div class="copy-row">
-        <span>密码: <b id="view_pwd" style="color:#fff"></b></span>
-        <button class="copy-btn" onclick="copyText('view_pwd')">复制</button>
+        <span>密码: <b id="v_pwd"></b></span>
+        <button class="copy-btn" onclick="copyText(this,'v_pwd')">复制</button>
       </div>
     </div>
 
     <div class="info-section">
-      <div class="info-title"><i class="ri-key-2-line"></i> 入住方式</div>
-      <div class="info-content" id="view_checkin"></div>
+      <div class="info-title">🔑 入住方式</div>
+      <div class="info-content" id="v_checkin"></div>
+    </div>
+
+    <div class="info-section" id="img-section" style="display:none">
+      <div class="info-title">📷 图片指引</div>
+      <div class="img-grid" id="v_images"></div>
     </div>
 
     <div class="info-section">
-      <div class="info-title"><i class="ri-information-line"></i> 其他事项</div>
-      <div class="info-content" id="view_extra"></div>
+      <div class="info-title">ℹ️ 其他事项</div>
+      <div class="info-content" id="v_extra"></div>
     </div>
 
-    <div class="footer-btn">
-      <a href="?">我也要生成入住卡</a>
+    <div class="footer-link">
+      <a href="?">我也要生成入住卡 →</a>
     </div>
   </div>
 
+  <!-- 过期页 -->
+  <div id="expired-mode" style="display:none">
+    <div class="status-page">
+      <div class="status-box">
+        <div class="icon">⏰</div>
+        <h2>入住卡已过期</h2>
+        <p>此入住指南已超过有效期</p>
+        <button class="btn" onclick="location.href='?'">创建新入住卡</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 未找到页 -->
+  <div id="notfound-mode" style="display:none">
+    <div class="status-page">
+      <div class="status-box">
+        <div class="icon">🔍</div>
+        <h2>未找到入住卡</h2>
+        <p>该入住卡不存在或已被删除</p>
+        <button class="btn" onclick="location.href='?'">创建新入住卡</button>
+      </div>
+    </div>
+  </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.5.0/dist/easy.qrcode.min.js"></script>
+<!-- 图片预览弹窗 -->
+<div class="modal" id="modal" onclick="this.classList.remove('show')">
+  <img id="modal-img" src="">
+</div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
-  // --- 核心逻辑 ---
+// ========== 配置 ==========
+const STORAGE_KEY = 'checkin_cards';
+let uploadedImages = [];
+let currentUrl = '';
 
-  // 1. 页面加载时：判断是“编辑模式”还是“访客模式”
-  window.onload = function() {
-    const params = new URLSearchParams(window.location.search);
-    
-    // 如果 URL 里包含 'data' 参数，说明是扫码进来的
-    if (params.has('r')) {
-      showGuestMode(params);
-    } else {
-      document.getElementById('editor-mode').style.display = 'block';
+// ========== 初始化 ==========
+window.onload = function() {
+  const params = new URLSearchParams(location.search);
+  const id = params.get('id');
+  
+  if (id) {
+    loadCard(id);
+  } else {
+    document.getElementById('editor-mode').style.display = 'block';
+  }
+};
+
+// ========== 本地存储 ==========
+function getStorage() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  } catch { return {}; }
+}
+
+function setStorage(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
+}
+
+// ========== 图片上传 ==========
+function handleUpload(input) {
+  const files = Array.from(input.files);
+  if (uploadedImages.length + files.length > 5) {
+    alert('最多上传5张图片'); return;
+  }
+  
+  files.forEach(file => {
+    if (file.size > 500 * 1024) {
+      alert('图片 ' + file.name + ' 超过500KB'); return;
     }
+    const reader = new FileReader();
+    reader.onload = e => {
+      uploadedImages.push({ name: file.name, data: e.target.result });
+      renderPreview();
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+}
+
+function renderPreview() {
+  const container = document.getElementById('img-preview');
+  container.innerHTML = uploadedImages.map((img, i) => `
+    <div class="img-item">
+      <img src="${img.data}">
+      <button class="del" onclick="removeImg(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+function removeImg(i) {
+  uploadedImages.splice(i, 1);
+  renderPreview();
+}
+
+// ========== 生成入住卡 ==========
+function generateCard() {
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true;
+  btn.textContent = '生成中...';
+
+  const data = {
+    room: document.getElementById('in_room').value,
+    ssid: document.getElementById('in_ssid').value,
+    pwd: document.getElementById('in_pwd').value,
+    checkin: document.getElementById('in_checkin').value,
+    extra: document.getElementById('in_extra').value,
+    images: uploadedImages,
+    days: parseInt(document.getElementById('in_days').value),
+    createdAt: Date.now(),
+    expiresAt: Date.now() + parseInt(document.getElementById('in_days').value) * 24 * 60 * 60 * 1000
   };
 
-  // 2. 生成二维码 (编辑模式)
-  function generateQR() {
-    const room = document.getElementById('in_room').value;
-    const ssid = document.getElementById('in_wifi_ssid').value;
-    const pwd = document.getElementById('in_wifi_pwd').value;
-    const checkin = document.getElementById('in_checkin').value;
-    const extra = document.getElementById('in_extra').value;
+  const id = generateId();
+  const storage = getStorage();
+  
+  // 清理过期数据
+  Object.keys(storage).forEach(k => {
+    if (storage[k].expiresAt && Date.now() > storage[k].expiresAt) {
+      delete storage[k];
+    }
+  });
+  
+  storage[id] = data;
+  setStorage(storage);
 
-    // 构建当前的 Base URL (例如 https://c1211tokyo.github.io/tool/QR-checkin.html)
-    const baseUrl = window.location.href.split('?')[0];
+  const baseUrl = location.href.split('?')[0];
+  currentUrl = baseUrl + '?id=' + id;
 
-    // 拼接参数
-    // 为了缩短 URL，使用简写: r=room, s=ssid, p=pwd, c=checkin, e=extra
-    const params = new URLSearchParams();
-    params.append('r', room);
-    params.append('s', ssid);
-    params.append('p', pwd);
-    params.append('c', checkin);
-    params.append('e', extra);
+  // 生成二维码
+  document.getElementById('qrcode').innerHTML = '';
+  new QRCode(document.getElementById('qrcode'), {
+    text: currentUrl,
+    width: 180,
+    height: 180,
+    correctLevel: QRCode.CorrectLevel.M
+  });
 
-    const finalUrl = `${baseUrl}?${params.toString()}`;
+  document.getElementById('url-box').textContent = currentUrl;
+  document.getElementById('qr-result').style.display = 'block';
+  document.getElementById('qr-result').scrollIntoView({ behavior: 'smooth' });
 
-    // 显示二维码区域
-    document.getElementById('qr-result').style.display = 'block';
-    const qrContainer = document.getElementById('qrcode-container');
-    qrContainer.innerHTML = '';
+  btn.disabled = false;
+  btn.textContent = '生成入住卡二维码';
+}
 
-    // 生成二维码指向该 URL
-    new QRCode(qrContainer, {
-      text: finalUrl,
-      width: 240,
-      height: 240,
-      colorDark: "#000000",
-      colorLight: "#ffffff",
-      correctLevel: QRCode.CorrectLevel.L, // URL比较长，用L级容错可以保证二维码不会太密
-      quietZone: 10
-    });
+// ========== 读取入住卡 ==========
+function loadCard(id) {
+  const storage = getStorage();
+  const data = storage[id];
 
-    // 自动滚动到底部
-    document.getElementById('qr-result').scrollIntoView({ behavior: 'smooth' });
+  if (!data) {
+    document.getElementById('notfound-mode').style.display = 'block';
+    return;
   }
 
-  // 3. 展示信息 (访客模式)
-  function showGuestMode(params) {
-    document.getElementById('guest-mode').style.display = 'block';
-    document.title = params.get('r') + " - 入住指南";
-
-    // 填充数据
-    setText('view_room', params.get('r'));
-    setText('view_ssid', params.get('s'));
-    setText('view_pwd', params.get('p'));
-    setText('view_checkin', params.get('c'));
-    setText('view_extra', params.get('e'));
+  if (data.expiresAt && Date.now() > data.expiresAt) {
+    document.getElementById('expired-mode').style.display = 'block';
+    return;
   }
 
-  function setText(id, text) {
-    const el = document.getElementById(id);
-    if(el) el.textContent = text || '无';
+  document.title = data.room + ' - 入住指南';
+  document.getElementById('v_room').textContent = data.room;
+  document.getElementById('v_ssid').textContent = data.ssid;
+  document.getElementById('v_pwd').textContent = data.pwd;
+  document.getElementById('v_checkin').textContent = data.checkin;
+  document.getElementById('v_extra').textContent = data.extra;
+
+  if (data.images && data.images.length > 0) {
+    document.getElementById('img-section').style.display = 'block';
+    document.getElementById('v_images').innerHTML = data.images.map(img => 
+      `<img src="${img.data}" onclick="showModal(this.src)">`
+    ).join('');
   }
 
-  // 4. 复制功能
-  function copyText(elementId) {
-    const text = document.getElementById(elementId).textContent;
-    navigator.clipboard.writeText(text).then(() => {
-      alert('已复制: ' + text);
-    }).catch(err => {
-      console.error('复制失败', err);
-      alert('复制失败，请手动长按复制');
-    });
-  }
+  document.getElementById('guest-mode').style.display = 'block';
+}
+
+// ========== 工具函数 ==========
+function copyText(btn, id) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '已复制';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = '复制';
+      btn.classList.remove('copied');
+    }, 1500);
+  });
+}
+
+function copyUrl() {
+  navigator.clipboard.writeText(currentUrl).then(() => {
+    alert('链接已复制');
+  });
+}
+
+function showModal(src) {
+  document.getElementById('modal-img').src = src;
+  document.getElementById('modal').classList.add('show');
+}
 </script>
-
 </body>
 </html>
