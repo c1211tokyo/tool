@@ -3,183 +3,316 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>入住信息 QR 卡生成器</title>
+  <title>民宿入住指南</title>
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
   <style>
+    :root {
+      --bg-color: #0d0d0f;
+      --card-bg: #1a1a1d;
+      --primary: #4a7bee;
+      --text-main: #ffffff;
+      --text-sub: #aaaaaa;
+    }
+
     body {
       font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
-      background: #0d0d0f;
-      color: #fff;
-      padding: 20px;
+      background: var(--bg-color);
+      color: var(--text-main);
       margin: 0;
+      padding: 20px;
+      line-height: 1.6;
     }
+
     .container {
       max-width: 600px;
       margin: 0 auto;
     }
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-      font-size: 24px;
+
+    /* --- 编辑模式样式 (生成器) --- */
+    #editor-mode {
+      display: none; /* 默认隐藏，JS控制显示 */
     }
-    .card {
-      background: #1a1a1d;
-      padding: 20px;
-      border-radius: 12px;
+    
+    .input-card {
+      background: var(--card-bg);
+      padding: 25px;
+      border-radius: 16px;
       border: 1px solid #333;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
     }
+
     label {
       display: block;
       margin-top: 15px;
+      color: var(--text-sub);
       font-size: 14px;
-      color: #bbb;
       font-weight: bold;
     }
+
     input, textarea {
       width: 100%;
       padding: 12px;
       margin-top: 8px;
-      border-radius: 8px;
-      border: 1px solid #444;
       background: #252528;
+      border: 1px solid #444;
+      border-radius: 8px;
       color: #fff;
       box-sizing: border-box;
       font-size: 15px;
     }
-    textarea {
-      min-height: 80px;
-      line-height: 1.5;
-    }
-    button {
+
+    button.generate-btn {
       width: 100%;
       padding: 16px;
-      margin-top: 25px;
-      background: #4a7bee;
+      margin-top: 30px;
+      background: var(--primary);
       border: none;
       border-radius: 8px;
-      color: white;
+      color: #fff;
       font-size: 16px;
       font-weight: bold;
       cursor: pointer;
     }
-    button:hover {
-      background: #3a6bde;
-    }
-    
-    /* 预览区域 */
-    #preview {
+
+    #qr-result {
       margin-top: 30px;
-      padding: 30px 20px;
-      background: #fff; /* 预览卡片整体用白色，模拟打印纸效果 */
-      color: #000;     /* 黑色文字 */
-      border-radius: 12px;
       text-align: center;
-      display: none;   /* 初始隐藏 */
+      padding: 20px;
+      background: #fff;
+      border-radius: 12px;
+      display: none;
     }
-    
-    .preview-header {
-      font-size: 20px;
-      font-weight: bold;
-      margin-bottom: 15px;
-      border-bottom: 2px solid #000;
-      display: inline-block;
-      padding-bottom: 5px;
+    #qr-result p { color: #333; margin-bottom: 10px; }
+
+    /* --- 访客模式样式 (展示页) --- */
+    #guest-mode {
+      display: none; /* 默认隐藏 */
     }
 
-    /* 二维码容器 */
-    #qrcode {
-      display: flex;
-      justify-content: center;
-      margin: 10px auto;
+    .guest-header {
+      text-align: center;
+      margin-bottom: 30px;
     }
-    
-    .preview-footer {
-      margin-top: 15px;
+    .guest-header h1 { margin: 0; font-size: 24px; }
+    .guest-header p { color: var(--text-sub); margin-top: 5px; }
+
+    .info-section {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 15px;
+      border: 1px solid #333;
+    }
+
+    .info-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .info-title i { margin-right: 8px; }
+
+    .info-content {
+      font-size: 15px;
+      white-space: pre-wrap; /* 保留换行 */
+      color: #ddd;
+    }
+
+    /* 复制按钮样式 */
+    .copy-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #252528;
+      padding: 10px 15px;
+      border-radius: 8px;
+      margin-top: 8px;
+    }
+    .copy-btn {
+      background: rgba(74, 123, 238, 0.2);
+      color: #4a7bee;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
       font-size: 12px;
-      color: #555;
+      cursor: pointer;
+    }
+    .copy-btn:active { background: rgba(74, 123, 238, 0.4); }
+
+    /* 底部按钮 */
+    .footer-btn {
+      text-align: center;
+      margin-top: 40px;
+    }
+    .footer-btn a {
+      color: #666;
+      text-decoration: none;
+      font-size: 12px;
     }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <h1>🏠 入住 QR 生成器</h1>
 
-  <div class="card">
-    <label>房源名称</label>
-    <input id="roomName" value="宿栖新宿A" />
+  <div id="editor-mode">
+    <h1 style="text-align:center">🛠️ 入住卡生成器</h1>
+    <div class="input-card">
+      <label>🏠 房源名称</label>
+      <input id="in_room" placeholder="例如：海景大床房 A01" value="宿栖新宿A">
 
-    <label>WiFi 信息</label>
-    <textarea id="wifiInfo">SSID: MyHostel_Wifi
-密码: 88888888</textarea>
+      <label>📶 WiFi 名称 (SSID)</label>
+      <input id="in_wifi_ssid" placeholder="WiFi名称" value="Su_Guest_Wifi">
 
-    <label>入住指引</label>
-    <textarea id="checkinInfo">大门密码：1234#
-进门后左转上楼。</textarea>
+      <label>🔑 WiFi 密码</label>
+      <input id="in_wifi_pwd" placeholder="WiFi密码" value="88888888">
 
-    <label>其他备注</label>
-    <textarea id="extraInfo">退房时间：12:00
-紧急联系：13800000000</textarea>
+      <label>🚪 入住/开门方式</label>
+      <textarea id="in_checkin" rows="3">大门密码：1234#
+进门后左转，钥匙在鞋柜上的密码盒里（密码0000）。</textarea>
 
-    <button onclick="generate()">生成入住卡</button>
+      <label>📝 其他注意事项</label>
+      <textarea id="in_extra" rows="3">退房时间 12:00。
+请勿在室内吸烟。</textarea>
+
+      <button class="generate-btn" onclick="generateQR()">生成网页跳转二维码</button>
+    </div>
+
+    <div id="qr-result">
+      <p><b>手机扫码测试</b></p>
+      <div id="qrcode-container" style="display:flex;justify-content:center;"></div>
+      <p style="font-size:12px; color:#666; margin-top:10px;">
+        * 此二维码指向本页面的“展示模式”<br>
+        信息已加密存储在二维码链接中
+      </p>
+    </div>
   </div>
 
-  <div id="preview">
-    <div class="preview-header" id="pTitle">房源名称</div>
-    <div id="qrcode"></div>
-    <div class="preview-footer">请使用微信或相机扫描查看完整信息</div>
+
+  <div id="guest-mode">
+    <div class="guest-header">
+      <h1 id="view_room">房源名称</h1>
+      <p>欢迎入住，以下是您的入住指南</p>
+    </div>
+
+    <div class="info-section">
+      <div class="info-title"><i class="ri-wifi-line"></i> WiFi 连接</div>
+      
+      <div class="copy-row">
+        <span>名称: <b id="view_ssid" style="color:#fff"></b></span>
+        <button class="copy-btn" onclick="copyText('view_ssid')">复制</button>
+      </div>
+      <div class="copy-row">
+        <span>密码: <b id="view_pwd" style="color:#fff"></b></span>
+        <button class="copy-btn" onclick="copyText('view_pwd')">复制</button>
+      </div>
+    </div>
+
+    <div class="info-section">
+      <div class="info-title"><i class="ri-key-2-line"></i> 入住方式</div>
+      <div class="info-content" id="view_checkin"></div>
+    </div>
+
+    <div class="info-section">
+      <div class="info-title"><i class="ri-information-line"></i> 其他事项</div>
+      <div class="info-content" id="view_extra"></div>
+    </div>
+
+    <div class="footer-btn">
+      <a href="?">我也要生成入住卡</a>
+    </div>
   </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.5.0/dist/easy.qrcode.min.js"></script>
 
 <script>
-  let qrcodeObj = null;
+  // --- 核心逻辑 ---
 
-  function generate() {
-    // 1. 获取内容
-    const room = document.getElementById('roomName').value || '入住指南';
-    const wifi = document.getElementById('wifiInfo').value;
-    const checkin = document.getElementById('checkinInfo').value;
-    const extra = document.getElementById('extraInfo').value;
+  // 1. 页面加载时：判断是“编辑模式”还是“访客模式”
+  window.onload = function() {
+    const params = new URLSearchParams(window.location.search);
+    
+    // 如果 URL 里包含 'data' 参数，说明是扫码进来的
+    if (params.has('r')) {
+      showGuestMode(params);
+    } else {
+      document.getElementById('editor-mode').style.display = 'block';
+    }
+  };
 
-    // 2. 拼接文本
-    // 注意：开头加上中文标题，避免iOS相机识别成电话号码跳转拨号
-    const textContent = `【${room} 入住指南】
+  // 2. 生成二维码 (编辑模式)
+  function generateQR() {
+    const room = document.getElementById('in_room').value;
+    const ssid = document.getElementById('in_wifi_ssid').value;
+    const pwd = document.getElementById('in_wifi_pwd').value;
+    const checkin = document.getElementById('in_checkin').value;
+    const extra = document.getElementById('in_extra').value;
 
-=== WiFi ===
-${wifi}
+    // 构建当前的 Base URL (例如 https://c1211tokyo.github.io/tool/QR-checkin.html)
+    const baseUrl = window.location.href.split('?')[0];
 
-=== 入住方式 ===
-${checkin}
+    // 拼接参数
+    // 为了缩短 URL，使用简写: r=room, s=ssid, p=pwd, c=checkin, e=extra
+    const params = new URLSearchParams();
+    params.append('r', room);
+    params.append('s', ssid);
+    params.append('p', pwd);
+    params.append('c', checkin);
+    params.append('e', extra);
 
-=== 其他 ===
-${extra}`;
+    const finalUrl = `${baseUrl}?${params.toString()}`;
 
-    // 3. 显示预览区
-    const preview = document.getElementById('preview');
-    const pTitle = document.getElementById('pTitle');
-    preview.style.display = 'block';
-    pTitle.innerText = room;
+    // 显示二维码区域
+    document.getElementById('qr-result').style.display = 'block';
+    const qrContainer = document.getElementById('qrcode-container');
+    qrContainer.innerHTML = '';
 
-    // 4. 清理旧的二维码
-    const qrContainer = document.getElementById('qrcode');
-    qrContainer.innerHTML = ''; 
-
-    // 5. 生成二维码 (最简配置，减少出错概率)
-    // EasyQRCodeJS 会自动处理 UTF-8 编码
+    // 生成二维码指向该 URL
     new QRCode(qrContainer, {
-      text: textContent,
-      width: 260,      // 稍微大一点，更清晰
-      height: 260,
+      text: finalUrl,
+      width: 240,
+      height: 240,
       colorDark: "#000000",
       colorLight: "#ffffff",
-      correctLevel: QRCode.CorrectLevel.M, // M级容错，平衡数据量和清晰度
-      quietZone: 10,   // 留白边距，确保能扫出来
-      quietZoneColor: '#ffffff' // 边距颜色
+      correctLevel: QRCode.CorrectLevel.L, // URL比较长，用L级容错可以保证二维码不会太密
+      quietZone: 10
     });
 
-    // 滚动到预览区
-    preview.scrollIntoView({ behavior: 'smooth' });
+    // 自动滚动到底部
+    document.getElementById('qr-result').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // 3. 展示信息 (访客模式)
+  function showGuestMode(params) {
+    document.getElementById('guest-mode').style.display = 'block';
+    document.title = params.get('r') + " - 入住指南";
+
+    // 填充数据
+    setText('view_room', params.get('r'));
+    setText('view_ssid', params.get('s'));
+    setText('view_pwd', params.get('p'));
+    setText('view_checkin', params.get('c'));
+    setText('view_extra', params.get('e'));
+  }
+
+  function setText(id, text) {
+    const el = document.getElementById(id);
+    if(el) el.textContent = text || '无';
+  }
+
+  // 4. 复制功能
+  function copyText(elementId) {
+    const text = document.getElementById(elementId).textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      alert('已复制: ' + text);
+    }).catch(err => {
+      console.error('复制失败', err);
+      alert('复制失败，请手动长按复制');
+    });
   }
 </script>
 
