@@ -5,68 +5,133 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>蘇的工具箱</title>
   <style>
+    /* 全局变量：方便微调颜色 */
+    :root {
+      --bg-color: #0a0a0a;       /* 极深灰背景 */
+      --btn-bg: #1a1a1a;         /* 按钮背景 */
+      --btn-border: #333333;     /* 按钮边框 */
+      --btn-hover: #262626;      /* 悬停背景 */
+      --btn-hover-border: #555;  /* 悬停边框 */
+      --text-main: #e5e5e5;      /* 主要文字 */
+      --text-sub: #666666;       /* 次要文字 */
+    }
+
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background: #0f0f0f;
-      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
       display: flex;
       flex-direction: column;
       align-items: center;
+      min-height: 100vh;
+      padding: 40px 20px;
     }
+
     h1 {
-      margin: 30px 0;
-      font-size: 2rem;
+      margin: 20px 0 40px 0;
+      font-size: 1.8rem;
+      font-weight: 500;
       letter-spacing: 2px;
+      color: #fff;
     }
+
+    /* 网格布局：自适应列宽，保持整齐 */
     .grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 20px;
-      width: 90%;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 16px;
+      width: 100%;
       max-width: 800px;
     }
+
+    /* 按钮样式：扁平、有边框、无阴影 */
     .btn {
-      background: #1e1e1e;
-      border: 1px solid #333;
-      border-radius: 10px;
-      padding: 30px 10px;
+      background: var(--btn-bg);
+      border: 1px solid var(--btn-border);
+      border-radius: 8px;
+      height: 60px; /* 统一高度 */
+      display: flex;
+      align-items: center;
+      justify-content: center;
       text-align: center;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    .btn:hover {
-      background: #333;
-    }
-    a {
       text-decoration: none;
-      color: #ffffff;
-      display: block;
-      width: 100%;
-      height: 100%;
+      color: var(--text-main);
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    /* 悬停效果：变亮一点点 */
+    .btn:hover {
+      background: var(--btn-hover);
+      border-color: var(--btn-hover-border);
+      color: #fff;
+    }
+
+    /* 外部链接标记 (右上角小点) */
+    .external::after {
+      content: "";
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 4px;
+      height: 4px;
+      background-color: var(--btn-border);
+      border-radius: 50%;
+    }
+    .btn:hover.external::after {
+      background-color: #888;
+    }
+
+    /* 页脚 */
+    footer {
+      margin-top: auto; /* 自动推到最底部 */
+      padding-top: 60px;
+      font-size: 0.75rem;
+      color: var(--text-sub);
+      letter-spacing: 1px;
+      font-family: 'Menlo', monospace; /* 等宽字体增加科技感 */
+      opacity: 0.6;
+    }
+
+    /* 手机端适配：一行两个 */
+    @media (max-width: 600px) {
+      .grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .btn {
+        height: 55px;
+        font-size: 0.9rem;
+      }
     }
   </style>
 </head>
 <body>
+
   <h1>蘇的工具箱</h1>
+
   <div class="grid">
-    <div class="btn"><a href="ABCD">Tool A</a></div>
-    <div class="btn"><a href="Loan-calculator.html">贷款计算</a></div>
-    <div class="btn"><a href="PL-calculation.html">购租测算</a></div>
-    <div class="btn"><a href="https://1211.world/count.html">1211.回报测算</a></div>
-    <div class="btn"><a href="Reimbursement.html">报销表格</a></div>
-    <div class="btn"><a href="ABCB">Tool F</a></div>
-    <div class="btn"><a href="ABCB">Tool G</a></div>
-    <div class="btn"><a href="ABCB">Tool H</a></div>
-    <div class="btn"><a href="ABCB">Tool I</a></div>
-    <div class="btn"><a href="ABCB">Tool J</a></div>
-    <div class="btn"><a href="ABCB">Tool K</a></div>
-    <div class="btn"><a href="QR-checkin.html">QR卡片生成</a></div>
-    <div class="btn"><a href="annual-lottery.html">抽奖工具</a></div>
-    <div class="btn"><a href="ABCB">Tool N</a></div>
-    <div class="btn"><a href="ABCB">Tool O</a></div>
-    <div class="btn"><a href="https://tools.pdf24.org/zh/">PDF工具集*</a></div>
+    <a href="1234" class="btn">Tool A</a>
+    <a href="Loan-calculator.html" class="btn">贷款计算</a>
+    <a href="PL-calculation.html" class="btn">购租测算</a>
+    <a href="https://1211.world/count.html" class="btn external" target="_blank">1211.回报测算</a>
+    <a href="Reimbursement.html" class="btn">报销表格</a>
+    <a href="ABCB" class="btn">Tool F</a>
+    <a href="ABCB" class="btn">Tool G</a>
+    <a href="ABCB" class="btn">Tool H</a>
+    <a href="ABCB" class="btn">Tool I</a>
+    <a href="ABCB" class="btn">Tool J</a>
+    <a href="ABCB" class="btn">Tool K</a>
+    <a href="QR-checkin.html" class="btn">QR卡片生成</a>
+    <a href="annual-lottery.html" class="btn">抽奖工具</a>
+    <a href="ABCB" class="btn">Tool N</a>
+    <a href="ABCB" class="btn">Tool O</a>
+    <a href="https://tools.pdf24.org/zh/" class="btn external" target="_blank">PDF工具集*</a>
   </div>
+
+  <footer>蘇的工具箱 · SUYU.2025</footer>
+
 </body>
 </html>
