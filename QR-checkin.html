@@ -3,57 +3,55 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>入住信息卡生成器 | 蘇的工具箱</title>
+  <title>入住信息 QR 卡生成器</title>
   <style>
     body {
-      font-family: "Inter", sans-serif;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
       background: #0d0d0f;
       color: #fff;
       padding: 20px;
+      margin: 0;
     }
     .container {
-      max-width: 800px;
-      margin: auto;
+      max-width: 600px;
+      margin: 0 auto;
     }
     h1 {
       text-align: center;
       margin-bottom: 20px;
+      font-size: 24px;
     }
     .card {
       background: #1a1a1d;
       padding: 20px;
       border-radius: 12px;
-      margin-bottom: 20px;
       border: 1px solid #333;
     }
     label {
       display: block;
       margin-top: 15px;
-      font-size: 0.9rem;
-      color: #aaa;
+      font-size: 14px;
+      color: #bbb;
+      font-weight: bold;
     }
     input, textarea {
       width: 100%;
       padding: 12px;
       margin-top: 8px;
       border-radius: 8px;
-      border: 1px solid #333;
-      background: #2a2a2d;
+      border: 1px solid #444;
+      background: #252528;
       color: #fff;
       box-sizing: border-box;
-      font-size: 14px;
-    }
-    input:focus, textarea:focus {
-      outline: none;
-      border-color: #4a7bee;
+      font-size: 15px;
     }
     textarea {
       min-height: 80px;
-      resize: vertical;
+      line-height: 1.5;
     }
     button {
       width: 100%;
-      padding: 14px;
+      padding: 16px;
       margin-top: 25px;
       background: #4a7bee;
       border: none;
@@ -62,133 +60,128 @@
       font-size: 16px;
       font-weight: bold;
       cursor: pointer;
-      transition: background 0.2s;
     }
     button:hover {
       background: #3a6bde;
     }
+    
+    /* 预览区域 */
     #preview {
-      background: #1a1a1d;
-      padding: 40px 20px;
+      margin-top: 30px;
+      padding: 30px 20px;
+      background: #fff; /* 预览卡片整体用白色，模拟打印纸效果 */
+      color: #000;     /* 黑色文字 */
       border-radius: 12px;
-      margin-top: 20px;
       text-align: center;
-      display: none;
-      border: 1px solid #333;
+      display: none;   /* 初始隐藏 */
     }
-    #qrcode {
+    
+    .preview-header {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      border-bottom: 2px solid #000;
       display: inline-block;
-      margin-top: 20px;
-      padding: 20px;
-      background: #ffffff; 
-      border-radius: 8px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      padding-bottom: 5px;
     }
-    /* 确保二维码图片居中 */
-    #qrcode img, #qrcode canvas {
-        display: block; 
-        margin: 0 auto;
+
+    /* 二维码容器 */
+    #qrcode {
+      display: flex;
+      justify-content: center;
+      margin: 10px auto;
     }
-    .preview-title {
-        font-size: 1.4rem;
-        font-weight: bold;
-        margin-bottom: 10px;
-        color: #fff;
-    }
-    .preview-hint {
-        font-size: 0.9rem;
-        color: #888;
-        margin-top: 20px;
+    
+    .preview-footer {
+      margin-top: 15px;
+      font-size: 12px;
+      color: #555;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>🏠 民宿入住 QR 卡生成器</h1>
 
-    <div class="card">
-      <label>房源名称</label>
-      <input id="roomName" placeholder="例：宿栖新宿A" value="宿栖新宿A" />
+<div class="container">
+  <h1>🏠 入住 QR 生成器</h1>
 
-      <label>WiFi 信息</label>
-      <textarea id="wifiInfo" placeholder="SSID: XXX&#10;密码: XXX">SSID: Guest_Wifi
-PWD: 88888888</textarea>
+  <div class="card">
+    <label>房源名称</label>
+    <input id="roomName" value="宿栖新宿A" />
 
-      <label>入住方式</label>
-      <textarea id="checkinInfo" placeholder="密码箱位置、开门方式等">大门密码：1234#</textarea>
+    <label>WiFi 信息</label>
+    <textarea id="wifiInfo">SSID: MyHostel_Wifi
+密码: 88888888</textarea>
 
-      <label>其他说明</label>
-      <textarea id="extraInfo" placeholder="注意事项等">请保持安静，退房时间12:00</textarea>
+    <label>入住指引</label>
+    <textarea id="checkinInfo">大门密码：1234#
+进门后左转上楼。</textarea>
 
-      <button onclick="generateCard()">生成 QR 卡</button>
-    </div>
+    <label>其他备注</label>
+    <textarea id="extraInfo">退房时间：12:00
+紧急联系：13800000000</textarea>
 
-    <div id="preview"></div>
+    <button onclick="generate()">生成入住卡</button>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.5.0/dist/easy.qrcode.min.js"></script>
-  
-  <script>
-    // 核心修复：强制 UTF-8 编码转换函数
-    // 这能解决微信显示“不支持文本”以及手机识别成电话号码的问题
-    function toUtf8(str) {
-        var out, i, len, c;
-        out = "";
-        len = str.length;
-        for(i = 0; i < len; i++) {
-            c = str.charCodeAt(i);
-            if ((c >= 0x0001) && (c <= 0x007F)) {
-                out += str.charAt(i);
-            } else if (c > 0x07FF) {
-                out += String.fromCharCode(0xE0 | ((c >> 12) & 0x0F));
-                out += String.fromCharCode(0x80 | ((c >> 6) & 0x3F));
-                out += String.fromCharCode(0x80 | ((c >> 0) & 0x3F));
-            } else {
-                out += String.fromCharCode(0xC0 | ((c >> 6) & 0x1F));
-                out += String.fromCharCode(0x80 | ((c >> 0) & 0x3F));
-            }
-        }
-        return out;
-    }
+  <div id="preview">
+    <div class="preview-header" id="pTitle">房源名称</div>
+    <div id="qrcode"></div>
+    <div class="preview-footer">请使用微信或相机扫描查看完整信息</div>
+  </div>
+</div>
 
-    let qrcodeObj = null;
+<script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.5.0/dist/easy.qrcode.min.js"></script>
 
-    function generateCard() {
-      const room = document.getElementById('roomName').value || "入住信息";
-      const wifi = document.getElementById('wifiInfo').value;
-      const checkin = document.getElementById('checkinInfo').value;
-      const extra = document.getElementById('extraInfo').value;
+<script>
+  let qrcodeObj = null;
 
-      // 1. 添加显眼的标题符号，防止手机误判为电话号码
-      // 2. 组合文本
-      const rawText = `【${room} 入住指南】\n\n--- WiFi ---\n${wifi}\n\n--- 入住方式 ---\n${checkin}\n\n--- 其他 ---\n${extra}`;
-      
-      // 3. 关键步骤：转换编码
-      const safeText = toUtf8(rawText);
+  function generate() {
+    // 1. 获取内容
+    const room = document.getElementById('roomName').value || '入住指南';
+    const wifi = document.getElementById('wifiInfo').value;
+    const checkin = document.getElementById('checkinInfo').value;
+    const extra = document.getElementById('extraInfo').value;
 
-      const previewDiv = document.getElementById('preview');
-      previewDiv.style.display = "block";
-      
-      previewDiv.innerHTML = `
-        <div class="preview-title">${room}</div>
-        <div id="qrcode"></div>
-        <div class="preview-hint">📷 微信或相机扫码查看详情</div>
-      `;
+    // 2. 拼接文本
+    // 注意：开头加上中文标题，避免iOS相机识别成电话号码跳转拨号
+    const textContent = `【${room} 入住指南】
 
-      if (qrcodeObj) {
-        qrcodeObj = null; // 清理旧对象
-      }
+=== WiFi ===
+${wifi}
 
-      qrcodeObj = new QRCode(document.getElementById('qrcode'), {
-        text: safeText, // 使用转换后的 UTF-8 文本
-        width: 220,
-        height: 220,
-        colorDark: "#000000",
-        colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.L, // 使用 L (低容错) 以减少数据量，提高长文本的扫描成功率
-        useSVG: false
-      });
-    }
-  </script>
+=== 入住方式 ===
+${checkin}
+
+=== 其他 ===
+${extra}`;
+
+    // 3. 显示预览区
+    const preview = document.getElementById('preview');
+    const pTitle = document.getElementById('pTitle');
+    preview.style.display = 'block';
+    pTitle.innerText = room;
+
+    // 4. 清理旧的二维码
+    const qrContainer = document.getElementById('qrcode');
+    qrContainer.innerHTML = ''; 
+
+    // 5. 生成二维码 (最简配置，减少出错概率)
+    // EasyQRCodeJS 会自动处理 UTF-8 编码
+    new QRCode(qrContainer, {
+      text: textContent,
+      width: 260,      // 稍微大一点，更清晰
+      height: 260,
+      colorDark: "#000000",
+      colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.M, // M级容错，平衡数据量和清晰度
+      quietZone: 10,   // 留白边距，确保能扫出来
+      quietZoneColor: '#ffffff' // 边距颜色
+    });
+
+    // 滚动到预览区
+    preview.scrollIntoView({ behavior: 'smooth' });
+  }
+</script>
+
 </body>
 </html>
