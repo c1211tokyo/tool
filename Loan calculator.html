@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>蘇的工具箱 — 贷款计算器</title>
+  <style>
+    :root{--bg:#0b0b0d;--card:#121217;--muted:#9aa0a6;--accent:#7dd3fc}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter, system-ui, -apple-system, 'Helvetica Neue', Arial;background:var(--bg);color:#e6eef6}
+    header{padding:28px 20px;text-align:center}
+    h1{margin:0;font-size:1.5rem;letter-spacing:1px}
+    main{max-width:1000px;margin:20px auto;padding:20px}
+    .grid{display:grid;grid-template-columns:1fr 420px;gap:20px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.04);padding:18px;border-radius:12px}
+    label{display:block;font-size:0.85rem;color:var(--muted);margin-bottom:6px}
+    input,select{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+    .row{display:flex;gap:12px}
+    .row > *{flex:1}
+    .btn{display:inline-block;padding:10px 14px;border-radius:10px;background:transparent;border:1px solid rgba(125,211,252,0.18);cursor:pointer}
+    .btn.primary{background:linear-gradient(90deg,#0ea5e9,#60a5fa);color:#071126;border:none}
+    .result{font-size:0.95rem;margin-top:12px;padding:12px;border-radius:10px;background:rgba(255,255,255,0.02)}
+    table{width:100%;border-collapse:collapse;font-size:0.9rem;margin-top:12px}
+    th,td{padding:8px;text-align:right;border-bottom:1px dashed rgba(255,255,255,0.03)}
+    th{text color:var(--muted);text-align:center}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    footer{padding:20px;text-align:center;color:var(--muted);font-size:0.85rem}
+    @media(max-width:880px){.grid{grid-template-columns:1fr;}.row{flex-direction:column}}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>蘇的工具箱 — 贷款计算器</h1>
+    <div style="color:var(--muted);margin-top:8px">支持中国 & 日本的常见还款方式，生成摊还表并导出 CSV</div>
+  </header>
+  <main>
+    <div class="grid">
+      <section class="card">
+        <h2 style="margin-top:0">贷款参数</h2>
+        <div style="margin-top:10px">
+          <label>适用地区</label>
+          <select id="country">
+            <option value="cn">中国 (CNY)</option>
+            <option value="jp">日本 (JPY)</option>
+          </select>
+        </div>
+        <div style="margin-top:12px">
+          <label>贷款总额（本金）</label>
+          <input id="principal" type="number" min="0" step="0.01" placeholder="例如：3000000" />
+        </div>
+        <div style="margin-top:12px">
+          <label>首付 / 自付（可留空）</label>
+          <input id="downpayment" type="number" min="0" step="0.01" placeholder="例如：600000" />
+        </div>
+        <div style="margin-top:12px" class="row">
+          <div>
+            <label>年利率（%）</label>
+            <input id="rate" type="number" step="0.001" placeholder="年利率，例：3.25" />
+          </div>
+          <div>
+            <label>利率类型</label>
+            <select id="rateType">
+              <option value="fixed">固定利率</option>
+              <option value="variable">浮动/可调整（仅用于估算）</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-top:12px" class="row">
+          <div>
+            <label>期限</label>
+            <input id="term" type="number" min="1" step="1" placeholder="年数，例如：30" />
+          </div>
+          <div>
+            <label>还款频率</label>
+            <select id="frequency">
+              <option value="12">按月还款（12 次/年）</option>
+              <option value="4">按季还款（4 次/年）</option>
+              <option value="1">按年还款（1 次/年）</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-top:12px">
+          <label>还款方式</label>
+          <select id="method">
+            <option value="annuity">等额本息（每期等额，常见）</option>
+            <option value="equal-principal">等额本金（每期本金相等，利息递减）</option>
+            <option value="interest-only">先息后本（利息先付，本金到期一次偿还）</option>
+            <option value="bullet">到期一次还本（本金到期偿还，期间只付利息或不付）</option>
+          </select>
+        </div>
+
+        <div style="margin-top:14px" class="row">
+          <button class="btn primary" id="calc">计算并生成摊还表</button>
+          <button class="btn" id="reset">重置</button>
+        </div>
+
+        <div class="result" id="summary" aria-live="polite">
+          结果将在这里显示 — 输入参数后点击“计算并生成摊还表”。
+        </div>
+
+        <div class="actions">
+          <button class="btn" id="exportCsv">导出 CSV</button>
+          <button class="btn" id="copySchedule">复制摊还表到剪贴板</button>
+        </div>
+      </section>
+
+      <aside class="card" id="rightPanel">
+        <h3 style="margin-top:0">摊还表（预览）</h3>
+        <div id="tableWrap" style="max-height:520px;overflow:auto">
+          <table id="scheduleTable">
+            <thead>
+              <tr>
+                <th>期数</th>
+                <th>期初余额</th>
+                <th>本金</th>
+                <th>利息</th>
+                <th>当期还款</th>
+                <th>期末余额</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- 动态填充 -->
+            </tbody>
+          </table>
+        </div>
+      </aside>
+    </div>
+
+    <section class="card" style="margin-top:20px">
+      <h3 style="margin-top:0">说明与使用提示</h3>
+      <ul style="color:var(--muted)">
+        <li>本工具提供常见还款方式的计算与摊还表导出（CSV），便于对比不同方案。</li>
+        <li>“利率类型”为估算用途；浮动利率情况下，实际利率会随政策或银行合同变化，请以银行合同为准。</li>
+        <li>中国常见还款方式：等额本息（等额本息）与等额本金；日本常见为等额本金（或等额本息/按揭方式亦存在）。</li>
+        <li>若需要加入公积金贷款、组合贷款、提前还款模拟、手续费或税费计算，请告知，我可以帮你扩展功能。</li>
+      </ul>
+    </section>
+  </main>
+  <footer>蘇的工具箱 · 贷款计算器 — 简洁深色风格 · 由你部署到 <code>tool/loan-calculator.html</code></footer>
+
+  <script>
+    // 工具函数
+    function fmt(num, currency){
+      if (!isFinite(num)) return "-";
+      const opts = {minimumFractionDigits:2, maximumFractionDigits:2};
+      if(currency==='JPY') opts.minimumFractionDigits = opts.maximumFractionDigits = 0;
+      return new Intl.NumberFormat(undefined, opts).format(num);
+    }
+
+    function clearTable(){
+      const tbody = document.querySelector('#scheduleTable tbody');
+      tbody.innerHTML = '';
+    }
+
+    function addRow(i, begin, principal, interest, payment, end, currency){
+      const tbody = document.querySelector('#scheduleTable tbody');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td style="text-align:center">${i}</td>
+        <td> ${fmt(begin, currency)}</td>
+        <td> ${fmt(principal, currency)}</td>
+        <td> ${fmt(interest, currency)}</td>
+        <td> ${fmt(payment, currency)}</td>
+        <td> ${fmt(end, currency)}</td>`;
+      tbody.appendChild(tr);
+    }
+
+    // 计算函数：生成摊还表
+    function generateSchedule({principal, annualRate, years, freq, method, currency}){
+      const periods = years * freq;
+      const periodRate = annualRate / 100 / freq;
+      let schedule = [];
+      let balance = principal;
+
+      if(method === 'annuity'){
+        // 等额本息（年利率 -> 周期利率）
+        const r = periodRate;
+        let payment;
+        if(r === 0) payment = principal / periods;
+        else payment = principal * r * Math.pow(1+r, periods) / (Math.pow(1+r, periods) - 1);
+
+        for(let i=1;i<=periods;i++){
+          const interest = balance * r;
+          let principalPaid = payment - interest;
+          if(i === periods) principalPaid = balance; // 修正最后一期
+          const end = Math.max(0, balance - principalPaid);
+          schedule.push({i, begin: balance, principal: principalPaid, interest, payment: principalPaid+interest, end});
+          balance = end;
+        }
+      } else if(method === 'equal-principal'){
+        const principalEach = principal / periods;
+        for(let i=1;i<=periods;i++){
+          const interest = balance * periodRate;
+          const payment = principalEach + interest;
+          const end = Math.max(0, balance - principalEach);
+          schedule.push({i, begin: balance, principal: principalEach, interest, payment, end});
+          balance = end;
+        }
+      } else if(method === 'interest-only'){
+        for(let i=1;i<=periods;i++){
+          const interest = principal * periodRate;
+          const payment = interest; // 期间只付利息
+          const end = principal; // 本金不变
+          schedule.push({i, begin: principal, principal: 0, interest, payment, end});
+        }
+        // 最后一期还本金
+        schedule.push({i: periods+1, begin: principal, principal: principal, interest: 0, payment: principal, end:0});
+      } else if(method === 'bullet'){
+        // 到期一次还本：期间可能只付利息或不付（这里默认付利息）
+        for(let i=1;i<=periods;i++){
+          const interest = principal * periodRate;
+          const payment = interest;
+          schedule.push({i, begin: principal, principal: 0, interest, payment, end: principal});
+        }
+        schedule.push({i: periods+1, begin: principal, principal: principal, interest: 0, payment: principal, end:0});
+      }
+
+      return schedule;
+    }
+
+    // UI 交互
+    document.getElementById('calc').addEventListener('click', ()=>{
+      const country = document.getElementById('country').value;
+      const currency = country === 'jp' ? 'JPY' : 'CNY';
+      const principalInput = parseFloat(document.getElementById('principal').value) || 0;
+      const down = parseFloat(document.getElementById('downpayment').value) || 0;
+      const principal = Math.max(0, principalInput - down);
+      const rate = parseFloat(document.getElementById('rate').value) || 0;
+      const years = parseInt(document.getElementById('term').value) || 1;
+      const freq = parseInt(document.getElementById('frequency').value);
+      const method = document.getElementById('method').value;
+
+      if(principalInput <= 0){
+        alert('请输入有效的贷款总额（本金）。');
+        return;
+      }
+
+      clearTable();
+      const schedule = generateSchedule({principal, annualRate: rate, years, freq, method, currency});
+      let totalPayment = 0, totalInterest = 0;
+      schedule.forEach(row=>{
+        addRow(row.i, row.begin, row.principal, row.interest, row.payment, row.end, currency);
+        totalPayment += row.payment;
+        totalInterest += row.interest;
+      });
+
+      const summary = document.getElementById('summary');
+      summary.innerHTML = `贷款本金：${fmt(principal, currency)}（已减去首付 ${fmt(down, currency)}）<br>
+        期数：${schedule.length} ； 总还款：${fmt(totalPayment, currency)} ； 总利息：${fmt(totalInterest, currency)}`;
+
+      // 存储最新计算结果到 window 以便导出
+      window._lastSchedule = {schedule, currency};
+    });
+
+    document.getElementById('reset').addEventListener('click', ()=>{
+      document.getElementById('principal').value = '';
+      document.getElementById('downpayment').value = '';
+      document.getElementById('rate').value = '';
+      document.getElementById('term').value = '';
+      document.getElementById('country').value = 'cn';
+      document.getElementById('frequency').value = '12';
+      document.getElementById('method').value = 'annuity';
+      clearTable();
+      document.getElementById('summary').textContent = '结果将在这里显示 — 输入参数后点击“计算并生成摊还表”。';
+      window._lastSchedule = null;
+    });
+
+    document.getElementById('exportCsv').addEventListener('click', ()=>{
+      if(!window._lastSchedule){ alert('请先计算摊还表。'); return; }
+      const rows = window._lastSchedule.schedule;
+      const currency = window._lastSchedule.currency;
+      let csv = '期数,期初余额,本金,利息,当期还款,期末余额\n';
+      rows.forEach(r=>{
+        csv += `${r.i},${r.begin},${r.principal},${r.interest},${r.payment},${r.end}\n`;
+      });
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `loan_schedule_${currency}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById('copySchedule').addEventListener('click', async ()=>{
+      if(!window._lastSchedule){ alert('请先计算摊还表。'); return; }
+      const rows = window._lastSchedule.schedule;
+      let text = '期数\t期初余额\t本金\t利息\t当期还款\t期末余额\n';
+      rows.forEach(r=>{
+        text += `${r.i}\t${fmt(r.begin, window._lastSchedule.currency)}\t${fmt(r.principal, window._lastSchedule.currency)}\t${fmt(r.interest, window._lastSchedule.currency)}\t${fmt(r.payment, window._lastSchedule.currency)}\t${fmt(r.end, window._lastSchedule.currency)}\n`;
+      });
+      try{
+        await navigator.clipboard.writeText(text);
+        alert('已复制到剪贴板，粘贴到表格软件中查看。');
+      }catch(e){
+        alert('复制失败，请手动导出 CSV。');
+      }
+    });
+  </script>
+</body>
+</html>
