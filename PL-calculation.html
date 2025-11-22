@@ -1,556 +1,411 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>购租测算｜蘇的工具箱</title>
-
-  <style>
-    :root {
-      --bg: #0b0b0d;
-      --card: #111315;
-      --muted: #9aa0a6;
-      --accent: #76c7ff;
-      --border: #2a2d31;
-    }
-
-    body {
-      margin: 0;
-      font-family: "Inter", sans-serif;
-      background: var(--bg);
-      color: #e8eef6;
-    }
-    header {
-      padding: 20px;
-      text-align: center;
-      border-bottom: 1px solid var(--border);
-    }
-    h1 { margin: 0; font-size: 1.6rem; }
-
-    .lang-switch {
-      margin-top: 8px;
-      font-size: 0.9rem;
-      color: var(--muted);
-      cursor: pointer;
-    }
-
-    .tabs {
-      display: flex;
-      gap: 12px;
-      margin: 20px;
-    }
-    .tab {
-      padding: 10px 16px;
-      border-radius: 8px;
-      background: #16181d;
-      cursor: pointer;
-      border: 1px solid var(--border);
-    }
-    .tab.active {
-      background: var(--accent);
-      color: #0a0d11;
-      font-weight: bold;
-    }
-
-    .panel {
-      display: none;
-      background: var(--card);
-      padding: 20px;
-      border-radius: 10px;
-      margin: 0 20px 20px;
-    }
-    .panel.active {
-      display: block;
-    }
-
-    .row {
-      display: flex;
-      gap: 15px;
-      margin-bottom: 15px;
-    }
-    .row label {
-      flex: 1;
-      font-size: 0.9rem;
-      color: var(--muted);
-    }
-    .row input,
-    .row select {
-      flex: 2;
-      padding: 8px;
-      background: #1c1e22;
-      border: 1px solid #333;
-      border-radius: 6px;
-      color: #fff;
-    }
-
-    .btn {
-      margin-top: 20px;
-      padding: 12px 20px;
-      border: none;
-      border-radius: 8px;
-      background: var(--accent);
-      color: #0b0f12;
-      cursor: pointer;
-      font-size: 1rem;
-    }
-
-    .result {
-      margin-top: 20px;
-      padding: 15px;
-      background: rgba(255,255,255,0.05);
-      border-radius: 8px;
-      font-size: 0.95rem;
-    }
-
-    /* Modal */
-    .modal {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5);
-      display: none;
-      justify-content: center;
-      align-items: center;
-    }
-    .modal-content {
-      width: 90%;
-      max-width: 520px;
-      background: var(--card);
-      padding: 20px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-    }
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .close {
-      cursor: pointer;
-      font-size: 1.4rem;
-    }
-    .modal-body {
-      margin-top: 15px;
-      max-height: 60vh;
-      overflow-y: auto;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 15px;
-    }
-    table th, table td {
-      padding: 8px;
-      border: 1px solid var(--border);
-      font-size: 0.85rem;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>购租测算 | 蘇的工具箱</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Noto Sans SC',system-ui,Arial,sans-serif;background:#f5f5f7;color:#1d1d1f;padding:16px;min-height:100vh;font-size:13px}
+.container{max-width:860px;margin:0 auto;background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.08);padding:20px 24px}
+header{text-align:center;padding-bottom:14px;border-bottom:1px solid #e5e5e7;margin-bottom:14px}
+h1{font-size:1.25rem;font-weight:600;letter-spacing:1px;color:#1d1d1f;margin-bottom:2px}
+.subtitle{color:#86868b;font-size:0.72rem}
+.top-bar{display:flex;justify-content:flex-end;margin-bottom:10px}
+.top-bar select{padding:4px 10px;border-radius:4px;border:1px solid #d2d2d7;background:#fff;color:#1d1d1f;font-size:0.75rem}
+.tabs{display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid #e5e5e7;padding-bottom:10px}
+.tab{padding:7px 14px;border-radius:5px;background:#f5f5f7;border:1px solid #e5e5e7;cursor:pointer;font-size:0.78rem;color:#515154;transition:all .15s}
+.tab:hover{border-color:#0071e3;color:#0071e3}
+.tab.active{background:#0071e3;color:#fff;border-color:#0071e3}
+.panel{display:none}
+.panel.active{display:block}
+.section{border:1px solid #e5e5e7;border-radius:6px;padding:12px;margin-bottom:10px}
+.section-title{font-size:0.72rem;color:#86868b;margin-bottom:8px;font-weight:500;display:flex;align-items:center;gap:5px}
+.section-title::before{content:'';width:3px;height:10px;background:#0071e3;border-radius:2px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.form-grid.col3{grid-template-columns:1fr 1fr 1fr}
+.field{display:flex;flex-direction:column;gap:3px}
+.field.full{grid-column:span 2}
+.field label{font-size:0.68rem;color:#515154}
+.field input,.field select{padding:7px 9px;border:1px solid #d2d2d7;border-radius:4px;background:#fafafa;color:#1d1d1f;font-size:0.82rem}
+.field input:focus,.field select:focus{outline:none;border-color:#0071e3;background:#fff}
+.field-hint{font-size:0.62rem;color:#86868b;margin-top:1px}
+.btn{padding:9px 18px;border:none;border-radius:5px;font-size:0.82rem;cursor:pointer;font-weight:500;transition:all .15s}
+.btn-primary{background:#0071e3;color:#fff}
+.btn-primary:hover{background:#0077ed}
+.btn-secondary{background:#f5f5f7;border:1px solid #d2d2d7;color:#1d1d1f}
+.btn-secondary:hover{background:#e8e8ed}
+.btn-row{display:flex;gap:8px;margin-top:12px}
+.result{margin-top:12px;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;display:none}
+.result.show{display:block}
+.result-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #e5e5e7}
+.result-title{font-size:0.82rem;font-weight:600;color:#1d1d1f}
+.result-total{font-size:1.05rem;color:#0071e3;font-weight:700}
+.result-table{width:100%;font-size:0.75rem}
+.result-table tr{border-bottom:1px solid #f0f0f2}
+.result-table tr:last-child{border-bottom:none}
+.result-table td{padding:6px 4px}
+.result-table td:last-child{text-align:right;font-weight:500;color:#1d1d1f}
+.result-table tr.highlight{background:#e8f4fd}
+.result-table tr.highlight td{color:#0055b3;font-weight:600}
+.result-table tr.sub td{color:#86868b;font-size:0.7rem;padding:4px 4px 4px 12px}
+.result-note{font-size:0.65rem;color:#86868b;margin-top:8px;text-align:center}
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.metric{background:#f5f5f7;border-radius:5px;padding:10px;text-align:center}
+.metric .val{font-size:1.1rem;font-weight:700;color:#0071e3}
+.metric .lbl{font-size:0.68rem;color:#515154;margin-top:2px}
+.metric.warn .val{color:#d97706}
+.metric.good .val{color:#059669}
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);display:none;justify-content:center;align-items:center;z-index:100}
+.modal.show{display:flex}
+.modal-content{width:92%;max-width:520px;background:#fff;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.15);overflow:hidden;max-height:90vh;display:flex;flex-direction:column}
+.modal-header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #e5e5e7;background:#f8f8fa}
+.modal-header h3{font-size:0.85rem;font-weight:600}
+.modal-close{width:26px;height:26px;border:none;background:#e5e5e7;border-radius:50%;cursor:pointer;font-size:1rem;color:#666;display:flex;align-items:center;justify-content:center}
+.modal-body{padding:14px 16px;overflow-y:auto;flex:1}
+.stamp-table{width:100%;border-collapse:collapse;font-size:0.68rem;margin-bottom:12px}
+.stamp-table th,.stamp-table td{padding:4px 6px;border:1px solid #e5e5e7;text-align:center}
+.stamp-table th{background:#f5f5f7;color:#515154;font-weight:500}
+.modal-actions{padding:12px 16px;border-top:1px solid #e5e5e7;display:flex;justify-content:flex-end;gap:8px}
+.info-box{background:#fffbeb;border:1px solid #fde68a;border-radius:5px;padding:8px 10px;margin-bottom:10px;font-size:0.7rem;color:#92400e}
+@media(max-width:600px){.form-grid,.form-grid.col3{grid-template-columns:1fr}.field.full{grid-column:span 1}.result-grid{grid-template-columns:1fr}}
+</style>
 </head>
-
 <body>
+<div class="container">
+<div class="top-bar">
+<select id="lang" onchange="switchLang()">
+<option value="zh">中文</option>
+<option value="jp">日本語</option>
+</select>
+</div>
 <header>
-  <h1 id="title">购租测算</h1>
-  <div class="lang-switch" id="langToggle">中文 / 日本語</div>
+<h1 id="title">购租测算</h1>
+<p class="subtitle" id="subtitle">蘇的工具箱 · 日本不动产购置成本与租售回报模拟</p>
 </header>
 
 <div class="tabs">
-  <div class="tab active" data-tab="buy" id="tabBuy">购置成本</div>
-  <div class="tab" data-tab="rent" id="tabRent">租售收益</div>
-  <div class="tab" id="openSetting">高级设定</div>
+<div class="tab active" data-tab="buy" id="tabBuy">购置成本</div>
+<div class="tab" data-tab="rent" id="tabRent">收益模拟</div>
+<div class="tab" id="openSetting">⚙ 税率设定</div>
 </div>
 
 <!-- 购置成本 -->
 <section id="buy" class="panel active">
-  <div class="row">
-    <label id="lblPrice">物件价格</label>
-    <input type="number" id="price" value="40000000">
-  </div>
-
-  <div class="row">
-    <label id="lblDown">首付</label>
-    <input type="number" id="down" value="8000000">
-  </div>
-
-  <div class="row">
-    <label id="lblBroker">中介费</label>
-    <select id="broker">
-      <option value="yes">有</option>
-      <option value="no">无</option>
-    </select>
-  </div>
-
-  <div class="row">
-    <label id="lblShiho">司法书士</label>
-    <input type="number" id="shiho" value="100000">
-  </div>
-
-  <button class="btn" id="btnCalcBuy">计算成本</button>
-  <div class="result" id="buyResult"></div>
-</section>
-
-<!-- 租售收益 -->
-<section id="rent" class="panel">
-  <div class="row">
-    <label id="lblRent">月租金</label>
-    <input type="number" id="rentInput" value="150000">
-  </div>
-
-  <div class="row">
-    <label id="lblOcc">稼働率</label>
-    <input type="number" id="occ" step="0.01" value="0.75">
-  </div>
-
-  <div class="row">
-    <label id="lblMgmt">管理费%</label>
-    <input type="number" id="mgmt" value="10">
-  </div>
-
-  <div class="row">
-    <label id="lblRep">修繕准备%</label>
-    <input type="number" id="rep" value="5">
-  </div>
-
-  <div class="row">
-    <label id="lblRate">贷款利率%</label>
-    <input type="number" id="loanRate" step="0.01" value="1.5">
-  </div>
-
-  <div class="row">
-    <label id="lblYears">贷款年数</label>
-    <input type="number" id="years" value="35">
-  </div>
-
-  <button class="btn" id="btnCalcRent">模拟收益</button>
-  <div class="result" id="rentResult"></div>
-</section>
-
-<!-- 高级设定 Modal（包含税率，印纸税，自定义税额） -->
-<div class="modal" id="settingModal">
-  <div class="modal-content">
-
-    <div class="modal-header">
-      <div id="settingTitle">高级设定</div>
-      <div class="close" id="closeSetting">&times;</div>
-    </div>
-
-    <div class="modal-body">
-
-      <h3 id="stampTitle">印纸税（契約書の印紙税）</h3>
-      <table>
-        <tr><th>契约金额</th><th>印纸税额</th></tr>
-        <tr><td>~1万</td><td>0</td></tr>
-        <tr><td>1万~10万</td><td>200</td></tr>
-        <tr><td>10万~50万</td><td>400</td></tr>
-        <tr><td>50万~100万</td><td>1000</td></tr>
-        <tr><td>100万~500万</td><td>2000</td></tr>
-        <tr><td>500万~1000万</td><td>10000</td></tr>
-        <tr><td>1000万~5000万</td><td>20000</td></tr>
-        <tr><td>5000万~1億</td><td>60000</td></tr>
-        <tr><td>1億~5億</td><td>100000</td></tr>
-        <tr><td>5億~10億</td><td>200000</td></tr>
-        <tr><td>10億~50億</td><td>400000</td></tr>
-        <tr><td>50億以上</td><td>600000</td></tr>
-      </table>
-
-      <div class="row">
-        <label id="lblStampCustom">自定义印纸税</label>
-        <input type="number" id="customStamp" value="0">
-      </div>
-
-      <h3 id="taxTitle">税率参数</h3>
-      <div class="row">
-        <label id="lblAcq">不动产取得税%</label>
-        <input type="number" id="acq" value="3" step="0.1">
-      </div>
-
-      <div class="row">
-        <label id="lblReg">登记注册税%</label>
-        <input type="number" id="reg" value="0.4" step="0.1">
-      </div>
-
-      <button class="btn" id="saveSetting">保存设定</button>
-    </div>
-  </div>
+<div class="section">
+<div class="section-title" id="sec_property">物件信息</div>
+<div class="form-grid">
+<div class="field"><label id="lblPrice">物件价格 (円)</label><input type="number" id="price" value="40000000"><p class="field-hint" id="hintPrice">市场交易价格</p></div>
+<div class="field"><label id="lblEval">固定资产评估价 (円)</label><input type="number" id="evalPrice" value="28000000"><p class="field-hint" id="hintEval">通常为市价的70%，用于计税</p></div>
+<div class="field"><label id="lblType">物件类型</label><select id="propType"><option value="house">一户建/整栋</option><option value="mansion">公寓（区分所有）</option><option value="land">土地</option></select></div>
+<div class="field"><label id="lblAge">房龄</label><select id="propAge"><option value="new">新建（5年内）</option><option value="used">二手房</option></select></div>
 </div>
-  <script>
-/* 简单注释：切换、配置、计算、显示（中/日双语） */
+</div>
 
-/* 初始税率配置（可由弹窗修改） */
-const taxConfig = {
-  acqPct: 3.0,       // 不动産取得税 百分比（%）
-  regPct: 0.4,       // 登记注册税 百分比（%）
-  customStamp: 0     // 若用户填了自定义印纸税则使用（否则用表格规则）
+<div class="section">
+<div class="section-title" id="sec_cost">购置费用项目</div>
+<div class="form-grid col3">
+<div class="field"><label id="lblBroker">中介手续费</label><select id="broker"><option value="yes">有（3%+6万）</option><option value="half">半额（1.5%+3万）</option><option value="no">无（新房直销）</option></select></div>
+<div class="field"><label id="lblShiho">司法书士费 (円)</label><input type="number" id="shiho" value="150000"><p class="field-hint">登记代理费，通常10-20万</p></div>
+<div class="field"><label id="lblFire">火灾保险 (円)</label><input type="number" id="fire" value="100000"><p class="field-hint">一次性，约5-15万</p></div>
+</div>
+</div>
+
+<div class="section">
+<div class="section-title" id="sec_loan">贷款信息（选填）</div>
+<div class="form-grid col3">
+<div class="field"><label id="lblDown">首付金额 (円)</label><input type="number" id="down" value="8000000"></div>
+<div class="field"><label id="lblLoanRate">贷款利率 (%)</label><input type="number" id="loanRate" step="0.01" value="1.5"></div>
+<div class="field"><label id="lblYears">贷款年数</label><input type="number" id="years" value="35"></div>
+</div>
+</div>
+
+<div class="btn-row">
+<button class="btn btn-primary" id="btnCalcBuy">计算购置成本</button>
+<button class="btn btn-secondary" onclick="resetBuy()">重置</button>
+</div>
+<div class="result" id="buyResult"></div>
+</section>
+
+<!-- 收益模拟 -->
+<section id="rent" class="panel">
+<div class="info-box" id="infoRent">💡 收益模拟将使用「购置成本」页面的物件价格和贷款参数，请先填写完整。</div>
+
+<div class="section">
+<div class="section-title" id="sec_rental">租赁/民宿参数</div>
+<div class="form-grid">
+<div class="field"><label id="lblOpType">运营类型</label><select id="opType" onchange="toggleOpType()"><option value="rent">普通长租</option><option value="minpaku">民宿/旅馆</option></select></div>
+<div class="field"><label id="lblRent">月租金 / 日均房价 (円)</label><input type="number" id="rentInput" value="150000"><p class="field-hint" id="hintRent">长租填月租金，民宿填ADR</p></div>
+</div>
+<div class="form-grid col3" id="occRow">
+<div class="field"><label id="lblOcc">稼働率 / 入住率</label><input type="number" id="occ" step="0.01" value="0.95"><p class="field-hint">长租约0.95，民宿约0.60-0.75</p></div>
+<div class="field"><label id="lblRooms">客房数量</label><input type="number" id="rooms" value="1"><p class="field-hint">民宿/旅馆填写</p></div>
+<div class="field"><label id="lblDays">年运营天数</label><input type="number" id="opDays" value="365"><p class="field-hint">民宿新法上限180天</p></div>
+</div>
+</div>
+
+<div class="section">
+<div class="section-title" id="sec_expense">运营成本</div>
+<div class="form-grid col3">
+<div class="field"><label id="lblMgmt">管理费/托管费 (%)</label><input type="number" id="mgmt" value="5"><p class="field-hint">长租3-5%，民宿15-25%</p></div>
+<div class="field"><label id="lblRep">修繕积立金 (%)</label><input type="number" id="rep" value="5"><p class="field-hint">通常5-10%</p></div>
+<div class="field"><label id="lblOther">其他杂费/年 (円)</label><input type="number" id="otherCost" value="0"><p class="field-hint">清扫、WIFI、水电等</p></div>
+</div>
+</div>
+
+<div class="btn-row">
+<button class="btn btn-primary" id="btnCalcRent">模拟收益</button>
+<button class="btn btn-secondary" onclick="resetRent()">重置</button>
+</div>
+<div class="result" id="rentResult"></div>
+</section>
+</div>
+
+<!-- 税率设定弹窗 -->
+<div class="modal" id="settingModal">
+<div class="modal-content">
+<div class="modal-header">
+<h3 id="settingTitle">税率参数设定</h3>
+<button class="modal-close" onclick="closeModal()">×</button>
+</div>
+<div class="modal-body">
+<div class="section-title" id="lblTaxBuy">购置时税费</div>
+<div class="form-grid" style="margin-bottom:14px">
+<div class="field"><label id="lblAcqLand">不动产取得税-土地 (%)</label><input type="number" id="acqLand" value="1.5" step="0.1"><p class="field-hint">评估价×税率，土地减半1.5%</p></div>
+<div class="field"><label id="lblAcqBld">不动产取得税-建物 (%)</label><input type="number" id="acqBld" value="3" step="0.1"><p class="field-hint">住宅3%，非住宅4%</p></div>
+<div class="field"><label id="lblRegLand">登录免许税-土地 (%)</label><input type="number" id="regLand" value="1.5" step="0.1"><p class="field-hint">所有权转移，土地1.5%</p></div>
+<div class="field"><label id="lblRegBld">登录免许税-建物 (%)</label><input type="number" id="regBld" value="2" step="0.1"><p class="field-hint">新建0.4%，二手2%</p></div>
+</div>
+<div class="section-title" id="lblTaxHold">持有时税费（年）</div>
+<div class="form-grid" style="margin-bottom:14px">
+<div class="field"><label id="lblFixedTax">固定资产税 (%)</label><input type="number" id="fixedTax" value="1.4" step="0.1"><p class="field-hint">评估价×1.4%，住宅用地减至1/6</p></div>
+<div class="field"><label id="lblCityTax">都市计划税 (%)</label><input type="number" id="cityTax" value="0.3" step="0.1"><p class="field-hint">评估价×0.3%</p></div>
+</div>
+<div class="section-title" id="stampTitle">印纸税速查表</div>
+<table class="stamp-table">
+<tr><th>契约金额</th><th>税额</th><th>契约金额</th><th>税额</th></tr>
+<tr><td>100万~500万</td><td>2,000</td><td>500万~1000万</td><td>10,000</td></tr>
+<tr><td>1000万~5000万</td><td>20,000</td><td>5000万~1億</td><td>60,000</td></tr>
+<tr><td>1億~5億</td><td>100,000</td><td>5億以上</td><td>200,000+</td></tr>
+</table>
+<div class="field"><label id="lblStampCustom">自定义印纸税 (円)</label><input type="number" id="customStamp" value="0"><p class="field-hint">留空则自动按价格档位计算</p></div>
+</div>
+<div class="modal-actions">
+<button class="btn btn-secondary" onclick="closeModal()">取消</button>
+<button class="btn btn-primary" id="saveSetting">保存设定</button>
+</div>
+</div>
+</div>
+
+<script>
+const TAX={acqLand:1.5,acqBld:3,regLand:1.5,regBld:2,fixedTax:1.4,cityTax:0.3,customStamp:0};
+const STAMP=[{max:1e6,tax:1000},{max:5e6,tax:2000},{max:1e7,tax:10000},{max:5e7,tax:20000},{max:1e8,tax:60000},{max:5e8,tax:100000},{max:1e9,tax:200000},{max:Infinity,tax:600000}];
+const L={
+zh:{title:"购租测算",subtitle:"蘇的工具箱 · 日本不动产购置成本与租售回报模拟",tabBuy:"购置成本",tabRent:"收益模拟",openSetting:"⚙ 税率设定",sec_property:"物件信息",lblPrice:"物件价格 (円)",hintPrice:"市场交易价格",lblEval:"固定资产评估价 (円)",hintEval:"通常为市价的70%，用于计税",lblType:"物件类型",lblAge:"房龄",sec_cost:"购置费用项目",lblBroker:"中介手续费",lblShiho:"司法书士费 (円)",lblFire:"火灾保险 (円)",sec_loan:"贷款信息（选填）",lblDown:"首付金额 (円)",lblLoanRate:"贷款利率 (%)",lblYears:"贷款年数",btnCalcBuy:"计算购置成本",infoRent:"💡 收益模拟将使用「购置成本」页面的物件价格和贷款参数，请先填写完整。",sec_rental:"租赁/民宿参数",lblOpType:"运营类型",lblRent:"月租金 / 日均房价 (円)",hintRent:"长租填月租金，民宿填ADR",lblOcc:"稼働率 / 入住率",lblRooms:"客房数量",lblDays:"年运营天数",sec_expense:"运营成本",lblMgmt:"管理费/托管费 (%)",lblRep:"修繕积立金 (%)",lblOther:"其他杂费/年 (円)",btnCalcRent:"模拟收益",settingTitle:"税率参数设定",resultBuy:"购置成本明细",resultRent:"收益模拟结果",note:"（估算仅供参考，实际以官方为准）"},
+jp:{title:"購入・収益シミュレーター",subtitle:"蘇のツールボックス · 日本不動産の購入費用と収益シミュレーション",tabBuy:"購入費用",tabRent:"収益試算",openSetting:"⚙ 税率設定",sec_property:"物件情報",lblPrice:"物件価格 (円)",hintPrice:"市場取引価格",lblEval:"固定資産評価額 (円)",hintEval:"通常市価の70%、課税基準",lblType:"物件タイプ",lblAge:"築年数",sec_cost:"購入諸費用",lblBroker:"仲介手数料",lblShiho:"司法書士費用 (円)",lblFire:"火災保険 (円)",sec_loan:"ローン情報",lblDown:"頭金 (円)",lblLoanRate:"金利 (%)",lblYears:"返済年数",btnCalcBuy:"費用を計算",infoRent:"💡 収益試算は「購入費用」の物件価格とローン情報を使用します。",sec_rental:"賃貸・民泊条件",lblOpType:"運営タイプ",lblRent:"月額賃料 / ADR (円)",hintRent:"長期賃貸は月額、民泊はADR",lblOcc:"稼働率",lblRooms:"客室数",lblDays:"年間営業日数",sec_expense:"運営コスト",lblMgmt:"管理費 (%)",lblRep:"修繕積立 (%)",lblOther:"その他経費/年 (円)",btnCalcRent:"収益試算",settingTitle:"税率設定",resultBuy:"購入費用明細",resultRent:"収益シミュレーション",note:"（概算です。実際は公式情報をご確認ください）"}
 };
+let curLang="zh";
+const $=id=>document.getElementById(id);
+const money=v=>"¥"+Math.round(v).toLocaleString();
+const pct=v=>(v*100).toFixed(2)+"%";
+const i18n=k=>L[curLang][k]||L.zh[k]||k;
 
-/* 印纸税档位（日本国税厅表，单位：日元） */
-const stampTable = [
-  {max: 10000, tax: 0},
-  {max: 100000, tax: 200},
-  {max: 500000, tax: 400},
-  {max: 1000000, tax: 1000},
-  {max: 5000000, tax: 2000},
-  {max: 10000000, tax: 10000},
-  {max: 50000000, tax: 20000},
-  {max: 100000000, tax: 60000},
-  {max: 500000000, tax: 100000},
-  {max: 1000000000, tax: 200000},
-  {max: 5000000000, tax: 400000},
-  {max: Infinity, tax: 600000}
-];
+function switchLang(){curLang=$("lang").value;Object.keys(L[curLang]).forEach(k=>{const el=$(k);if(el){if(el.tagName==="INPUT"||el.tagName==="SELECT")return;el.textContent=L[curLang][k];}});}
+function calcStamp(amt){const c=Number($("customStamp").value)||0;if(c>0)return c;for(const r of STAMP)if(amt<=r.max)return r.tax;return 0;}
 
-/* 语言包（简洁） */
-const I18N = {
-  zh: {
-    title: '购租测算',
-    desc: '购置成本 + 租售回报模拟',
-    tabBuy: '购置成本',
-    tabRent: '租售收益',
-    openSetting: '高级设定',
-    lblPrice: '物件价格',
-    lblDown: '首付',
-    lblBroker: '中介费',
-    lblShiho: '司法书士',
-    btnCalcBuy: '计算成本',
-    buyResultNote: '（估算，请以官方数据为准）',
-    lblRent: '月租金',
-    lblOcc: '稼働率',
-    lblMgmt: '管理费%',
-    lblRep: '修繕准备%',
-    lblRate: '贷款利率%',
-    lblYears: '贷款年数',
-    btnCalcRent: '模拟收益',
-    settingTitle: '高级设定',
-    stampTitle: '印纸税（国税厅表）',
-    lblStampCustom: '自定义印纸税',
-    lblAcq: '不动产取得税%',
-    lblReg: '登记注册税%',
-    saveSetting: '保存设定',
-    close: '关闭',
-    resultPurchase: '估算总支付',
-    resultRent: '模拟结果'
-  },
-  jp: {
-    title: '購入・賃貸シミュレーター',
-    desc: '購入コスト + 賃貸収益のシミュレーション',
-    tabBuy: '購入費用',
-    tabRent: '賃貸収益',
-    openSetting: '詳細設定',
-    lblPrice: '物件価格',
-    lblDown: '頭金',
-    lblBroker: '仲介手数料',
-    lblShiho: '司法書士',
-    btnCalcBuy: '費用を計算',
-    buyResultNote: '（目安です。公式データをご確認ください）',
-    lblRent: '月額賃料',
-    lblOcc: '稼働率',
-    lblMgmt: '管理費%',
-    lblRep: '修繕準備%',
-    lblRate: 'ローン金利%',
-    lblYears: 'ローン年数',
-    btnCalcRent: 'シミュレーション',
-    settingTitle: '詳細設定',
-    stampTitle: '印紙税（国税庁表）',
-    lblStampCustom: 'カスタム印紙税',
-    lblAcq: '取得税%',
-    lblReg: '登録免許税%',
-    saveSetting: '設定を保存',
-    close: '閉じる',
-    resultPurchase: '概算合計',
-    resultRent: 'シミュレーション結果'
-  }
-};
+document.querySelectorAll(".tab").forEach(btn=>{
+btn.addEventListener("click",()=>{
+if(btn.id==="openSetting"){$("settingModal").classList.add("show");return;}
+document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
+btn.classList.add("active");
+document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+$(btn.dataset.tab).classList.add("active");
+});
+});
 
-/* 默认语言 */
-let LANG = 'zh';
+function closeModal(){$("settingModal").classList.remove("show");}
+$("saveSetting").addEventListener("click",()=>{
+TAX.acqLand=Number($("acqLand").value);TAX.acqBld=Number($("acqBld").value);
+TAX.regLand=Number($("regLand").value);TAX.regBld=Number($("regBld").value);
+TAX.fixedTax=Number($("fixedTax").value);TAX.cityTax=Number($("cityTax").value);
+TAX.customStamp=Number($("customStamp").value);
+closeModal();
+});
 
-/* 工具函数 */
-function $(id){ return document.getElementById(id); }
-function money(v){ return '¥' + (Math.round(v)).toLocaleString(); }
-function pctToNum(v){ return Number(v) / 100; }
-
-/* 计算印纸税（优先使用自定义） */
-function calcStamp(amount){
-  const custom = Number($('customStamp').value) || taxConfig.customStamp || 0;
-  if(custom > 0) return custom;
-  for(const row of stampTable){
-    if(amount <= row.max) return row.tax;
-  }
-  return 0;
+function toggleOpType(){
+const isMinpaku=$("opType").value==="minpaku";
+$("occ").value=isMinpaku?"0.70":"0.95";
+$("mgmt").value=isMinpaku?"20":"5";
+$("opDays").value=isMinpaku?"180":"365";
+$("rooms").value=isMinpaku?"5":"1";
+$("rentInput").value=isMinpaku?"15000":"150000";
 }
 
-/* 绑定标签页切换 */
-document.querySelectorAll('.tab').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    const t = btn.dataset.tab;
-    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-    if(t) $(t).classList.add('active');
-    if(btn.id === 'openSetting') {
-      $('settingModal').style.display = 'flex';
-    }
-  });
+// 计算购置成本
+$("btnCalcBuy").addEventListener("click",()=>{
+const price=Number($("price").value)||0;
+const evalP=Number($("evalPrice").value)||price*0.7;
+const evalLand=evalP*0.4,evalBld=evalP*0.6; // 假设土地40%建物60%
+const isNew=$("propAge").value==="new";
+const brokerType=$("broker").value;
+const shiho=Number($("shiho").value)||0;
+const fire=Number($("fire").value)||0;
+
+// 中介费
+let broker=0;
+if(brokerType==="yes")broker=price*0.03+60000;
+else if(brokerType==="half")broker=price*0.015+30000;
+
+// 税费
+const stamp=calcStamp(price);
+const acqTax=evalLand*(TAX.acqLand/100)+evalBld*(TAX.acqBld/100);
+const regTax=evalLand*(TAX.regLand/100)+evalBld*((isNew?0.4:TAX.regBld)/100);
+const totalTax=stamp+acqTax+regTax;
+const totalFee=broker+shiho+fire;
+const grandTotal=totalTax+totalFee;
+
+// 贷款计算
+const down=Number($("down").value)||0;
+const principal=Math.max(0,price-down);
+const rate=Number($("loanRate").value)/100;
+const years=Number($("years").value)||35;
+const n=years*12,rM=rate/12;
+const monthly=rM>0?principal*rM*Math.pow(1+rM,n)/(Math.pow(1+rM,n)-1):principal/n;
+const totalRepay=monthly*n;
+const totalInt=totalRepay-principal;
+
+let html=`<div class="result-header"><span class="result-title">${i18n("resultBuy")}</span><span class="result-total">${money(grandTotal)}</span></div>`;
+html+=`<table class="result-table">
+<tr><td colspan="2" style="font-weight:600;color:#515154">■ 税费</td></tr>
+<tr><td>印纸税</td><td>${money(stamp)}</td></tr>
+<tr><td>不动产取得税</td><td>${money(acqTax)}</td></tr>
+<tr class="sub"><td>└ 土地 ${TAX.acqLand}%</td><td>${money(evalLand*(TAX.acqLand/100))}</td></tr>
+<tr class="sub"><td>└ 建物 ${TAX.acqBld}%</td><td>${money(evalBld*(TAX.acqBld/100))}</td></tr>
+<tr><td>登录免许税</td><td>${money(regTax)}</td></tr>
+<tr><td colspan="2" style="font-weight:600;color:#515154;padding-top:8px">■ 其他费用</td></tr>
+<tr><td>中介手续费</td><td>${money(broker)}</td></tr>
+<tr><td>司法书士费</td><td>${money(shiho)}</td></tr>
+<tr><td>火灾保险</td><td>${money(fire)}</td></tr>
+<tr class="highlight"><td>购置总费用</td><td>${money(grandTotal)}</td></tr>
+<tr><td>占物件价格比例</td><td>${(grandTotal/price*100).toFixed(2)}%</td></tr>
+</table>`;
+
+if(principal>0){
+html+=`<div style="margin-top:12px;padding-top:10px;border-top:1px solid #e5e5e7">
+<div style="font-size:0.75rem;font-weight:600;color:#515154;margin-bottom:6px">■ 贷款参考</div>
+<table class="result-table">
+<tr><td>贷款金额</td><td>${money(principal)}</td></tr>
+<tr><td>月供</td><td>${money(monthly)}</td></tr>
+<tr><td>总还款额</td><td>${money(totalRepay)}</td></tr>
+<tr><td>总利息</td><td>${money(totalInt)}</td></tr>
+</table></div>`;
+}
+html+=`<p class="result-note">${i18n("note")}</p>`;
+$("buyResult").innerHTML=html;
+$("buyResult").classList.add("show");
 });
 
-/* 打开/关闭设置弹窗 */
-$('closeSetting').addEventListener('click', ()=> $('settingModal').style.display = 'none');
-$('openSetting').addEventListener('click', ()=> $('settingModal').style.display = 'flex');
+// 计算收益
+$("btnCalcRent").addEventListener("click",()=>{
+const price=Number($("price").value)||0;
+const evalP=Number($("evalPrice").value)||price*0.7;
+const down=Number($("down").value)||0;
+const principal=Math.max(0,price-down);
+const rate=Number($("loanRate").value)/100;
+const years=Number($("years").value)||35;
+const n=years*12,rM=rate/12;
+const monthly=rM>0?principal*rM*Math.pow(1+rM,n)/(Math.pow(1+rM,n)-1):principal/n;
+const annualDebt=monthly*12;
 
-/* 保存设置 */
-$('saveSetting').addEventListener('click', ()=>{
-  taxConfig.acqPct = Number($('acq').value) || 3.0;
-  taxConfig.regPct = Number($('reg').value) || 0.4;
-  taxConfig.customStamp = Number($('customStamp').value) || 0;
-  $('settingModal').style.display = 'none';
-});
+const isMinpaku=$("opType").value==="minpaku";
+const rentVal=Number($("rentInput").value)||0;
+const occ=Number($("occ").value)||0;
+const rooms=Number($("rooms").value)||1;
+const opDays=Number($("opDays").value)||365;
+const mgmtPct=Number($("mgmt").value)/100;
+const repPct=Number($("rep").value)/100;
+const otherCost=Number($("otherCost").value)||0;
 
-/* 购置成本计算 */
-$('btnCalcBuy').addEventListener('click', ()=>{
-  const price = Number($('price').value) || 0;
-  const down = Number($('down').value) || 0;
-  const hasBroker = $('broker').value === 'yes';
-  const shiho = Number($('shiho').value) || 0;
-
-  const brokerFee = hasBroker ? (price * 0.03 + 60000) : 0;
-  const acqTax = price * (taxConfig.acqPct/100);
-  const regTax = price * (taxConfig.regPct/100);
-  const stamp = calcStamp(price);
-  const total = brokerFee + acqTax + regTax + stamp + shiho;
-
-  const lines = [
-    {k: i18n('lblBroker'), v: brokerFee},
-    {k: i18n('stampTitle'), v: stamp},
-    {k: i18n('lblAcq'), v: acqTax},
-    {k: i18n('lblReg'), v: regTax},
-    {k: i18n('lblShiho'), v: shiho},
-    {k: i18n('resultPurchase'), v: total}
-  ];
-
-  let html = `<div><strong>${i18n('resultPurchase')}： ${money(total)}</strong></div><div class="small">${i18n('buyResultNote') || ''}</div><table style="margin-top:10px;width:100%;">`;
-  lines.forEach(r=> html += `<tr><td style="text-align:left;padding:6px">${r.k}</td><td style="text-align:right;padding:6px">${money(r.v)}</td></tr>`);
-  html += `</table>`;
-  $('buyResult').innerHTML = html;
-});
-
-/* 租售测算（含 NOI, Gross Yield, Cap Rate, Cash-on-Cash, IRR） */
-$('btnCalcRent').addEventListener('click', ()=>{
-  const price = Number($('price').value) || 0; // 用同一 price 输入
-  const rent = Number($('rentInput').value) || 0;
-  const occ = Number($('occ').value) || 0;
-  const mgmt = Number($('mgmt').value) / 100;
-  const rep = Number($('rep').value) / 100;
-  const loanRate = Number($('loanRate').value)/100;
-  const years = Number($('years').value) || 35;
-  const down = Number($('down').value) || 0;
-
-  const annualIncome = rent * 12 * occ;
-  const mgmtCost = annualIncome * mgmt;
-  const repCost = annualIncome * rep;
-  const fixedTax = price * 0.014; // 固定資産税近似
-  const noi = annualIncome - mgmtCost - repCost - fixedTax;
-
-  // 等额本息月供
-  const principal = Math.max(0, price - down);
-  const n = years * 12;
-  const rMonth = loanRate / 12;
-  let monthly = 0;
-  if(rMonth > 0){
-    monthly = principal * rMonth * Math.pow(1 + rMonth, n) / (Math.pow(1 + rMonth, n) - 1);
-  } else {
-    monthly = principal / n;
-  }
-  const annualDebt = monthly * 12;
-  const cashFlow = noi - annualDebt;
-
-  const grossYield = annualIncome / price * 100;
-  const capRate = noi / price * 100;
-  const cashOnCash = (cashFlow / down) * 100;
-
-  // 简单 IRR（10 年）计算
-  const yearsIrr = 10;
-  const flows = [-down];
-  for(let y=1;y<=yearsIrr;y++) flows.push(cashFlow);
-  const irrVal = computeIRR(flows);
-
-  let html = `<div><strong>${i18n('resultRent')}</strong></div>
-    <table style="margin-top:10px;width:100%;">
-      <tr><td style="text-align:left;padding:6px">年预期收入</td><td style="text-align:right;padding:6px">${money(annualIncome)}</td></tr>
-      <tr><td style="text-align:left;padding:6px">NOI</td><td style="text-align:right;padding:6px">${money(noi)}</td></tr>
-      <tr><td style="text-align:left;padding:6px">表面利回 (Gross Yield)</td><td style="text-align:right;padding:6px">${grossYield.toFixed(2)}%</td></tr>
-      <tr><td style="text-align:left;padding:6px">资本化率 (Cap Rate)</td><td style="text-align:right;padding:6px">${capRate.toFixed(2)}%</td></tr>
-      <tr><td style="text-align:left;padding:6px">现金回报 (Cash-on-Cash)</td><td style="text-align:right;padding:6px">${isFinite(cashOnCash)?cashOnCash.toFixed(2)+'%':'-'}</td></tr>
-      <tr><td style="text-align:left;padding:6px">IRR（${yearsIrr}年简化）</td><td style="text-align:right;padding:6px">${isFinite(irrVal)?(irrVal*100).toFixed(2)+'%':'-'}</td></tr>
-      <tr><td style="text-align:left;padding:6px">年贷款还本利息</td><td style="text-align:right;padding:6px">${money(annualDebt)}</td></tr>
-      <tr><td style="text-align:left;padding:6px">年净现金流</td><td style="text-align:right;padding:6px">${money(cashFlow)}</td></tr>
-    </table>`;
-  $('rentResult').innerHTML = html;
-});
-
-/* 计算 IRR（牛顿法） */
-function computeIRR(cashflows, guess=0.1){
-  let x0 = guess;
-  for(let iter=0;iter<200;iter++){
-    let f = 0, df = 0;
-    for(let t=0;t<cashflows.length;t++){
-      f += cashflows[t] / Math.pow(1 + x0, t);
-      if(t>0) df += -t * cashflows[t] / Math.pow(1 + x0, t + 1);
-    }
-    const x1 = x0 - f/df;
-    if(!isFinite(x1)) return NaN;
-    if(Math.abs(x1 - x0) < 1e-7) return x1;
-    x0 = x1;
-  }
-  return NaN;
+// 年收入计算
+let annualIncome;
+if(isMinpaku){
+annualIncome=rentVal*occ*rooms*opDays; // ADR × 入住率 × 房间数 × 运营天数
+}else{
+annualIncome=rentVal*12*occ; // 月租 × 12 × 入住率
 }
 
-/* 语言替换：把页面上常见 label / 文案替换为目标语言 */
-function i18n(key){
-  return I18N[LANG][key] || I18N['zh'][key] || key;
-}
-function applyLang(){
-  $('title').innerText = i18n('title');
-  // header desc
-  document.querySelector('.lang-switch').innerText = LANG === 'zh' ? '中文 / 日本語' : '中文 / 日本語';
-  // tabs & labels
-  $('tabBuy').innerText = i18n('tabBuy');
-  $('tabRent').innerText = i18n('tabRent');
-  $('openSetting').innerText = i18n('openSetting');
-  $('lblPrice').innerText = i18n('lblPrice');
-  $('lblDown').innerText = i18n('lblDown');
-  $('lblBroker').innerText = i18n('lblBroker');
-  $('lblShiho').innerText = i18n('lblShiho');
-  $('btnCalcBuy').innerText = i18n('btnCalcBuy');
-  $('lblRent').innerText = i18n('lblRent');
-  $('lblOcc').innerText = i18n('lblOcc');
-  $('lblMgmt').innerText = i18n('lblMgmt');
-  $('lblRep').innerText = i18n('lblRep');
-  $('lblRate').innerText = i18n('lblRate');
-  $('lblYears').innerText = i18n('lblYears');
-  $('btnCalcRent').innerText = i18n('btnCalcRent');
-  $('settingTitle').innerText = i18n('settingTitle');
-  $('stampTitle').innerText = i18n('stampTitle');
-  $('lblStampCustom').innerText = i18n('lblStampCustom');
-  $('lblAcq').innerText = i18n('lblAcq');
-  $('lblReg').innerText = i18n('lblReg');
-  $('saveSetting').innerText = i18n('saveSetting');
-  $('closeSetting').innerText = i18n('close');
-}
-/* 语言切换事件 */
-document.querySelector('#langToggle').addEventListener('click', ()=>{
-  LANG = LANG === 'zh' ? 'jp' : 'zh';
-  applyLang();
+// 年支出
+const mgmtCost=annualIncome*mgmtPct;
+const repCost=annualIncome*repPct;
+const fixedTax=evalP*(TAX.fixedTax/100);
+const cityTax=evalP*(TAX.cityTax/100);
+const annualTax=fixedTax+cityTax;
+const totalExpense=mgmtCost+repCost+annualTax+otherCost;
+
+// 收益指标
+const goi=annualIncome; // 毛收入
+const noi=annualIncome-totalExpense; // 净营业收入
+const cashFlow=noi-annualDebt; // 税前现金流
+const grossYield=annualIncome/price; // 表面利回
+const capRate=noi/price; // 资本化率
+const cashOnCash=down>0?cashFlow/down:0; // 现金回报率
+
+// IRR计算（10年，假设退出价格=买入价格）
+const holdYears=10;
+const flows=[-down-Number($("buyResult").textContent.match(/[\d,]+/)?.[0]?.replace(/,/g,'')||0)];
+for(let y=1;y<holdYears;y++)flows.push(cashFlow);
+flows.push(cashFlow+price-principal*(1-holdYears/years)); // 最后一年加退出
+const irr=computeIRR(flows);
+
+// 判断收益等级
+const getClass=v=>v>=0.08?"good":v>=0.05?"":"warn";
+
+let html=`<div class="result-header"><span class="result-title">${i18n("resultRent")}</span></div>`;
+html+=`<div class="result-grid">
+<div class="metric"><div class="val">${pct(grossYield)}</div><div class="lbl">表面利回 Gross Yield</div></div>
+<div class="metric ${getClass(capRate)}"><div class="val">${pct(capRate)}</div><div class="lbl">实际利回 Cap Rate</div></div>
+<div class="metric ${getClass(cashOnCash)}"><div class="val">${isFinite(cashOnCash)?pct(cashOnCash):"-"}</div><div class="lbl">现金回报 Cash-on-Cash</div></div>
+<div class="metric"><div class="val">${isFinite(irr)?pct(irr):"-"}</div><div class="lbl">IRR (${holdYears}年)</div></div>
+</div>`;
+
+html+=`<table class="result-table">
+<tr><td colspan="2" style="font-weight:600;color:#515154">■ 收入</td></tr>
+<tr><td>年毛收入 (GOI)</td><td>${money(goi)}</td></tr>
+<tr><td colspan="2" style="font-weight:600;color:#515154;padding-top:8px">■ 支出</td></tr>
+<tr><td>管理费/托管费 (${(mgmtPct*100).toFixed(0)}%)</td><td>${money(mgmtCost)}</td></tr>
+<tr><td>修繕积立金 (${(repPct*100).toFixed(0)}%)</td><td>${money(repCost)}</td></tr>
+<tr><td>固定资产税+都市计划税</td><td>${money(annualTax)}</td></tr>
+<tr><td>其他杂费</td><td>${money(otherCost)}</td></tr>
+<tr style="border-top:1px solid #d2d2d7"><td>年支出合计</td><td>${money(totalExpense)}</td></tr>
+<tr><td colspan="2" style="font-weight:600;color:#515154;padding-top:8px">■ 现金流</td></tr>
+<tr><td>NOI 净营业收入</td><td>${money(noi)}</td></tr>
+<tr><td>年还贷金额</td><td>${money(annualDebt)}</td></tr>
+<tr class="highlight"><td>年净现金流</td><td>${money(cashFlow)}</td></tr>
+<tr><td>月净现金流</td><td>${money(cashFlow/12)}</td></tr>
+</table>`;
+html+=`<p class="result-note">${i18n("note")}</p>`;
+$("rentResult").innerHTML=html;
+$("rentResult").classList.add("show");
 });
-applyLang();
 
-/* 初始化 modal 隐藏 */
-document.getElementById('settingModal').style.display = 'none';
+function computeIRR(cf,guess=0.1){let x=guess;for(let i=0;i<200;i++){let f=0,df=0;for(let t=0;t<cf.length;t++){f+=cf[t]/Math.pow(1+x,t);if(t>0)df+=-t*cf[t]/Math.pow(1+x,t+1);}const nx=x-f/df;if(!isFinite(nx))return NaN;if(Math.abs(nx-x)<1e-7)return nx;x=nx;}return NaN;}
 
-/* 初始保存设置 UI 值 */
-$('acq').value = taxConfig.acqPct;
-$('reg').value = taxConfig.regPct;
-$('customStamp').value = taxConfig.customStamp;
+function resetBuy(){
+$("price").value="40000000";$("evalPrice").value="28000000";$("propType").value="house";$("propAge").value="used";
+$("broker").value="yes";$("shiho").value="150000";$("fire").value="100000";
+$("down").value="8000000";$("loanRate").value="1.5";$("years").value="35";
+$("buyResult").classList.remove("show");
+}
+function resetRent(){
+$("opType").value="rent";$("rentInput").value="150000";$("occ").value="0.95";
+$("rooms").value="1";$("opDays").value="365";$("mgmt").value="5";$("rep").value="5";$("otherCost").value="0";
+$("rentResult").classList.remove("show");
+}
 
-/* End of script */
+// 初始化税率输入框
+$("acqLand").value=TAX.acqLand;$("acqBld").value=TAX.acqBld;
+$("regLand").value=TAX.regLand;$("regBld").value=TAX.regBld;
+$("fixedTax").value=TAX.fixedTax;$("cityTax").value=TAX.cityTax;
 </script>
 </body>
 </html>
