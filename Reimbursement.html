@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>费用报销表 | 蘇的工具箱</title>
+<style>
+  body { font-family: Arial, sans-serif; background:#111; color:#fff; padding:20px; }
+  .container { max-width:900px; margin:auto; }
+  h1 { text-align:center; margin-bottom:20px; }
+  label { display:block; margin-top:10px; }
+  input, textarea, select {
+    width:100%; padding:8px; border:none; border-radius:6px;
+    background:#222; color:#fff; margin-top:4px;
+  }
+  table { width:100%; border-collapse:collapse; margin-top:20px; }
+  th, td {
+    border:1px solid #444; padding:8px; text-align:left;
+  }
+  button {
+    width:100%; padding:12px; margin-top:20px;
+    background:#4a7bee; border:none; border-radius:8px;
+    color:white; font-size:16px; cursor:pointer;
+  }
+  .flex { display:flex; gap:10px; }
+  .col { flex:1; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1 id="title">费用报销表</h1>
+<select id="lang" onchange="switchLang()" style="margin-bottom:20px;">
+  <option value="zh">中文</option>
+  <option value="jp">日本語</option>
+</select>
+
+<div class="flex">
+  <div class="col">
+    <label id="l_name">员工姓名</label>
+    <input id="name" />
+  </div>
+  <div class="col">
+    <label id="l_dept">部门</label>
+    <input id="dept" />
+  </div>
+  <div class="col">
+    <label id="l_date">提交日期</label>
+    <input id="date" type="date" />
+  </div>
+</div>
+
+<table id="expenseTable">
+  <thead>
+    <tr>
+      <th id="th_no">序号</th>
+      <th id="th_cat">费用类别</th>
+      <th id="th_desc">费用项目描述</th>
+      <th id="th_amt">金额(円)</th>
+      <th id="th_inv">发票编号</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- rows -->
+    <script>
+      for(let i=1;i<=15;i++){
+        document.write(`<tr>
+          <td>${i}</td>
+          <td><input /></td>
+          <td><input /></td>
+          <td><input type='number' /></td>
+          <td><input /></td>
+        </tr>`);
+      }
+    </script>
+  </tbody>
+</table>
+
+<button onclick="downloadPDF()" id="btn_download">下载 PDF</button>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const langMap = {
+  zh:{ title:"费用报销表", l_name:"员工姓名", l_dept:"部门", l_date:"提交日期", th_no:"序号", th_cat:"费用类别", th_desc:"费用项目描述", th_amt:"金额(円)", th_inv:"发票编号", btn:"下载 PDF" },
+  jp:{ title:"経費精算書", l_name:"氏名", l_dept:"部署", l_date:"提出日", th_no:"番号", th_cat:"費用区分", th_desc:"内容説明", th_amt:"金額(円)", th_inv:"領収書番号", btn:"PDFをダウンロード" }
+};
+function switchLang(){
+  let l=document.getElementById("lang").value;
+  Object.keys(langMap[l]).forEach(k=>{
+    let el=document.getElementById(k);
+    if(el) el.innerText=langMap[l][k];
+  });
+  document.getElementById("title").innerText=langMap[l].title;
+  document.getElementById("btn_download").innerText=langMap[l].btn;
+}
+
+function downloadPDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:"pt", format:"a4"});
+  doc.html(document.body,{
+    callback:()=> doc.save("expense.pdf"),
+    x:10, y:10, width:550
+  });
+}
+</script>
+
+</body>
+</html>
