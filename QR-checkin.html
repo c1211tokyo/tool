@@ -37,6 +37,7 @@
       border: none;
       background: #2a2a2d;
       color: #fff;
+      box-sizing: border-box;
     }
     button {
       width: 100%;
@@ -49,12 +50,19 @@
       font-size: 16px;
       cursor: pointer;
     }
+    button:hover {
+      background: #3a6bde;
+    }
     #preview {
       background: #111;
       padding: 20px;
       border-radius: 12px;
       margin-top: 20px;
       text-align: center;
+    }
+    #qrcode {
+      display: inline-block;
+      margin-top: 12px;
     }
   </style>
 </head>
@@ -67,7 +75,7 @@
       <input id="roomName" placeholder="例：宿栖新宿A" />
 
       <label>WiFi 信息</label>
-      <textarea id="wifiInfo" placeholder="SSID: XXX\n密码: XXX"></textarea>
+      <textarea id="wifiInfo" placeholder="SSID: XXX&#10;密码: XXX"></textarea>
 
       <label>入住方式（例如：自助入住步骤）</label>
       <textarea id="checkinInfo" placeholder="密码箱位置、开门方式等"></textarea>
@@ -97,11 +105,8 @@
         <p style="opacity:0.7; margin-top:12px;">扫描二维码查看入住信息</p>
       `;
 
-      // Clear previous QR
-      const qrContainer = document.getElementById('qrcode');
-      qrContainer.innerHTML = '';
-
-      new QRCode(qrContainer(document.getElementById('qrcode'), {
+      // 生成二维码
+      new QRCode(document.getElementById('qrcode'), {
         text: text,
         width: 200,
         height: 200,
