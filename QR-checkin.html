@@ -97,7 +97,11 @@
         <p style="opacity:0.7; margin-top:12px;">扫描二维码查看入住信息</p>
       `;
 
-      new QRCode(document.getElementById('qrcode'), {
+      // Clear previous QR
+      const qrContainer = document.getElementById('qrcode');
+      qrContainer.innerHTML = '';
+
+      new QRCode(qrContainer(document.getElementById('qrcode'), {
         text: text,
         width: 200,
         height: 200,
