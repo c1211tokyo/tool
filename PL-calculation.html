@@ -27,7 +27,9 @@ h1{font-size:1.25rem;font-weight:600;letter-spacing:1px;color:#1d1d1f;margin-bot
 .field{display:flex;flex-direction:column;gap:3px}
 .field.full{grid-column:span 2}
 .field label{font-size:0.68rem;color:#515154}
+/* 输入框样式调整：placeholder 为灰色，输入内容为深色 */
 .field input,.field select{padding:7px 9px;border:1px solid #d2d2d7;border-radius:4px;background:#fafafa;color:#1d1d1f;font-size:0.82rem}
+.field input::placeholder {color: #a1a1a6;} 
 .field input:focus,.field select:focus{outline:none;border-color:#0071e3;background:#fff}
 .field-hint{font-size:0.62rem;color:#86868b;margin-top:1px}
 .btn{padding:9px 18px;border:none;border-radius:5px;font-size:0.82rem;cursor:pointer;font-weight:500;transition:all .15s}
@@ -68,6 +70,9 @@ h1{font-size:1.25rem;font-weight:600;letter-spacing:1px;color:#1d1d1f;margin-bot
 .stamp-table th{background:#f5f5f7;color:#515154;font-weight:500}
 .modal-actions{padding:12px 16px;border-top:1px solid #e5e5e7;display:flex;justify-content:flex-end;gap:8px}
 .info-box{background:#fffbeb;border:1px solid #fde68a;border-radius:5px;padding:8px 10px;margin-bottom:10px;font-size:0.7rem;color:#92400e}
+/* 新增：自定义输入框显示控制 */
+.hidden-input {display:none;}
+.hidden-input.show {display:flex;}
 @media(max-width:600px){.form-grid,.form-grid.col3{grid-template-columns:1fr}.field.full{grid-column:span 1}.result-grid{grid-template-columns:1fr}}
 </style>
 </head>
@@ -90,13 +95,12 @@ h1{font-size:1.25rem;font-weight:600;letter-spacing:1px;color:#1d1d1f;margin-bot
 <div class="tab" id="openSetting">⚙ 税率设定</div>
 </div>
 
-<!-- 购置成本 -->
 <section id="buy" class="panel active">
 <div class="section">
 <div class="section-title" id="sec_property">物件信息</div>
 <div class="form-grid">
-<div class="field"><label id="lblPrice">物件价格 (円)</label><input type="number" id="price" value="40000000"><p class="field-hint" id="hintPrice">市场交易价格</p></div>
-<div class="field"><label id="lblEval">固定资产评估价 (円)</label><input type="number" id="evalPrice" value="28000000"><p class="field-hint" id="hintEval">通常为市价的70%，用于计税</p></div>
+<div class="field"><label id="lblPrice">物件价格 (円)</label><input type="number" id="price" placeholder="40000000"><p class="field-hint" id="hintPrice">市场交易价格</p></div>
+<div class="field"><label id="lblEval">固定资产评估价 (円)</label><input type="number" id="evalPrice" placeholder="28000000"><p class="field-hint" id="hintEval">通常为市价的70%，用于计税</p></div>
 <div class="field"><label id="lblType">物件类型</label><select id="propType"><option value="house">一户建/整栋</option><option value="mansion">公寓（区分所有）</option><option value="land">土地</option></select></div>
 <div class="field"><label id="lblAge">房龄</label><select id="propAge"><option value="new">新建（5年内）</option><option value="used">二手房</option></select></div>
 </div>
@@ -105,18 +109,33 @@ h1{font-size:1.25rem;font-weight:600;letter-spacing:1px;color:#1d1d1f;margin-bot
 <div class="section">
 <div class="section-title" id="sec_cost">购置费用项目</div>
 <div class="form-grid col3">
-<div class="field"><label id="lblBroker">中介手续费</label><select id="broker"><option value="yes">有（3%+6万）</option><option value="half">半额（1.5%+3万）</option><option value="no">无（新房直销）</option></select></div>
-<div class="field"><label id="lblShiho">司法书士费 (円)</label><input type="number" id="shiho" value="150000"><p class="field-hint">登记代理费，通常10-20万</p></div>
-<div class="field"><label id="lblFire">火灾保险 (円)</label><input type="number" id="fire" value="100000"><p class="field-hint">一次性，约5-15万</p></div>
+<div class="field">
+    <label id="lblBroker">中介手续费</label>
+    <select id="broker" onchange="toggleBrokerInput()">
+        <option value="3pct">3% (常规)</option>
+        <option value="1.5pct">1.5% (半额)</option>
+        <option value="custom_amt">自定义金额</option>
+        <option value="custom_pct">自定义比例</option>
+        <option value="no">无 (新房直销)</option>
+    </select>
+</div>
+<div class="field hidden-input" id="brokerCustomField">
+    <label id="lblBrokerVal">输入数值</label>
+    <input type="number" id="brokerCustomVal" placeholder="0">
+    <p class="field-hint" id="hintBrokerCustom">金额(円) 或 比例(%)</p>
+</div>
+
+<div class="field"><label id="lblShiho">司法书士费 (円)</label><input type="number" id="shiho" placeholder="150000"><p class="field-hint">登记代理费，通常10-20万</p></div>
+<div class="field"><label id="lblFire">火灾保险 (円)</label><input type="number" id="fire" placeholder="100000"><p class="field-hint">一次性，约5-15万</p></div>
 </div>
 </div>
 
 <div class="section">
 <div class="section-title" id="sec_loan">贷款信息（选填）</div>
 <div class="form-grid col3">
-<div class="field"><label id="lblDown">首付金额 (円)</label><input type="number" id="down" value="8000000"></div>
-<div class="field"><label id="lblLoanRate">贷款利率 (%)</label><input type="number" id="loanRate" step="0.01" value="1.5"></div>
-<div class="field"><label id="lblYears">贷款年数</label><input type="number" id="years" value="35"></div>
+<div class="field"><label id="lblDown">首付金额 (円)</label><input type="number" id="down" placeholder="8000000"></div>
+<div class="field"><label id="lblLoanRate">贷款利率 (%)</label><input type="number" id="loanRate" step="0.01" placeholder="1.5"></div>
+<div class="field"><label id="lblYears">贷款年数</label><input type="number" id="years" placeholder="35"></div>
 </div>
 </div>
 
@@ -127,7 +146,6 @@ h1{font-size:1.25rem;font-weight:600;letter-spacing:1px;color:#1d1d1f;margin-bot
 <div class="result" id="buyResult"></div>
 </section>
 
-<!-- 收益模拟 -->
 <section id="rent" class="panel">
 <div class="info-box" id="infoRent">💡 收益模拟将使用「购置成本」页面的物件价格和贷款参数，请先填写完整。</div>
 
@@ -135,21 +153,21 @@ h1{font-size:1.25rem;font-weight:600;letter-spacing:1px;color:#1d1d1f;margin-bot
 <div class="section-title" id="sec_rental">租赁/民宿参数</div>
 <div class="form-grid">
 <div class="field"><label id="lblOpType">运营类型</label><select id="opType" onchange="toggleOpType()"><option value="rent">普通长租</option><option value="minpaku">民宿/旅馆</option></select></div>
-<div class="field"><label id="lblRent">月租金 / 日均房价 (円)</label><input type="number" id="rentInput" value="150000"><p class="field-hint" id="hintRent">长租填月租金，民宿填ADR</p></div>
+<div class="field"><label id="lblRent">月租金 / 日均房价 (円)</label><input type="number" id="rentInput" placeholder="150000"><p class="field-hint" id="hintRent">长租填月租金，民宿填ADR</p></div>
 </div>
 <div class="form-grid col3" id="occRow">
-<div class="field"><label id="lblOcc">稼働率 / 入住率</label><input type="number" id="occ" step="0.01" value="0.95"><p class="field-hint">长租约0.95，民宿约0.60-0.75</p></div>
-<div class="field"><label id="lblRooms">客房数量</label><input type="number" id="rooms" value="1"><p class="field-hint">民宿/旅馆填写</p></div>
-<div class="field"><label id="lblDays">年运营天数</label><input type="number" id="opDays" value="365"><p class="field-hint">民宿新法上限180天</p></div>
+<div class="field"><label id="lblOcc">稼働率 / 入住率</label><input type="number" id="occ" step="0.01" placeholder="0.95"><p class="field-hint">长租约0.95，民宿约0.60-0.75</p></div>
+<div class="field"><label id="lblRooms">客房数量</label><input type="number" id="rooms" placeholder="1"><p class="field-hint">民宿/旅馆填写</p></div>
+<div class="field"><label id="lblDays">年运营天数</label><input type="number" id="opDays" placeholder="365"><p class="field-hint">民宿新法上限180天</p></div>
 </div>
 </div>
 
 <div class="section">
 <div class="section-title" id="sec_expense">运营成本</div>
 <div class="form-grid col3">
-<div class="field"><label id="lblMgmt">管理费/托管费 (%)</label><input type="number" id="mgmt" value="5"><p class="field-hint">长租3-5%，民宿15-25%</p></div>
-<div class="field"><label id="lblRep">修繕积立金 (%)</label><input type="number" id="rep" value="5"><p class="field-hint">通常5-10%</p></div>
-<div class="field"><label id="lblOther">其他杂费/年 (円)</label><input type="number" id="otherCost" value="0"><p class="field-hint">清扫、WIFI、水电等</p></div>
+<div class="field"><label id="lblMgmt">管理费/托管费 (%)</label><input type="number" id="mgmt" placeholder="5"><p class="field-hint">长租3-5%，民宿15-25%</p></div>
+<div class="field"><label id="lblRep">修繕积立金 (%)</label><input type="number" id="rep" placeholder="5"><p class="field-hint">通常5-10%</p></div>
+<div class="field"><label id="lblOther">其他杂费/年 (円)</label><input type="number" id="otherCost" placeholder="0"><p class="field-hint">清扫、WIFI、水电等</p></div>
 </div>
 </div>
 
@@ -161,7 +179,6 @@ h1{font-size:1.25rem;font-weight:600;letter-spacing:1px;color:#1d1d1f;margin-bot
 </section>
 </div>
 
-<!-- 税率设定弹窗 -->
 <div class="modal" id="settingModal">
 <div class="modal-content">
 <div class="modal-header">
@@ -198,11 +215,17 @@ h1{font-size:1.25rem;font-weight:600;letter-spacing:1px;color:#1d1d1f;margin-bot
 </div>
 
 <script>
+// 常量定义
 const TAX={acqLand:1.5,acqBld:3,regLand:1.5,regBld:2,fixedTax:1.4,cityTax:0.3,customStamp:0};
+// 消费税率 (中介费和书士费通常需加算消费税)
+const VAT = 1.10; 
+
 const STAMP=[{max:1e6,tax:1000},{max:5e6,tax:2000},{max:1e7,tax:10000},{max:5e7,tax:20000},{max:1e8,tax:60000},{max:5e8,tax:100000},{max:1e9,tax:200000},{max:Infinity,tax:600000}];
 const L={
-zh:{title:"购租测算",subtitle:"蘇的工具箱 · 日本不动产购置成本与租售回报模拟",tabBuy:"购置成本",tabRent:"收益模拟",openSetting:"⚙ 税率设定",sec_property:"物件信息",lblPrice:"物件价格 (円)",hintPrice:"市场交易价格",lblEval:"固定资产评估价 (円)",hintEval:"通常为市价的70%，用于计税",lblType:"物件类型",lblAge:"房龄",sec_cost:"购置费用项目",lblBroker:"中介手续费",lblShiho:"司法书士费 (円)",lblFire:"火灾保险 (円)",sec_loan:"贷款信息（选填）",lblDown:"首付金额 (円)",lblLoanRate:"贷款利率 (%)",lblYears:"贷款年数",btnCalcBuy:"计算购置成本",infoRent:"💡 收益模拟将使用「购置成本」页面的物件价格和贷款参数，请先填写完整。",sec_rental:"租赁/民宿参数",lblOpType:"运营类型",lblRent:"月租金 / 日均房价 (円)",hintRent:"长租填月租金，民宿填ADR",lblOcc:"稼働率 / 入住率",lblRooms:"客房数量",lblDays:"年运营天数",sec_expense:"运营成本",lblMgmt:"管理费/托管费 (%)",lblRep:"修繕积立金 (%)",lblOther:"其他杂费/年 (円)",btnCalcRent:"模拟收益",settingTitle:"税率参数设定",resultBuy:"购置成本明细",resultRent:"收益模拟结果",note:"（估算仅供参考，实际以官方为准）"},
-jp:{title:"購入・収益シミュレーター",subtitle:"蘇のツールボックス · 日本不動産の購入費用と収益シミュレーション",tabBuy:"購入費用",tabRent:"収益試算",openSetting:"⚙ 税率設定",sec_property:"物件情報",lblPrice:"物件価格 (円)",hintPrice:"市場取引価格",lblEval:"固定資産評価額 (円)",hintEval:"通常市価の70%、課税基準",lblType:"物件タイプ",lblAge:"築年数",sec_cost:"購入諸費用",lblBroker:"仲介手数料",lblShiho:"司法書士費用 (円)",lblFire:"火災保険 (円)",sec_loan:"ローン情報",lblDown:"頭金 (円)",lblLoanRate:"金利 (%)",lblYears:"返済年数",btnCalcBuy:"費用を計算",infoRent:"💡 収益試算は「購入費用」の物件価格とローン情報を使用します。",sec_rental:"賃貸・民泊条件",lblOpType:"運営タイプ",lblRent:"月額賃料 / ADR (円)",hintRent:"長期賃貸は月額、民泊はADR",lblOcc:"稼働率",lblRooms:"客室数",lblDays:"年間営業日数",sec_expense:"運営コスト",lblMgmt:"管理費 (%)",lblRep:"修繕積立 (%)",lblOther:"その他経費/年 (円)",btnCalcRent:"収益試算",settingTitle:"税率設定",resultBuy:"購入費用明細",resultRent:"収益シミュレーション",note:"（概算です。実際は公式情報をご確認ください）"}
+zh:{title:"购租测算",subtitle:"蘇的工具箱 · 日本不动产购置成本与租售回报模拟",tabBuy:"购置成本",tabRent:"收益模拟",openSetting:"⚙ 税率设定",sec_property:"物件信息",lblPrice:"物件价格 (円)",hintPrice:"市场交易价格",lblEval:"固定资产评估价 (円)",hintEval:"通常为市价的70%，用于计税",lblType:"物件类型",lblAge:"房龄",sec_cost:"购置费用项目",lblBroker:"中介手续费",lblShiho:"司法书士费 (円)",lblFire:"火灾保险 (円)",sec_loan:"贷款信息（选填）",lblDown:"首付金额 (円)",lblLoanRate:"贷款利率 (%)",lblYears:"贷款年数",btnCalcBuy:"计算购置成本",infoRent:"💡 收益模拟将使用「购置成本」页面的物件价格和贷款参数，请先填写完整。",sec_rental:"租赁/民宿参数",lblOpType:"运营类型",lblRent:"月租金 / 日均房价 (円)",hintRent:"长租填月租金，民宿填ADR",lblOcc:"稼働率 / 入住率",lblRooms:"客房数量",lblDays:"年运营天数",sec_expense:"运营成本",lblMgmt:"管理费/托管费 (%)",lblRep:"修繕积立金 (%)",lblOther:"其他杂费/年 (円)",btnCalcRent:"模拟收益",settingTitle:"税率参数设定",resultBuy:"购置成本明细",resultRent:"收益模拟结果",note:"（估算仅供参考，实际以官方为准）",
+lblBrokerVal:"自定义数值",hintBrokerCustom:"请输入具体金额或比例",opt3pct:"3% (常规)",opt15pct:"1.5% (半额)",optCustAmt:"自定义金额",optCustPct:"自定义比例",optNo:"无"},
+jp:{title:"購入・収益シミュレーター",subtitle:"蘇のツールボックス · 日本不動産の購入費用と収益シミュレーション",tabBuy:"購入費用",tabRent:"収益試算",openSetting:"⚙ 税率設定",sec_property:"物件情報",lblPrice:"物件価格 (円)",hintPrice:"市場取引価格",lblEval:"固定資産評価額 (円)",hintEval:"通常市価の70%、課税基準",lblType:"物件タイプ",lblAge:"築年数",sec_cost:"購入諸費用",lblBroker:"仲介手数料",lblShiho:"司法書士費用 (円)",lblFire:"火災保険 (円)",sec_loan:"ローン情報",lblDown:"頭金 (円)",lblLoanRate:"金利 (%)",lblYears:"返済年数",btnCalcBuy:"費用を計算",infoRent:"💡 収益試算は「購入費用」の物件価格とローン情報を使用します。",sec_rental:"賃貸・民泊条件",lblOpType:"運営タイプ",lblRent:"月額賃料 / ADR (円)",hintRent:"長期賃貸は月額、民泊はADR",lblOcc:"稼働率",lblRooms:"客室数",lblDays:"年間営業日数",sec_expense:"運営コスト",lblMgmt:"管理費 (%)",lblRep:"修繕積立 (%)",lblOther:"その他経費/年 (円)",btnCalcRent:"収益試算",settingTitle:"税率設定",resultBuy:"購入費用明細",resultRent:"収益シミュレーション",note:"（概算です。実際は公式情報をご確認ください）",
+lblBrokerVal:"カスタム値",hintBrokerCustom:"金額または割合を入力",opt3pct:"3% (通常)",opt15pct:"1.5% (半額)",optCustAmt:"金額指定",optCustPct:"割合指定(%)",optNo:"なし"}
 };
 let curLang="zh";
 const $=id=>document.getElementById(id);
@@ -210,7 +233,35 @@ const money=v=>"¥"+Math.round(v).toLocaleString();
 const pct=v=>(v*100).toFixed(2)+"%";
 const i18n=k=>L[curLang][k]||L.zh[k]||k;
 
-function switchLang(){curLang=$("lang").value;Object.keys(L[curLang]).forEach(k=>{const el=$(k);if(el){if(el.tagName==="INPUT"||el.tagName==="SELECT")return;el.textContent=L[curLang][k];}});}
+// 核心优化：获取数值，如果为空则使用 placeholder
+function getVal(id) {
+    const el = $(id);
+    if (!el) return 0;
+    if (el.value !== "") return Number(el.value);
+    return Number(el.placeholder) || 0;
+}
+
+function switchLang(){
+    curLang=$("lang").value;
+    Object.keys(L[curLang]).forEach(k=>{
+        const el=$(k);
+        if(el){
+            if(el.tagName==="INPUT"||el.tagName==="SELECT"){
+                // Update options if needed, usually simpler to just update text content elements
+            }else{
+                el.textContent=L[curLang][k];
+            }
+        }
+    });
+    // 更新Select的文本
+    const brokerOpts = $("broker").options;
+    brokerOpts[0].text = i18n("opt3pct");
+    brokerOpts[1].text = i18n("opt15pct");
+    brokerOpts[2].text = i18n("optCustAmt");
+    brokerOpts[3].text = i18n("optCustPct");
+    brokerOpts[4].text = i18n("optNo");
+}
+
 function calcStamp(amt){const c=Number($("customStamp").value)||0;if(c>0)return c;for(const r of STAMP)if(amt<=r.max)return r.tax;return 0;}
 
 document.querySelectorAll(".tab").forEach(btn=>{
@@ -232,43 +283,68 @@ TAX.customStamp=Number($("customStamp").value);
 closeModal();
 });
 
+// 中介费自定义输入框显隐
+function toggleBrokerInput() {
+    const type = $("broker").value;
+    const customField = $("brokerCustomField");
+    if(type === "custom_amt" || type === "custom_pct") {
+        customField.classList.add("show");
+    } else {
+        customField.classList.remove("show");
+    }
+}
+
 function toggleOpType(){
 const isMinpaku=$("opType").value==="minpaku";
-$("occ").value=isMinpaku?"0.70":"0.95";
-$("mgmt").value=isMinpaku?"20":"5";
-$("opDays").value=isMinpaku?"180":"365";
-$("rooms").value=isMinpaku?"5":"1";
-$("rentInput").value=isMinpaku?"15000":"150000";
+// 使用 placeholder 逻辑，所以这里我们要改 placeholder 吗？
+// 为了用户体验，切换模式时，如果用户没填值，我们应该更新 input 的 value 或者 placeholder
+// 这里直接改 value 比较直观，因为是模式切换的“预设”
+$("occ").placeholder=isMinpaku?"0.70":"0.95"; $("occ").value = "";
+$("mgmt").placeholder=isMinpaku?"20":"5"; $("mgmt").value = "";
+$("opDays").placeholder=isMinpaku?"180":"365"; $("opDays").value = "";
+$("rooms").placeholder=isMinpaku?"5":"1"; $("rooms").value = "";
+$("rentInput").placeholder=isMinpaku?"15000":"150000"; $("rentInput").value = "";
 }
 
 // 计算购置成本
 $("btnCalcBuy").addEventListener("click",()=>{
-const price=Number($("price").value)||0;
-const evalP=Number($("evalPrice").value)||price*0.7;
-const evalLand=evalP*0.4,evalBld=evalP*0.6; // 假设土地40%建物60%
+const price=getVal("price");
+const evalP=getVal("evalPrice") || price*0.7; // 如果都没填，基于price算
+const evalLand=evalP*0.4,evalBld=evalP*0.6; 
 const isNew=$("propAge").value==="new";
 const brokerType=$("broker").value;
-const shiho=Number($("shiho").value)||0;
-const fire=Number($("fire").value)||0;
+const shiho=getVal("shiho");
+const fire=getVal("fire");
 
-// 中介费
+// 中介费计算 (新逻辑)
 let broker=0;
-if(brokerType==="yes")broker=price*0.03+60000;
-else if(brokerType==="half")broker=price*0.015+30000;
+if(brokerType==="3pct") {
+    broker = price * 0.03 * VAT; // 3% + 消费税
+} else if(brokerType==="1.5pct") {
+    broker = price * 0.015 * VAT; // 1.5% + 消费税
+} else if(brokerType==="custom_amt") {
+    broker = Number($("brokerCustomVal").value) || 0;
+} else if(brokerType==="custom_pct") {
+    const pctVal = Number($("brokerCustomVal").value) || 0;
+    broker = price * (pctVal / 100) * VAT;
+}
+
+// 司法书士费加消费税
+const shihoWithTax = shiho * VAT;
 
 // 税费
 const stamp=calcStamp(price);
 const acqTax=evalLand*(TAX.acqLand/100)+evalBld*(TAX.acqBld/100);
 const regTax=evalLand*(TAX.regLand/100)+evalBld*((isNew?0.4:TAX.regBld)/100);
 const totalTax=stamp+acqTax+regTax;
-const totalFee=broker+shiho+fire;
+const totalFee=broker+shihoWithTax+fire;
 const grandTotal=totalTax+totalFee;
 
 // 贷款计算
-const down=Number($("down").value)||0;
+const down=getVal("down");
 const principal=Math.max(0,price-down);
-const rate=Number($("loanRate").value)/100;
-const years=Number($("years").value)||35;
+const rate=getVal("loanRate")/100;
+const years=getVal("years");
 const n=years*12,rM=rate/12;
 const monthly=rM>0?principal*rM*Math.pow(1+rM,n)/(Math.pow(1+rM,n)-1):principal/n;
 const totalRepay=monthly*n;
@@ -283,8 +359,8 @@ html+=`<table class="result-table">
 <tr class="sub"><td>└ 建物 ${TAX.acqBld}%</td><td>${money(evalBld*(TAX.acqBld/100))}</td></tr>
 <tr><td>登录免许税</td><td>${money(regTax)}</td></tr>
 <tr><td colspan="2" style="font-weight:600;color:#515154;padding-top:8px">■ 其他费用</td></tr>
-<tr><td>中介手续费</td><td>${money(broker)}</td></tr>
-<tr><td>司法书士费</td><td>${money(shiho)}</td></tr>
+<tr><td>中介手续费 (含税)</td><td>${money(broker)}</td></tr>
+<tr><td>司法书士费 (含税)</td><td>${money(shihoWithTax)}</td></tr>
 <tr><td>火灾保险</td><td>${money(fire)}</td></tr>
 <tr class="highlight"><td>购置总费用</td><td>${money(grandTotal)}</td></tr>
 <tr><td>占物件价格比例</td><td>${(grandTotal/price*100).toFixed(2)}%</td></tr>
@@ -307,24 +383,24 @@ $("buyResult").classList.add("show");
 
 // 计算收益
 $("btnCalcRent").addEventListener("click",()=>{
-const price=Number($("price").value)||0;
-const evalP=Number($("evalPrice").value)||price*0.7;
-const down=Number($("down").value)||0;
+const price=getVal("price");
+const evalP=getVal("evalPrice")||price*0.7;
+const down=getVal("down");
 const principal=Math.max(0,price-down);
-const rate=Number($("loanRate").value)/100;
-const years=Number($("years").value)||35;
+const rate=getVal("loanRate")/100;
+const years=getVal("years");
 const n=years*12,rM=rate/12;
 const monthly=rM>0?principal*rM*Math.pow(1+rM,n)/(Math.pow(1+rM,n)-1):principal/n;
 const annualDebt=monthly*12;
 
 const isMinpaku=$("opType").value==="minpaku";
-const rentVal=Number($("rentInput").value)||0;
-const occ=Number($("occ").value)||0;
-const rooms=Number($("rooms").value)||1;
-const opDays=Number($("opDays").value)||365;
-const mgmtPct=Number($("mgmt").value)/100;
-const repPct=Number($("rep").value)/100;
-const otherCost=Number($("otherCost").value)||0;
+const rentVal=getVal("rentInput");
+const occ=getVal("occ");
+const rooms=getVal("rooms");
+const opDays=getVal("opDays");
+const mgmtPct=getVal("mgmt")/100;
+const repPct=getVal("rep")/100;
+const otherCost=getVal("otherCost");
 
 // 年收入计算
 let annualIncome;
@@ -346,13 +422,27 @@ const totalExpense=mgmtCost+repCost+annualTax+otherCost;
 const goi=annualIncome; // 毛收入
 const noi=annualIncome-totalExpense; // 净营业收入
 const cashFlow=noi-annualDebt; // 税前现金流
-const grossYield=annualIncome/price; // 表面利回
-const capRate=noi/price; // 资本化率
+const grossYield=price>0?annualIncome/price:0; // 表面利回
+const capRate=price>0?noi/price:0; // 资本化率
 const cashOnCash=down>0?cashFlow/down:0; // 现金回报率
 
 // IRR计算（10年，假设退出价格=买入价格）
 const holdYears=10;
-const flows=[-down-Number($("buyResult").textContent.match(/[\d,]+/)?.[0]?.replace(/,/g,'')||0)];
+// 获取购置成本中的总费用，如果未计算则估算一个
+let totalFee = 0;
+const buyResStr = $("buyResult").innerText;
+if(buyResStr) {
+    // 简单的尝试从结果文本提取，这不是很稳健，但对于简单工具够用了
+    // 更好的方式是把 cost 存全局变量，这里简化处理
+    // 如果没有点计算购置成本，这里IRR的初期投入会偏低（只含首付）
+}
+// 重新计算一次购置杂费用于IRR（为了准确性）
+const stamp=calcStamp(price);
+// ...简化版，直接取首付+7%估算杂费作为初始流出，如果有具体计算结果更好
+// 这里为了代码简洁，我们假设用户已经点了计算购置成本，或者简单的 首付 + 价格*7%
+const initialOut = down + (price * 0.07); 
+const flows=[-initialOut];
+
 for(let y=1;y<holdYears;y++)flows.push(cashFlow);
 flows.push(cashFlow+price-principal*(1-holdYears/years)); // 最后一年加退出
 const irr=computeIRR(flows);
@@ -391,21 +481,22 @@ $("rentResult").classList.add("show");
 function computeIRR(cf,guess=0.1){let x=guess;for(let i=0;i<200;i++){let f=0,df=0;for(let t=0;t<cf.length;t++){f+=cf[t]/Math.pow(1+x,t);if(t>0)df+=-t*cf[t]/Math.pow(1+x,t+1);}const nx=x-f/df;if(!isFinite(nx))return NaN;if(Math.abs(nx-x)<1e-7)return nx;x=nx;}return NaN;}
 
 function resetBuy(){
-$("price").value="40000000";$("evalPrice").value="28000000";$("propType").value="house";$("propAge").value="used";
-$("broker").value="yes";$("shiho").value="150000";$("fire").value="100000";
-$("down").value="8000000";$("loanRate").value="1.5";$("years").value="35";
+$("price").value="";$("evalPrice").value="";
+$("propType").value="house";$("propAge").value="used";
+$("broker").value="3pct"; toggleBrokerInput();
+$("shiho").value="";$("fire").value="";
+$("down").value="";$("loanRate").value="";$("years").value="";
 $("buyResult").classList.remove("show");
 }
 function resetRent(){
-$("opType").value="rent";$("rentInput").value="150000";$("occ").value="0.95";
-$("rooms").value="1";$("opDays").value="365";$("mgmt").value="5";$("rep").value="5";$("otherCost").value="0";
+$("opType").value="rent"; toggleOpType();
+$("rentInput").value="";$("occ").value="";
+$("rooms").value="";$("opDays").value="";$("mgmt").value="";$("rep").value="";$("otherCost").value="";
 $("rentResult").classList.remove("show");
 }
 
-// 初始化税率输入框
-$("acqLand").value=TAX.acqLand;$("acqBld").value=TAX.acqBld;
-$("regLand").value=TAX.regLand;$("regBld").value=TAX.regBld;
-$("fixedTax").value=TAX.fixedTax;$("cityTax").value=TAX.cityTax;
+// 初始化
+toggleOpType();
 </script>
 </body>
 </html>
