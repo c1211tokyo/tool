@@ -67,7 +67,6 @@
     button:hover {
       background: #3a6bde;
     }
-    /* 预览区域样式 */
     #preview {
       background: #1a1a1d;
       padding: 40px 20px;
@@ -77,18 +76,16 @@
       display: none;
       border: 1px solid #333;
     }
-    /* 二维码白底容器 */
     #qrcode {
       display: inline-block;
       margin-top: 20px;
-      padding: 15px;
+      padding: 20px;
       background: #ffffff; 
       border-radius: 8px;
-      /* 防止二维码撑开布局 */
-      max-width: 100%; 
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
     }
-    /* 强制二维码图片样式 */
-    #qrcode img {
+    /* 确保二维码图片居中 */
+    #qrcode img, #qrcode canvas {
         display: block; 
         margin: 0 auto;
     }
@@ -132,46 +129,64 @@ PWD: 88888888</textarea>
   <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.5.0/dist/easy.qrcode.min.js"></script>
   
   <script>
-    // 定义全局变量，用于清除旧的二维码对象
+    // 核心修复：强制 UTF-8 编码转换函数
+    // 这能解决微信显示“不支持文本”以及手机识别成电话号码的问题
+    function toUtf8(str) {
+        var out, i, len, c;
+        out = "";
+        len = str.length;
+        for(i = 0; i < len; i++) {
+            c = str.charCodeAt(i);
+            if ((c >= 0x0001) && (c <= 0x007F)) {
+                out += str.charAt(i);
+            } else if (c > 0x07FF) {
+                out += String.fromCharCode(0xE0 | ((c >> 12) & 0x0F));
+                out += String.fromCharCode(0x80 | ((c >> 6) & 0x3F));
+                out += String.fromCharCode(0x80 | ((c >> 0) & 0x3F));
+            } else {
+                out += String.fromCharCode(0xC0 | ((c >> 6) & 0x1F));
+                out += String.fromCharCode(0x80 | ((c >> 0) & 0x3F));
+            }
+        }
+        return out;
+    }
+
     let qrcodeObj = null;
 
     function generateCard() {
-      const room = document.getElementById('roomName').value || "民宿入住卡";
+      const room = document.getElementById('roomName').value || "入住信息";
       const wifi = document.getElementById('wifiInfo').value;
       const checkin = document.getElementById('checkinInfo').value;
       const extra = document.getElementById('extraInfo').value;
 
-      // 组合文本
-      const text = `房源：${room}\n\n【WiFi】\n${wifi}\n\n【入住方式】\n${checkin}\n\n【其他】\n${extra}`;
+      // 1. 添加显眼的标题符号，防止手机误判为电话号码
+      // 2. 组合文本
+      const rawText = `【${room} 入住指南】\n\n--- WiFi ---\n${wifi}\n\n--- 入住方式 ---\n${checkin}\n\n--- 其他 ---\n${extra}`;
+      
+      // 3. 关键步骤：转换编码
+      const safeText = toUtf8(rawText);
 
-      // 显示预览区
       const previewDiv = document.getElementById('preview');
       previewDiv.style.display = "block";
       
-      // 重置预览区 HTML（保留容器）
       previewDiv.innerHTML = `
         <div class="preview-title">${room}</div>
         <div id="qrcode"></div>
-        <div class="preview-hint">📷 请扫描二维码获取入住信息</div>
+        <div class="preview-hint">📷 微信或相机扫码查看详情</div>
       `;
 
-      // 如果之前有二维码对象，先尝试清理（虽然 innerHTML 已经清空了 DOM，但这是好习惯）
       if (qrcodeObj) {
-        qrcodeObj = null;
+        qrcodeObj = null; // 清理旧对象
       }
 
-      // 生成新的二维码
-      // EasyQRCodeJS 配置文档: https://github.com/ushelp/EasyQRCodeJS
       qrcodeObj = new QRCode(document.getElementById('qrcode'), {
-        text: text,
+        text: safeText, // 使用转换后的 UTF-8 文本
         width: 220,
         height: 220,
         colorDark: "#000000",
         colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.M, // 使用 M (中等) 容错，防止文字过多导致无法生成
-        
-        // 强制使用 Canvas 或 Image 渲染，兼容性更好
-        useSVG: false 
+        correctLevel: QRCode.CorrectLevel.L, // 使用 L (低容错) 以减少数据量，提高长文本的扫描成功率
+        useSVG: false
       });
     }
   </script>
