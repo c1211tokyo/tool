@@ -28,16 +28,27 @@
     label {
       display: block;
       margin-top: 12px;
+      font-size: 0.9rem;
+      color: #aaa;
     }
     input, textarea {
       width: 100%;
-      padding: 10px;
+      padding: 12px;
       margin-top: 6px;
       border-radius: 8px;
-      border: none;
+      border: 1px solid #333;
       background: #2a2a2d;
       color: #fff;
       box-sizing: border-box;
+      font-size: 14px;
+    }
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #4a7bee;
+    }
+    textarea {
+      min-height: 80px;
+      resize: vertical;
     }
     button {
       width: 100%;
@@ -48,40 +59,60 @@
       border-radius: 8px;
       color: white;
       font-size: 16px;
+      font-weight: bold;
       cursor: pointer;
+      transition: background 0.2s;
     }
     button:hover {
       background: #3a6bde;
     }
     #preview {
-      background: #111;
-      padding: 20px;
+      background: #1a1a1d;
+      padding: 30px;
       border-radius: 12px;
       margin-top: 20px;
       text-align: center;
+      display: none; /* 默认隐藏，生成后显示 */
+      border: 1px solid #333;
     }
+    /* 二维码容器样式优化 */
     #qrcode {
       display: inline-block;
-      margin-top: 12px;
+      margin-top: 15px;
+      padding: 15px;
+      background: #ffffff; /* 关键：二维码必须有白底 */
+      border-radius: 8px;
+    }
+    /* 预览中的文字样式 */
+    .preview-title {
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+        color: #fff;
+    }
+    .preview-hint {
+        font-size: 0.8rem;
+        color: #666;
+        margin-top: 15px;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>入住信息 QR 卡生成器</h1>
+    <h1>🏠 民宿入住 QR 卡生成器</h1>
 
     <div class="card">
       <label>房源名称</label>
-      <input id="roomName" placeholder="例：宿栖新宿A" />
+      <input id="roomName" placeholder="例：宿栖新宿A" value="宿栖新宿A" />
 
       <label>WiFi 信息</label>
-      <textarea id="wifiInfo" placeholder="SSID: XXX&#10;密码: XXX"></textarea>
+      <textarea id="wifiInfo" placeholder="SSID: XXX&#10;密码: XXX">SSID: Guest_Wifi
+PWD: 12345678</textarea>
 
-      <label>入住方式（例如：自助入住步骤）</label>
-      <textarea id="checkinInfo" placeholder="密码箱位置、开门方式等"></textarea>
+      <label>入住方式（密码箱/钥匙位置）</label>
+      <textarea id="checkinInfo" placeholder="密码箱位置、开门方式等">一楼大堂左侧密码箱，密码 8888</textarea>
 
       <label>其他说明</label>
-      <textarea id="extraInfo" placeholder="注意事项等"></textarea>
+      <textarea id="extraInfo" placeholder="注意事项等">晚上请保持安静，垃圾请分类。</textarea>
 
       <button onclick="generateCard()">生成 QR 卡</button>
     </div>
@@ -91,27 +122,56 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script>
+    // 修复中文乱码的关键函数
+    function toUtf8(str) {
+        var out, i, len, c;
+        out = "";
+        len = str.length;
+        for(i = 0; i < len; i++) {
+            c = str.charCodeAt(i);
+            if ((c >= 0x0001) && (c <= 0x007F)) {
+                out += str.charAt(i);
+            } else if (c > 0x07FF) {
+                out += String.fromCharCode(0xE0 | ((c >> 12) & 0x0F));
+                out += String.fromCharCode(0x80 | ((c >> 6) & 0x3F));
+                out += String.fromCharCode(0x80 | ((c >> 0) & 0x3F));
+            } else {
+                out += String.fromCharCode(0xC0 | ((c >> 6) & 0x1F));
+                out += String.fromCharCode(0x80 | ((c >> 0) & 0x3F));
+            }
+        }
+        return out;
+    }
+
     function generateCard() {
-      const room = document.getElementById('roomName').value;
+      const room = document.getElementById('roomName').value || "未命名房源";
       const wifi = document.getElementById('wifiInfo').value;
       const checkin = document.getElementById('checkinInfo').value;
       const extra = document.getElementById('extraInfo').value;
 
+      // 组合文本
       const text = `房源：${room}\n\n【WiFi】\n${wifi}\n\n【入住方式】\n${checkin}\n\n【其他】\n${extra}`;
 
-      document.getElementById('preview').innerHTML = `
-        <h2>${room} 入住卡</h2>
+      // 显示预览区域
+      const previewDiv = document.getElementById('preview');
+      previewDiv.style.display = "block";
+      
+      previewDiv.innerHTML = `
+        <div class="preview-title">${room} 入住卡</div>
         <div id="qrcode"></div>
-        <p style="opacity:0.7; margin-top:12px;">扫描二维码查看入住信息</p>
+        <div class="preview-hint">扫描二维码获取 WiFi 及入住指南</div>
       `;
 
       // 生成二维码
+      // 注意：这里使用标准的 colorDark(黑) 和 colorLight(白)，
+      // 并且在 CSS 中给 #qrcode 加了白色背景 padding，这是最稳妥的方案。
       new QRCode(document.getElementById('qrcode'), {
-        text: text,
+        text: toUtf8(text), // 使用 UTF-8 转换函数
         width: 200,
         height: 200,
-        colorDark: "#ffffff",
-        colorLight: "#111111",
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel : QRCode.CorrectLevel.H // 高容错率，让二维码更清晰
       });
     }
   </script>
