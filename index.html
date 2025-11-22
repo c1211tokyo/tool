@@ -1,611 +1,72 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> 年会抽奖系统 / 年次抽選システム </title>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { margin: 0; padding: 0; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>蘇的工具箱</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0f0f0f;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      margin: 30px 0;
+      font-size: 2rem;
+      letter-spacing: 2px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      width: 90%;
+      max-width: 800px;
+    }
+    .btn {
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 30px 10px;
+      text-align: center;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .btn:hover {
+      background: #333;
+    }
+    a {
+      text-decoration: none;
+      color: #ffffff;
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
 </head>
 <body>
-    <div id="root"></div>
-
-    <script type="text/babel">
-        const { useState, useEffect } = React;
-
-        const translations = {
-            zh: {
-                title: '年会抽奖',
-                participate: '参与抽奖',
-                admin: '管理员',
-                name: '姓名',
-                enter: '参加',
-                yourName: '输入您的姓名',
-                registered: '已成功注册！',
-                alreadyRegistered: '您已经注册过了',
-                adminPassword: '管理员密码',
-                login: '登录',
-                wrongPassword: '密码错误',
-                prizeManagement: '奖品管理',
-                addPrize: '添加奖品',
-                prizeName: '奖品名称',
-                prizeLevel: '奖项等级',
-                quantity: '数量',
-                add: '添加',
-                startLottery: '开始抽奖',
-                participants: '参与者',
-                delete: '删除',
-                selectPrize: '选择奖品',
-                draw: '抽奖',
-                winner: '中奖者',
-                congratulations: '恭喜',
-                won: '获得',
-                close: '关闭',
-                remaining: '剩余',
-                noParticipants: '暂无参与者',
-                noPrizes: '请先添加奖品',
-                reset: '重置所有数据',
-                confirmReset: '确认要重置所有数据吗？',
-                level1: '一等奖',
-                level2: '二等奖',
-                level3: '三等奖',
-                level4: '参与奖',
-                total: '共',
-                people: '人',
-                back: '返回',
-                preparing: '准备抽奖...'
-            },
-            ja: {
-                title: '年次抽選',
-                participate: '抽選に参加',
-                admin: '管理者',
-                name: '名前',
-                enter: '参加',
-                yourName: 'お名前を入力',
-                registered: '登録完了！',
-                alreadyRegistered: '既に登録済みです',
-                adminPassword: '管理者パスワード',
-                login: 'ログイン',
-                wrongPassword: 'パスワードが違います',
-                prizeManagement: '賞品管理',
-                addPrize: '賞品を追加',
-                prizeName: '賞品名',
-                prizeLevel: '賞品ランク',
-                quantity: '数量',
-                add: '追加',
-                startLottery: '抽選開始',
-                participants: '参加者',
-                delete: '削除',
-                selectPrize: '賞品を選択',
-                draw: '抽選',
-                winner: '当選者',
-                congratulations: 'おめでとうございます',
-                won: 'が当選',
-                close: '閉じる',
-                remaining: '残り',
-                noParticipants: '参加者がいません',
-                noPrizes: '先に賞品を追加してください',
-                reset: '全データリセット',
-                confirmReset: '全データをリセットしますか？',
-                level1: '一等賞',
-                level2: '二等賞',
-                level3: '三等賞',
-                level4: '参加賞',
-                total: '合計',
-                people: '名',
-                back: '戻る',
-                preparing: '抽選準備中...'
-            }
-        };
-
-        // SVG Icons
-        const Trophy = () => (
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-            </svg>
-        );
-
-        const Globe = () => (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-            </svg>
-        );
-
-        const Users = () => (
-            <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
-        );
-
-        const Settings = () => (
-            <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-        );
-
-        const Gift = () => (
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
-            </svg>
-        );
-
-        const Play = () => (
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-        );
-
-        const Trash = () => (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-        );
-
-        function LotteryApp() {
-            const [lang, setLang] = useState('zh');
-            const [view, setView] = useState('home');
-            const [userName, setUserName] = useState('');
-            const [participants, setParticipants] = useState([]);
-            const [prizes, setPrizes] = useState([]);
-            const [winners, setWinners] = useState([]);
-            const [isAdmin, setIsAdmin] = useState(false);
-            const [password, setPassword] = useState('');
-            const [newPrize, setNewPrize] = useState({ name: '', level: 'level1', quantity: 1 });
-            const [selectedPrize, setSelectedPrize] = useState(null);
-            const [isDrawing, setIsDrawing] = useState(false);
-            const [currentWinner, setCurrentWinner] = useState(null);
-            const [message, setMessage] = useState('');
-
-            const t = translations[lang];
-            const ADMIN_PASSWORD = 'admin';
-
-            useEffect(() => {
-                loadData();
-            }, []);
-
-            const loadData = () => {
-                try {
-                    const participantsData = localStorage.getItem('lottery-participants');
-                    const prizesData = localStorage.getItem('lottery-prizes');
-                    const winnersData = localStorage.getItem('lottery-winners');
-                    const userParticipated = localStorage.getItem('user-participated');
-
-                    if (participantsData) setParticipants(JSON.parse(participantsData));
-                    if (prizesData) setPrizes(JSON.parse(prizesData));
-                    if (winnersData) setWinners(JSON.parse(winnersData));
-                    if (userParticipated) setUserName(userParticipated);
-                } catch (error) {
-                    console.log('First time loading');
-                }
-            };
-
-            const saveData = (key, data) => {
-                try {
-                    localStorage.setItem(key, JSON.stringify(data));
-                } catch (error) {
-                    console.error('Save error:', error);
-                }
-            };
-
-            const handleParticipate = () => {
-                if (!userName.trim()) {
-                    setMessage(lang === 'zh' ? '请输入姓名' : '名前を入力してください');
-                    return;
-                }
-
-                if (participants.some(p => p.name === userName)) {
-                    setMessage(t.alreadyRegistered);
-                    return;
-                }
-
-                const newParticipant = { id: Date.now(), name: userName };
-                const updatedParticipants = [...participants, newParticipant];
-                setParticipants(updatedParticipants);
-                saveData('lottery-participants', updatedParticipants);
-                localStorage.setItem('user-participated', userName);
-                setMessage(t.registered);
-            };
-
-            const handleAdminLogin = () => {
-                if (password === ADMIN_PASSWORD) {
-                    setIsAdmin(true);
-                    setView('admin');
-                    setMessage('');
-                } else {
-                    setMessage(t.wrongPassword);
-                }
-            };
-
-            const handleAddPrize = () => {
-                if (!newPrize.name.trim()) return;
-
-                const prize = {
-                    id: Date.now(),
-                    ...newPrize,
-                    remaining: parseInt(newPrize.quantity)
-                };
-
-                const updatedPrizes = [...prizes, prize];
-                setPrizes(updatedPrizes);
-                saveData('lottery-prizes', updatedPrizes);
-                setNewPrize({ name: '', level: 'level1', quantity: 1 });
-            };
-
-            const handleDeletePrize = (id) => {
-                const updatedPrizes = prizes.filter(p => p.id !== id);
-                setPrizes(updatedPrizes);
-                saveData('lottery-prizes', updatedPrizes);
-            };
-
-            const handleDeleteParticipant = (id) => {
-                const updatedParticipants = participants.filter(p => p.id !== id);
-                setParticipants(updatedParticipants);
-                saveData('lottery-participants', updatedParticipants);
-            };
-
-            const handleDraw = () => {
-                if (!selectedPrize || selectedPrize.remaining <= 0) {
-                    setMessage(lang === 'zh' ? '该奖品已抽完' : 'この賞品は完了しました');
-                    return;
-                }
-
-                const availableParticipants = participants.filter(
-                    p => !winners.some(w => w.participantId === p.id)
-                );
-
-                if (availableParticipants.length === 0) {
-                    setMessage(t.noParticipants);
-                    return;
-                }
-
-                setIsDrawing(true);
-                let count = 0;
-                const interval = setInterval(() => {
-                    const randomParticipant = availableParticipants[
-                        Math.floor(Math.random() * availableParticipants.length)
-                    ];
-                    setCurrentWinner(randomParticipant);
-                    count++;
-
-                    if (count > 20) {
-                        clearInterval(interval);
-                        setIsDrawing(false);
-                        finalizeWinner(randomParticipant);
-                    }
-                }, 100);
-            };
-
-            const finalizeWinner = (winner) => {
-                const newWinner = {
-                    id: Date.now(),
-                    participantId: winner.id,
-                    participantName: winner.name,
-                    prizeId: selectedPrize.id,
-                    prizeName: selectedPrize.name,
-                    prizeLevel: selectedPrize.level
-                };
-
-                const updatedWinners = [...winners, newWinner];
-                setWinners(updatedWinners);
-                saveData('lottery-winners', updatedWinners);
-
-                const updatedPrizes = prizes.map(p =>
-                    p.id === selectedPrize.id ? { ...p, remaining: p.remaining - 1 } : p
-                );
-                setPrizes(updatedPrizes);
-                saveData('lottery-prizes', updatedPrizes);
-                setSelectedPrize(updatedPrizes.find(p => p.id === selectedPrize.id));
-            };
-
-            const handleReset = () => {
-                if (window.confirm(t.confirmReset)) {
-                    localStorage.removeItem('lottery-participants');
-                    localStorage.removeItem('lottery-prizes');
-                    localStorage.removeItem('lottery-winners');
-                    localStorage.removeItem('user-participated');
-                    setParticipants([]);
-                    setPrizes([]);
-                    setWinners([]);
-                    setUserName('');
-                    setMessage(lang === 'zh' ? '已重置' : 'リセット完了');
-                }
-            };
-
-            return (
-                <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 p-4">
-                    <div className="max-w-4xl mx-auto">
-                        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-                            {/* Header */}
-                            <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6">
-                                <div className="flex justify-between items-center">
-                                    <div className="flex items-center gap-3">
-                                        <Trophy />
-                                        <h1 className="text-3xl font-bold">{t.title}</h1>
-                                    </div>
-                                    <button
-                                        onClick={() => setLang(lang === 'zh' ? 'ja' : 'zh')}
-                                        className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition"
-                                    >
-                                        <Globe />
-                                        {lang === 'zh' ? '日本語' : '中文'}
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Message */}
-                            {message && (
-                                <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4">
-                                    {message}
-                                </div>
-                            )}
-
-                            {/* Navigation */}
-                            {view === 'home' && (
-                                <div className="p-8">
-                                    <div className="grid md:grid-cols-2 gap-6">
-                                        <button
-                                            onClick={() => setView('participate')}
-                                            className="flex flex-col items-center gap-4 p-8 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl hover:scale-105 transition transform shadow-lg"
-                                        >
-                                            <Users />
-                                            <span className="text-2xl font-bold">{t.participate}</span>
-                                        </button>
-                                        <button
-                                            onClick={() => setView('adminLogin')}
-                                            className="flex flex-col items-center gap-4 p-8 bg-gradient-to-br from-orange-500 to-red-600 text-white rounded-xl hover:scale-105 transition transform shadow-lg"
-                                        >
-                                            <Settings />
-                                            <span className="text-2xl font-bold">{t.admin}</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Participate View */}
-                            {view === 'participate' && (
-                                <div className="p-8">
-                                    <button
-                                        onClick={() => {
-                                            setView('home');
-                                            setMessage('');
-                                        }}
-                                        className="mb-4 text-purple-600 hover:text-purple-800"
-                                    >
-                                        ← {t.back}
-                                    </button>
-                                    <div className="max-w-md mx-auto">
-                                        <div className="mb-6">
-                                            <label className="block text-gray-700 font-bold mb-2">{t.yourName}</label>
-                                            <input
-                                                type="text"
-                                                value={userName}
-                                                onChange={(e) => setUserName(e.target.value)}
-                                                className="w-full px-4 py-3 border-2 border-purple-300 rounded-lg focus:border-purple-500 focus:outline-none"
-                                                placeholder={t.name}
-                                            />
-                                        </div>
-                                        <button
-                                            onClick={handleParticipate}
-                                            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-lg font-bold text-xl hover:shadow-xl transition"
-                                        >
-                                            {t.enter}
-                                        </button>
-                                        <div className="mt-6 text-center text-gray-600">
-                                            {t.total} {participants.length} {t.people}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Admin Login */}
-                            {view === 'adminLogin' && !isAdmin && (
-                                <div className="p-8">
-                                    <button
-                                        onClick={() => {
-                                            setView('home');
-                                            setMessage('');
-                                        }}
-                                        className="mb-4 text-purple-600 hover:text-purple-800"
-                                    >
-                                        ← {t.back}
-                                    </button>
-                                    <div className="max-w-md mx-auto">
-                                        <div className="mb-6">
-                                            <label className="block text-gray-700 font-bold mb-2">{t.adminPassword}</label>
-                                            <input
-                                                type="password"
-                                                value={password}
-                                                onChange={(e) => setPassword(e.target.value)}
-                                                className="w-full px-4 py-3 border-2 border-orange-300 rounded-lg focus:border-orange-500 focus:outline-none"
-                                                placeholder="a****"
-                                            />
-                                        </div>
-                                        <button
-                                            onClick={handleAdminLogin}
-                                            className="w-full bg-gradient-to-r from-orange-500 to-red-600 text-white py-4 rounded-lg font-bold text-xl hover:shadow-xl transition"
-                                        >
-                                            {t.login}
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Admin Panel */}
-                            {view === 'admin' && isAdmin && (
-                                <div className="p-8">
-                                    <div className="flex justify-between items-center mb-6">
-                                        <button
-                                            onClick={() => {
-                                                setView('home');
-                                                setIsAdmin(false);
-                                                setPassword('');
-                                                setMessage('');
-                                            }}
-                                            className="text-purple-600 hover:text-purple-800"
-                                        >
-                                            ← {t.back}
-                                        </button>
-                                        <button
-                                            onClick={handleReset}
-                                            className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
-                                        >
-                                            <Trash />
-                                            {t.reset}
-                                        </button>
-                                    </div>
-
-                                    <div className="grid md:grid-cols-2 gap-8">
-                                        {/* Prize Management */}
-                                        <div className="bg-gray-50 p-6 rounded-xl">
-                                            <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-                                                <Gift />
-                                                {t.prizeManagement}
-                                            </h2>
-                                            <div className="space-y-4 mb-6">
-                                                <input
-                                                    type="text"
-                                                    value={newPrize.name}
-                                                    onChange={(e) => setNewPrize({ ...newPrize, name: e.target.value })}
-                                                    placeholder={t.prizeName}
-                                                    className="w-full px-4 py-2 border rounded-lg"
-                                                />
-                                                <select
-                                                    value={newPrize.level}
-                                                    onChange={(e) => setNewPrize({ ...newPrize, level: e.target.value })}
-                                                    className="w-full px-4 py-2 border rounded-lg"
-                                                >
-                                                    <option value="level1">{t.level1}</option>
-                                                    <option value="level2">{t.level2}</option>
-                                                    <option value="level3">{t.level3}</option>
-                                                    <option value="level4">{t.level4}</option>
-                                                </select>
-                                                <input
-                                                    type="number"
-                                                    value={newPrize.quantity}
-                                                    onChange={(e) => setNewPrize({ ...newPrize, quantity: e.target.value })}
-                                                    placeholder={t.quantity}
-                                                    min="1"
-                                                    className="w-full px-4 py-2 border rounded-lg"
-                                                />
-                                                <button
-                                                    onClick={handleAddPrize}
-                                                    className="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition"
-                                                >
-                                                    {t.add}
-                                                </button>
-                                            </div>
-
-                                            <div className="space-y-2 max-h-64 overflow-y-auto">
-                                                {prizes.map(prize => (
-                                                    <div key={prize.id} className="flex justify-between items-center bg-white p-3 rounded-lg">
-                                                        <div>
-                                                            <div className="font-bold">{prize.name}</div>
-                                                            <div className="text-sm text-gray-600">
-                                                                {t[prize.level]} - {t.remaining}: {prize.remaining}/{prize.quantity}
-                                                            </div>
-                                                        </div>
-                                                        <button
-                                                            onClick={() => handleDeletePrize(prize.id)}
-                                                            className="text-red-500 hover:text-red-700"
-                                                        >
-                                                            <Trash />
-                                                        </button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {/* Lottery Section */}
-                                        <div className="bg-gray-50 p-6 rounded-xl">
-                                            <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-                                                <Play />
-                                                {t.startLottery}
-                                            </h2>
-
-                                            <div className="mb-4">
-                                                <label className="block font-bold mb-2">{t.selectPrize}</label>
-                                                <select
-                                                    onChange={(e) => setSelectedPrize(prizes.find(p => p.id == e.target.value))}
-                                                    className="w-full px-4 py-2 border rounded-lg"
-                                                >
-                                                    <option value="">{t.selectPrize}</option>
-                                                    {prizes.filter(p => p.remaining > 0).map(prize => (
-                                                        <option key={prize.id} value={prize.id}>
-                                                            {prize.name} ({t.remaining}: {prize.remaining})
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-
-                                            {selectedPrize && (
-                                                <div className="bg-white p-8 rounded-xl mb-4 text-center">
-                                                    {isDrawing || currentWinner ? (
-                                                        <div className="text-4xl font-bold text-purple-600 animate-pulse">
-                                                            {currentWinner?.name}
-                                                        </div>
-                                                    ) : (
-                                                        <div className="text-gray-400 text-xl">{t.preparing}</div>
-                                                    )}
-                                                </div>
-                                            )}
-
-                                            <button
-                                                onClick={handleDraw}
-                                                disabled={!selectedPrize || isDrawing}
-                                                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-lg font-bold text-xl hover:shadow-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                {t.draw}
-                                            </button>
-
-                                            <div className="mt-6">
-                                                <h3 className="font-bold mb-2">{t.participants} ({participants.length})</h3>
-                                                <div className="max-h-40 overflow-y-auto space-y-1">
-                                                    {participants.map(p => (
-                                                        <div key={p.id} className="flex justify-between items-center bg-white p-2 rounded text-sm">
-                                                            <span>{p.name}</span>
-                                                            <button
-                                                                onClick={() => handleDeleteParticipant(p.id)}
-                                                                className="text-red-500 hover:text-red-700"
-                                                            >
-                                                                <Trash />
-                                                            </button>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Winners List */}
-                                    {winners.length > 0 && (
-                                        <div className="mt-8 bg-yellow-50 p-6 rounded-xl">
-                                            <h2 className="text-2xl font-bold mb-4">{t.winner}</h2>
-                                            <div className="grid md:grid-cols-2 gap-4">
-                                                {winners.map(w => (
-                                                    <div key={w.id} className="bg-white p-4 rounded-lg shadow">
-                                                        <div className="font-bold text-lg text-purple-600">{w.participantName}</div>
-                                                        <div className="text-sm text-gray-600">{w.prizeName} - {t[w.prizeLevel]}</div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        ReactDOM.render(<LotteryApp />, document.getElementById('root'));
-    </script>
+  <h1>蘇的工具箱</h1>
+  <div class="grid">
+    <div class="btn"><a href="annual-lottery.html">Tool A</a></div>
+    <div class="btn"><a href="ABCB">Tool B</a></div>
+    <div class="btn"><a href="ABCB">Tool C</a></div>
+    <div class="btn"><a href="ABCB">Tool D</a></div>
+    <div class="btn"><a href="ABCB">Tool E</a></div>
+    <div class="btn"><a href="ABCB">Tool F</a></div>
+    <div class="btn"><a href="ABCB">Tool G</a></div>
+    <div class="btn"><a href="ABCB">Tool H</a></div>
+    <div class="btn"><a href="ABCB">Tool I</a></div>
+    <div class="btn"><a href="ABCB">Tool J</a></div>
+    <div class="btn"><a href="ABCB">Tool K</a></div>
+    <div class="btn"><a href="ABCB">Tool L</a></div>
+    <div class="btn"><a href="ABCB">Tool M</a></div>
+    <div class="btn"><a href="ABCB">Tool N</a></div>
+    <div class="btn"><a href="ABCB">Tool O</a></div>
+    <div class="btn"><a href="ABCB">Tool P</a></div>
+  </div>
 </body>
 </html>
