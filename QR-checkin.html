@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>入住信息卡生成器 | 蘇的工具箱</title>
+  <style>
+    body {
+      font-family: "Inter", sans-serif;
+      background: #0d0d0f;
+      color: #fff;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .card {
+      background: #1a1a1d;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-top: 12px;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      border-radius: 8px;
+      border: none;
+      background: #2a2a2d;
+      color: #fff;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 20px;
+      background: #4a7bee;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #preview {
+      background: #111;
+      padding: 20px;
+      border-radius: 12px;
+      margin-top: 20px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>入住信息 QR 卡生成器</h1>
+
+    <div class="card">
+      <label>房源名称</label>
+      <input id="roomName" placeholder="例：宿栖新宿A" />
+
+      <label>WiFi 信息</label>
+      <textarea id="wifiInfo" placeholder="SSID: XXX\n密码: XXX"></textarea>
+
+      <label>入住方式（例如：自助入住步骤）</label>
+      <textarea id="checkinInfo" placeholder="密码箱位置、开门方式等"></textarea>
+
+      <label>其他说明</label>
+      <textarea id="extraInfo" placeholder="注意事项等"></textarea>
+
+      <button onclick="generateCard()">生成 QR 卡</button>
+    </div>
+
+    <div id="preview"></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script>
+    function generateCard() {
+      const room = document.getElementById('roomName').value;
+      const wifi = document.getElementById('wifiInfo').value;
+      const checkin = document.getElementById('checkinInfo').value;
+      const extra = document.getElementById('extraInfo').value;
+
+      const text = `房源：${room}\n\n【WiFi】\n${wifi}\n\n【入住方式】\n${checkin}\n\n【其他】\n${extra}`;
+
+      document.getElementById('preview').innerHTML = `
+        <h2>${room} 入住卡</h2>
+        <div id="qrcode"></div>
+        <p style="opacity:0.7; margin-top:12px;">扫描二维码查看入住信息</p>
+      `;
+
+      new QRCode(document.getElementById('qrcode'), {
+        text: text,
+        width: 200,
+        height: 200,
+        colorDark: "#ffffff",
+        colorLight: "#111111",
+      });
+    }
+  </script>
+</body>
+</html>
