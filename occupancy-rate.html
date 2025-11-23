@@ -1,1 +1,765 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>入住率计算器（带手动校正）</title>
 
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<!-- Tesseract.js -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@v4.0.2/dist/tesseract.min.js"></script>
+<!-- OpenCV.js -->
+<script async src="https://docs.opencv.org/4.x/opencv.js"></script>
+<!-- SheetJS (XLSX export optional) -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<style>
+  :root{--bg:#f7fafc;--card:#ffffff;--muted:#6b7280;--accent:#2563eb}
+  body{font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans SC","Microsoft YaHei",Arial; background:var(--bg); color:#0f172a; margin:0; padding:18px;}
+  .container{max-width:1200px;margin:0 auto;}
+  header{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .panel{background:var(--card); padding:12px;border-radius:8px; box-shadow:0 6px 18px rgba(15,23,42,0.06); margin-top:12px;}
+  canvas#imgCanvas{width:100%; border:1px solid #e6edf3; display:block; touch-action:none;}
+  .controls{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;}
+  button, input[type=file], select { padding:8px 10px; border-radius:6px; border:1px solid #e6edf3; background:white; cursor:pointer; }
+  .btn-primary{background:var(--accent); color:white; border:none;}
+  table{width:100%; border-collapse:collapse; margin-top:8px; font-size:13px;}
+  th,td{border:1px solid #eef2f6; padding:6px; text-align:center;}
+  .muted{color:var(--muted); font-size:13px;}
+  .small{font-size:13px;color:var(--muted)}
+  .inline{display:inline-block}
+  #chartArea{height:360px}
+  .config-row{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  label{font-size:13px;color:var(--muted)}
+  input[type=number]{width:90px}
+  .link-input{width:240px}
+  .notice{font-size:13px;color:#b91c1c}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h2>入住率计算器（带手动校正）</h2>
+    <div class="small">上传截图 → 自动检测 → 如有偏差可拖线修正 → 导出数据/图表</div>
+  </header>
+
+  <div class="panel">
+    <div class="controls">
+      <input id="fileInput" type="file" accept="image/*">
+      <button id="loadSample" class="btn-primary">加载示例图片</button>
+      <button id="autoDetect">自动检测表格（OpenCV）</button>
+      <button id="ocrHeaders" class="btn-primary">识别房名与日期（中文 OCR）</button>
+      <button id="calcOccupancy" class="btn-primary">计算入住率</button>
+      <button id="exportCSV">导出 CSV</button>
+      <button id="exportXLSX">导出 XLSX</button>
+      <button id="exportChartPNG">导出当前图为 PNG</button>
+    </div>
+
+    <div class="config-row" style="margin-top:8px">
+      <label>像素占比阈值（判定为被占）：</label>
+      <input id="fillThreshold" type="number" min="0" max="1" step="0.01" value="0.08">
+      <label>合并/跳过/校正后请先点击「计算入住率」</label>
+    </div>
+
+    <div style="margin-top:10px;">
+      <canvas id="imgCanvas" width="1200" height="600"></canvas>
+      <div class="small" id="canvasHint">提示：拖动竖线或横线来校正网格。点击上方「识别房名与日期」来用中文 OCR 识别头部和左侧。</div>
+    </div>
+
+    <div style="margin-top:8px" class="small">
+      <strong>联动房源设置（用于 B/C/B+C 逻辑）</strong>
+      <div>
+        <input id="combinedName" placeholder="合并单元名称（例如：两国B+C）" class="link-input">
+        <input id="components" placeholder="组件逗号分隔（例如：两国B,两国C）" class="link-input">
+        <button id="addLink">添加关联</button>
+      </div>
+      <div id="linksList" class="small muted" style="margin-top:6px"></div>
+    </div>
+  </div>
+
+  <div id="results" class="panel" style="display:none;">
+    <div style="display:flex;align-items:center;gap:12px; justify-content:space-between;">
+      <div>
+        <label>视图：</label>
+        <select id="viewSelect">
+          <option value="table">表格</option>
+          <option value="bar">柱状图</option>
+          <option value="line">折线图（每日总体占用率）</option>
+        </select>
+      </div>
+      <div class="small" id="summaryText"></div>
+    </div>
+
+    <div id="tableContainer"></div>
+    <div id="chartArea" style="display:none;">
+      <canvas id="chartCanvas"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+/* --------------------------
+  全局变量与初始配置
+---------------------------*/
+const SAMPLE_PATH = '/mnt/data/FE10E851-8288-4435-9C45-35C5086DBB99.png'; // 示例图片（来自你的上传）
+const canvas = document.getElementById('imgCanvas');
+const ctx = canvas.getContext('2d');
+let img = new Image();
+let imgScale = 1;
+
+let vLines = []; // 竖线 x 坐标（相对于 canvas）
+let hLines = []; // 横线 y 坐标
+let dragging = null; // {type:'v'|'h', idx, offset}
+let detectTableRect = null;
+let cells = []; // cells[r][c] = {x,y,w,h}
+let roomNames = []; // per col
+let dateLabels = []; // per row (strings)
+let occupancy = []; // boolean matrix
+let parseResult = null;
+let chartInstance = null;
+let linkedMap = {}; // {"两国B+C": ["两国B", "两国C"]}
+
+// UI elements
+const fileInput = document.getElementById('fileInput');
+const loadSample = document.getElementById('loadSample');
+const autoDetect = document.getElementById('autoDetect');
+const ocrHeadersBtn = document.getElementById('ocrHeaders');
+const calcBtn = document.getElementById('calcOccupancy');
+const exportCSVBtn = document.getElementById('exportCSV');
+const exportXLSXBtn = document.getElementById('exportXLSX');
+const exportChartPNGBtn = document.getElementById('exportChartPNG');
+const fillThresholdEl = document.getElementById('fillThreshold');
+const resultsPanel = document.getElementById('results');
+const tableContainer = document.getElementById('tableContainer');
+const viewSelect = document.getElementById('viewSelect');
+const chartArea = document.getElementById('chartArea');
+const chartCanvas = document.getElementById('chartCanvas');
+const summaryText = document.getElementById('summaryText');
+const combinedNameInput = document.getElementById('combinedName');
+const componentsInput = document.getElementById('components');
+const addLinkBtn = document.getElementById('addLink');
+const linksList = document.getElementById('linksList');
+
+/* 载入图片 */
+function drawImageToCanvas(image) {
+  // fit width
+  const maxW = 1200;
+  img = image;
+  imgScale = Math.min(maxW / img.width, 1);
+  canvas.width = Math.floor(img.width * imgScale);
+  canvas.height = Math.floor(img.height * imgScale);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  // reset lines
+  vLines = [];
+  hLines = [];
+  detectTableRect = null;
+  cells = [];
+  roomNames = []; dateLabels = []; occupancy = [];
+  resultsPanel.style.display = 'none';
+}
+
+/* 文件事件 */
+fileInput.onchange = (e)=>{
+  const f = e.target.files[0];
+  if (!f) return;
+  const url = URL.createObjectURL(f);
+  const im = new Image();
+  im.crossOrigin='anonymous';
+  im.onload = ()=> drawImageToCanvas(im);
+  im.src = url;
+};
+loadSample.onclick = ()=> {
+  const im = new Image();
+  im.crossOrigin='anonymous';
+  im.onload = ()=> drawImageToCanvas(im);
+  im.onerror = ()=> alert('示例图片加载失败（本地路径只在本地可用）');
+  im.src = SAMPLE_PATH;
+};
+
+/* --------------------------
+  OpenCV 自动检测网格（粗） -> 生成初始行列线
+---------------------------*/
+function whenOpenCVReady(cb){
+  if (window.cv && cv.Mat) return cb();
+  let tries=0;
+  const t = setInterval(()=> {
+    if (window.cv && cv.Mat) { clearInterval(t); cb(); }
+    tries++;
+    if (tries>200) { clearInterval(t); alert('OpenCV 加载超时'); }
+  },100);
+}
+
+autoDetect.onclick = ()=> {
+  if (!img || !img.width) return alert('请先加载图片');
+  whenOpenCVReady(()=> {
+    // draw current image into hidden mat
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tctx = tempCanvas.getContext('2d');
+    tctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const src = cv.imread(tempCanvas);
+    const gray = new cv.Mat(); cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+    const bw = new cv.Mat(); cv.adaptiveThreshold(gray, bw, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY_INV, 15, 10);
+    // horizontal and vertical morph
+    const horizontals = new cv.Mat();
+    const verticals = new cv.Mat();
+    let horKernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(Math.floor(src.cols/30),1));
+    let verKernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(1, Math.floor(src.rows/30)));
+    cv.morphologyEx(bw, horizontals, cv.MORPH_OPEN, horKernel);
+    cv.morphologyEx(bw, verticals, cv.MORPH_OPEN, verKernel);
+    const grid = new cv.Mat(); cv.addWeighted(horizontals,1,verticals,1,0,grid);
+    const k = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(3,3)); cv.dilate(grid, grid, k);
+    const contours = new cv.MatVector(); const hierarchy = new cv.Mat();
+    cv.findContours(grid, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+    // bounding box of contours
+    let rects = [];
+    for (let i=0;i<contours.size();i++){
+      const cnt = contours.get(i);
+      const r = cv.boundingRect(cnt);
+      if (r.width > src.cols*0.12 && r.height > src.rows*0.12) rects.push(r);
+      cnt.delete();
+    }
+    if (rects.length===0) {
+      // fallback: use whole image
+      detectTableRect = {x:0,y:0,w:canvas.width,h:canvas.height};
+    } else {
+      // choose largest union
+      let minX=rects[0].x, minY=rects[0].y, maxX=rects[0].x+rects[0].width, maxY=rects[0].y+rects[0].height;
+      for (const r of rects){
+        minX=Math.min(minX,r.x); minY=Math.min(minY,r.y);
+        maxX=Math.max(maxX,r.x+r.width); maxY=Math.max(maxY,r.y+r.height);
+      }
+      detectTableRect = {x:Math.max(0,minX-4), y:Math.max(0,minY-4), w:Math.min(canvas.width, maxX-minX+8), h:Math.min(canvas.height, maxY-minY+8)};
+    }
+    // derive line candidates by projection
+    const tableCanvas = document.createElement('canvas');
+    tableCanvas.width = detectTableRect.w; tableCanvas.height = detectTableRect.h;
+    const t2 = tableCanvas.getContext('2d');
+    t2.drawImage(img, detectTableRect.x/imgScale, detectTableRect.y/imgScale, detectTableRect.w/imgScale, detectTableRect.h/imgScale, 0, 0, detectTableRect.w, detectTableRect.h);
+    const tableSrc = cv.imread(tableCanvas);
+    const tableGray = new cv.Mat(); cv.cvtColor(tableSrc, tableGray, cv.COLOR_RGBA2GRAY, 0);
+    const tableBw = new cv.Mat(); cv.adaptiveThreshold(tableGray, tableBw, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY_INV, 15, 10);
+    // column sums
+    const colSums = new Array(tableBw.cols).fill(0);
+    for (let j=0;j<tableBw.cols;j++){
+      for (let i=0;i<tableBw.rows;i++){
+        if (tableBw.ucharPtr(i,j)[0]>0) colSums[j]++;
+      }
+    }
+    const vpeaks = [];
+    const colThresh = Math.max(5, tableBw.rows*0.18);
+    for (let j=1;j<colSums.length-1;j++){
+      if (colSums[j] > colThresh && colSums[j] >= colSums[j-1] && colSums[j] >= colSums[j+1]) vpeaks.push(j);
+    }
+    const rowSums = new Array(tableBw.rows).fill(0);
+    for (let i=0;i<tableBw.rows;i++){
+      for (let j=0;j<tableBw.cols;j++){
+        if (tableBw.ucharPtr(i,j)[0]>0) rowSums[i]++;
+      }
+    }
+    const hpeaks = [];
+    const rowThresh = Math.max(3, tableBw.cols*0.10);
+    for (let i=1;i<rowSums.length-1;i++){
+      if (rowSums[i] > rowThresh && rowSums[i] >= rowSums[i-1] && rowSums[i] >= rowSums[i+1]) hpeaks.push(i);
+    }
+    // convert peaks to global canvas coordinates
+    vLines = [detectTableRect.x];
+    for (let p of vpeaks) vLines.push(detectTableRect.x + p);
+    vLines.push(detectTableRect.x + detectTableRect.w);
+    hLines = [detectTableRect.y];
+    for (let p of hpeaks) hLines.push(detectTableRect.y + p);
+    hLines.push(detectTableRect.y + detectTableRect.h);
+    // sort unique
+    vLines = Array.from(new Set(vLines)).sort((a,b)=>a-b);
+    hLines = Array.from(new Set(hLines)).sort((a,b)=>a-b);
+    // redraw
+    redrawCanvas();
+    tableSrc.delete(); tableGray.delete(); tableBw.delete();
+    src.delete(); gray.delete(); bw.delete(); horizontals.delete(); verticals.delete(); grid.delete();
+    contours.delete(); hierarchy.delete();
+  });
+};
+
+/* 画面重绘：图片 + 线 + 小提示 */
+function redrawCanvas(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  // draw table rect lightly
+  if (detectTableRect) {
+    ctx.strokeStyle = 'rgba(0,0,0,0.1)'; ctx.lineWidth=1;
+    ctx.strokeRect(detectTableRect.x, detectTableRect.y, detectTableRect.w, detectTableRect.h);
+  }
+  // draw vertical lines
+  ctx.lineWidth = 2;
+  for (let i=0;i<vLines.length;i++){
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(255,0,0,0.9)';
+    ctx.moveTo(vLines[i], 0);
+    ctx.lineTo(vLines[i], canvas.height);
+    ctx.stroke();
+    // handle
+    ctx.fillStyle='rgba(255,0,0,0.9)';
+    ctx.fillRect(vLines[i]-6, 6, 12, 12);
+  }
+  // horizontal lines
+  for (let i=0;i<hLines.length;i++){
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(0,98,255,0.9)';
+    ctx.moveTo(0, hLines[i]);
+    ctx.lineTo(canvas.width, hLines[i]);
+    ctx.stroke();
+    ctx.fillStyle='rgba(0,98,255,0.9)';
+    ctx.fillRect(6, hLines[i]-6, 12, 12);
+  }
+}
+
+/* 鼠标交互：拖拽线条 */
+canvas.addEventListener('pointerdown', (e)=>{
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  // detect nearest vertical or horizontal (within 10px)
+  for (let i=0;i<vLines.length;i++){
+    if (Math.abs(x - vLines[i]) < 10) { dragging = {type:'v', idx:i, offset: x - vLines[i]}; return; }
+  }
+  for (let i=0;i<hLines.length;i++){
+    if (Math.abs(y - hLines[i]) < 10) { dragging = {type:'h', idx:i, offset: y - hLines[i]}; return; }
+  }
+});
+canvas.addEventListener('pointermove', (e)=>{
+  if (!dragging) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  if (dragging.type==='v') {
+    const newX = Math.max(0, Math.min(canvas.width, x - dragging.offset));
+    vLines[dragging.idx] = newX;
+  } else {
+    const newY = Math.max(0, Math.min(canvas.height, y - dragging.offset));
+    hLines[dragging.idx] = newY;
+  }
+  redrawCanvas();
+});
+canvas.addEventListener('pointerup', ()=> { dragging = null; buildCellsFromLines(); });
+canvas.addEventListener('pointerleave', ()=> { dragging = null; });
+
+/* 建立 cell 矩阵（基于当前的行列线） */
+function buildCellsFromLines(){
+  if (vLines.length < 2 || hLines.length < 2) return;
+  // sort lines
+  vLines.sort((a,b)=>a-b); hLines.sort((a,b)=>a-b);
+  const rows = hLines.length - 1;
+  const cols = vLines.length - 1;
+  cells = Array.from({length: rows}, ()=>Array(cols).fill(null));
+  for (let r=0;r<rows;r++){
+    for (let c=0;c<cols;c++){
+      const x = Math.round(vLines[c]);
+      const y = Math.round(hLines[r]);
+      const w = Math.max(1, Math.round(vLines[c+1] - vLines[c]));
+      const h = Math.max(1, Math.round(hLines[r+1] - hLines[r]));
+      cells[r][c] = {x,y,w,h};
+    }
+  }
+  // clear previous OCR & occupancy
+  roomNames = Array(cols).fill('');
+  dateLabels = Array(rows).fill('');
+  occupancy = Array.from({length: rows}, ()=>Array(cols).fill(false));
+  redrawCanvas();
+}
+
+/* OCR 识别：优先识别第一行房名与第一列日期（中文） */
+async function ocrImageRegionToText(regionRect){
+  // regionRect in canvas coords
+  const tmp = document.createElement('canvas');
+  tmp.width = regionRect.w; tmp.height = regionRect.h;
+  const tctx = tmp.getContext('2d');
+  tctx.drawImage(canvas, regionRect.x, regionRect.y, regionRect.w, regionRect.h, 0, 0, regionRect.w, regionRect.h);
+  // use Tesseract Chinese
+  const worker = Tesseract.createWorker({logger: m=>{/*console.log(m)*/}});
+  await worker.load();
+  await worker.loadLanguage('chi_sim');
+  await worker.initialize('chi_sim');
+  const { data: { text } } = await worker.recognize(tmp);
+  await worker.terminate();
+  return text.replace(/\n+/g,' ').trim();
+}
+
+ocrHeadersBtn.onclick = async ()=> {
+  if (!cells || cells.length===0) { alert('请先「自动检测表格」或手动拖线形成行列'); return; }
+  // assume header is first row for room names; detect a likely header row by checking text density across top rows:
+  // We'll OCR the top 2 rows and let user pick header row via prompt if ambiguous.
+  const rows = cells.length;
+  const cols = cells[0].length;
+  // OCR first two rows per column to get candidate names
+  const candidateNames = Array(cols).fill('');
+  for (let c=0;c<cols;c++){
+    // combine small crop in first row area (header)
+    const r = 0;
+    const cell = cells[r][c];
+    try {
+      const t = await ocrImageRegionToText({x:cell.x, y: Math.max(0, cell.y - Math.floor(cell.h*1.0)), w:cell.w, h: Math.min(canvas.height - cell.y, cell.h*2)});
+      candidateNames[c] = t || `房${c+1}`;
+    } catch(e){
+      candidateNames[c] = `房${c+1}`;
+    }
+  }
+  roomNames = candidateNames;
+  // OCR leftmost column for date labels
+  const dateCandidates = [];
+  for (let r=0; r<rows; r++){
+    const cell = cells[r][0];
+    try {
+      const t = await ocrImageRegionToText({x: Math.max(0, cell.x - Math.floor(cell.w*1.0)), y: cell.y, w: Math.min(canvas.width - cell.x, cell.w*1.2), h: cell.h});
+      dateCandidates.push(t || `R${r+1}`);
+    } catch(e){
+      dateCandidates.push(`R${r+1}`);
+    }
+  }
+  dateLabels = dateCandidates;
+  // draw room names on top of columns
+  redrawCanvas();
+  // overlay names (simple)
+  ctx.fillStyle='rgba(0,0,0,0.8)';
+  ctx.font = '12px sans-serif';
+  for (let c=0;c<roomNames.length;c++){
+    const midX = Math.round((vLines[c] + vLines[c+1])/2);
+    ctx.fillText(roomNames[c], midX - 30, Math.max(12, hLines[0]-6));
+  }
+  alert('OCR 已尝试识别顶部房名与左侧日期。你可以手动编辑识别错误（在表格输出区编辑）。');
+};
+
+/* 计算入住率：对每个单元格取像素非白比例 */
+function computeOccupancyMatrix(){
+  if (!cells || cells.length===0) return;
+  const rows = cells.length, cols = cells[0].length;
+  const threshold = parseFloat(fillThresholdEl.value) || 0.08;
+  occupancy = Array.from({length: rows}, ()=>Array(cols).fill(false));
+  for (let r=0;r<rows;r++){
+    for (let c=0;c<cols;c++){
+      const cell = cells[r][c];
+      // get image data from canvas
+      const id = ctx.getImageData(cell.x, cell.y, cell.w, cell.h);
+      let total = id.data.length/4;
+      let nonWhite = 0;
+      for (let i=0;i<id.data.length;i+=4){
+        const rr = id.data[i], gg=id.data[i+1], bb=id.data[i+2], aa=id.data[i+3];
+        if (aa>10 && (rr<240 || gg<240 || bb<240)) nonWhite++;
+      }
+      const ratio = nonWhite / total;
+      if (ratio > threshold) occupancy[r][c] = true;
+    }
+  }
+  // draw overlays for occupied cells
+  redrawCanvas();
+  for (let r=0;r<rows;r++){
+    for (let c=0;c<cols;c++){
+      if (occupancy[r][c]){
+        const cell = cells[r][c];
+        ctx.fillStyle='rgba(34,197,94,0.2)';
+        ctx.fillRect(cell.x, cell.y, cell.w, cell.h);
+      }
+    }
+  }
+}
+
+/* 应用联动房源逻辑并计算房间与总体入住率 */
+function calculateMetrics(){
+  if (!cells || cells.length===0) return;
+  const rows = cells.length, cols = cells[0].length;
+  // ensure roomNames/dateLabels length
+  if (roomNames.length !== cols) {
+    // fallback to generic names
+    roomNames = Array.from({length: cols}, (_,i)=>roomNames[i] || `房${i+1}`);
+  }
+  if (dateLabels.length !== rows) {
+    dateLabels = Array.from({length: rows}, (_,i)=>dateLabels[i] || `R${i+1}`);
+  }
+
+  // Build per-room basic stats
+  const rooms = roomNames.map((name, idx)=>({
+    name: name || `房${idx+1}`,
+    colIdx: idx,
+    occupiedDays: 0,
+    totalDays: rows,
+    excluded: false // if excluded due to linked combined booking
+  }));
+
+  // initial count occupiedDays
+  for (let c=0;c<cols;c++){
+    let occ = 0;
+    for (let r=0;r<rows;r++) if (occupancy[r][c]) occ++;
+    rooms[c].occupiedDays = occ;
+  }
+
+  // Apply linkedMap rules:
+  // For each linked combined unit (key) -> components array
+  // If combined unit column exists and has occupancy on a date -> combined booked that date:
+  //   - For any date where combined is booked: mark components columns as excluded for that date (not counted in numerator/denominator)
+  // If component unit booked -> combined unit is closed (not sellable) -> combined excluded for those dates
+  // Implementation: compute per-date availability per room, then apply rules to produce final per-room totals.
+
+  // Prepare a map name -> col index (first match)
+  const nameToCols = {};
+  for (let i=0;i<rooms.length;i++){
+    const nm = rooms[i].name;
+    nameToCols[nm] = i;
+  }
+
+  // Create per-room per-day status: 'occupied' | 'free' | 'excluded'
+  const dayStatus = Array.from({length: rows}, ()=>Array(cols).fill('free'));
+  for (let r=0;r<rows;r++){
+    for (let c=0;c<cols;c++){
+      if (occupancy[r][c]) dayStatus[r][c] = 'occupied';
+    }
+  }
+
+  // Process each linked pair mapping
+  // Example linkedMap = { "两国B+C": ["两国B","两国C"] }
+  for (const combined in linkedMap){
+    const comps = linkedMap[combined]; // array
+    const combinedIdx = nameToCols[combined];
+    const compIdxs = comps.map(n=>nameToCols[n]).filter(x=>typeof x !== 'undefined');
+    if (typeof combinedIdx !== 'undefined') {
+      for (let r=0;r<rows;r++){
+        if (dayStatus[r][combinedIdx] === 'occupied') {
+          // combined booked -> components excluded on this date
+          for (const ci of compIdxs) dayStatus[r][ci] = 'excluded';
+          // combined remains as occupied (and counted)
+        }
+      }
+    }
+    // If component booked -> combined excluded on that date
+    for (const ci of compIdxs){
+      if (typeof ci === 'undefined') continue;
+      for (let r=0;r<rows;r++){
+        if (dayStatus[r][ci] === 'occupied' && typeof combinedIdx !== 'undefined') {
+          dayStatus[r][combinedIdx] = 'excluded';
+        }
+      }
+    }
+  }
+
+  // Now compute final per-room occupiedDays and availableDays
+  for (let c=0;c<cols;c++){
+    let occ = 0, avail = 0;
+    for (let r=0;r<rows;r++){
+      const st = dayStatus[r][c];
+      if (st === 'occupied') { occ++; avail++; }
+      else if (st === 'free') { avail++; }
+      else if (st === 'excluded') {
+        // don't count this date into avail nor occ
+      }
+    }
+    rooms[c].occupiedDays = occ;
+    rooms[c].totalDays = avail;
+  }
+
+  // Compute overall totals (only count rooms with totalDays>0)
+  const totalOcc = rooms.reduce((s,r)=>s + (r.occupiedDays||0),0);
+  const totalAvail = rooms.reduce((s,r)=>s + (r.totalDays||0),0);
+  const overallRate = totalAvail>0 ? totalOcc/totalAvail : 0;
+
+  // per-date overall occupancy %
+  const perDate = [];
+  for (let r=0;r<rows;r++){
+    let occCount = 0, availCount = 0;
+    for (let c=0;c<cols;c++){
+      const st = dayStatus[r][c];
+      if (st === 'occupied') { occCount++; availCount++; }
+      else if (st === 'free') { availCount++; }
+      // excluded not counted
+    }
+    perDate.push({ date: dateLabels[r] || (`R${r+1}`), occ: occCount, avail: availCount, rate: availCount>0 ? (occCount/availCount) : 0 });
+  }
+
+  parseResult = { rooms, totalOcc, totalAvail, overallRate, perDate, dayStatus, rows, cols };
+  resultsPanel.style.display = 'block';
+  renderResults();
+}
+
+/* 渲染结果视图（表格 / 柱状 / 折线） */
+function renderResults(){
+  if (!parseResult) return;
+  const mode = viewSelect.value;
+  if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+  if (mode === 'table') {
+    chartArea.style.display = 'none';
+    let html = '<table><thead><tr><th>#</th><th>房名（可编辑）</th><th>入住天数</th><th>可售天数</th><th>入住率</th></tr></thead><tbody>';
+    parseResult.rooms.forEach((r,i)=>{
+      html += `<tr><td>${i+1}</td><td contenteditable="true" data-col="${i}" class="edName">${escapeHtml(r.name)}</td><td>${r.occupiedDays}</td><td>${r.totalDays}</td><td>${(r.totalDays>0? (r.occupiedDays/r.totalDays*100).toFixed(1): '-') }%</td></tr>`;
+    });
+    html += `</tbody></table><div style="margin-top:8px" class="small">总体：${parseResult.totalOcc} / ${parseResult.totalAvail} 房日，可售入住率 ${(parseResult.overallRate*100).toFixed(1)}%</div>`;
+    tableContainer.innerHTML = html;
+    // attach editing listener
+    document.querySelectorAll('.edName').forEach(el=>{
+      el.addEventListener('blur', (e)=>{
+        const col = parseInt(e.dataset.col,10);
+        parseResult.rooms[col].name = e.textContent.trim();
+        // update nameToCols mapping in future calcs
+      });
+    });
+  } else {
+    tableContainer.innerHTML = '';
+    chartArea.style.display = 'block';
+    const ctxChart = chartCanvas.getContext('2d');
+    if (mode === 'bar') {
+      const labels = parseResult.rooms.map(r=>r.name);
+      const data = parseResult.rooms.map(r=> r.totalDays>0 ? Math.round(r.occupiedDays / r.totalDays * 1000)/10 : 0);
+      chartInstance = new Chart(ctxChart, {
+        type: 'bar',
+        data: { labels, datasets: [{ label: '入住率 (%)', data }]},
+        options: { plugins: { title: { display:true, text:'各房入住率 (%)' }}, scales:{ y:{ beginAtZero:true, max:100 } } }
+      });
+    } else if (mode === 'line') {
+      const labels = parseResult.perDate.map(d=>d.date);
+      const data = parseResult.perDate.map(d=> Math.round((d.rate*1000))/10);
+      chartInstance = new Chart(ctxChart, {
+        type: 'line',
+        data: { labels, datasets: [{ label: '日总体占用 (%)', data }]},
+        options: { plugins: { title: { display:true, text:'每日总体占用率 (%)' }}, scales:{ y:{ beginAtZero:true, max:100 } } }
+      });
+    }
+  }
+  summaryText.textContent = `总体入住率 ${(parseResult.overallRate*100).toFixed(1)}% (${parseResult.totalOcc}/${parseResult.totalAvail})`;
+}
+
+/* 导出 CSV */
+function exportCSV(){
+  if (!parseResult) return alert('请先计算入住率');
+  let csv = '房名,入住天数,可售天数,入住率\n';
+  parseResult.rooms.forEach(r=>{
+    csv += `"${r.name.replace(/"/g,'""')}",${r.occupiedDays},${r.totalDays},${r.totalDays>0? (r.occupiedDays/r.totalDays*100).toFixed(2):''}\n`;
+  });
+  csv += `总体,${parseResult.totalOcc},${parseResult.totalAvail},${(parseResult.overallRate*100).toFixed(2)}\n`;
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'occupancy_report.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* 导出 XLSX（使用 SheetJS） */
+function exportXLSX(){
+  if (!parseResult) return alert('请先计算入住率');
+  const wb = XLSX.utils.book_new();
+  const wsData = [['房名','入住天数','可售天数','入住率']];
+  parseResult.rooms.forEach(r=> wsData.push([r.name, r.occupiedDays, r.totalDays, r.totalDays>0? (r.occupiedDays/r.totalDays):'']));
+  wsData.push(['总体', parseResult.totalOcc, parseResult.totalAvail, parseResult.overallRate]);
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  XLSX.utils.book_append_sheet(wb, ws, '入住率');
+  const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+  const blob = new Blob([wbout], {type:"application/octet-stream"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'occupancy_report.xlsx'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* 导出当前图表为 PNG */
+function exportChartPNG(){
+  if (!chartInstance) return alert('当前无图表');
+  const dataURL = chartCanvas.toDataURL('image/png');
+  const a = document.createElement('a');
+  a.href = dataURL; a.download = 'chart.png'; a.click();
+}
+
+/* 链接组管理 */
+addLinkBtn.onclick = ()=> {
+  const comb = combinedNameInput.value.trim();
+  const compsRaw = componentsInput.value.trim();
+  if (!comb || !compsRaw) return alert('请输入合并单元名与组件（逗号分隔）');
+  const comps = compsRaw.split(',').map(s=>s.trim()).filter(Boolean);
+  linkedMap[comb] = comps;
+  renderLinks();
+  combinedNameInput.value=''; componentsInput.value='';
+};
+
+function renderLinks(){
+  const lines = [];
+  for (const k in linkedMap) lines.push(`${k} ↔ ${linkedMap[k].join(',')}`);
+  linksList.textContent = lines.join('  |  ');
+}
+
+/* 小工具 */
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+
+/* 事件绑定 */
+ocrHeadersBtn.addEventListener('click', ()=> {
+  if (vLines.length<2 || hLines.length<2) alert('请先自动检测表格或手动拖线后再 OCR');
+  else ocrHeadersBtn.disabled=true;
+  ocrHeadersBtn.textContent='OCR 进行中...（可能较慢）';
+  ocrHeadersBtn.style.opacity=0.6;
+  // run; note: wrapped in async function inside to allow await
+  (async ()=> {
+    try {
+      await ocrHeadersBtnHandler();
+    } finally {
+      ocrHeadersBtn.disabled=false; ocrHeadersBtn.textContent='识别房名与日期（中文 OCR）'; ocrHeadersBtn.style.opacity=1;
+    }
+  })();
+});
+async function ocrHeadersBtnHandler(){
+  if (!cells || !cells.length) { alert('请先生成 cells'); return; }
+  // OCR top header row blocks (we try first row)
+  const cols = cells[0].length;
+  for (let c=0;c<cols;c++){
+    const cell = cells[0][c];
+    const region = {x: cell.x, y: Math.max(0, cell.y - Math.round(cell.h*0.6)), w: cell.w, h: Math.round(cell.h*1.2)};
+    try {
+      const txt = await ocrImageRegionToText(region);
+      roomNames[c] = txt || roomNames[c] || `房${c+1}`;
+    } catch(e){ roomNames[c] = roomNames[c] || `房${c+1}`; }
+  }
+  // OCR left column
+  const rows = cells.length;
+  for (let r=0;r<rows;r++){
+    const cell = cells[r][0];
+    const region = {x: Math.max(0, cell.x - Math.round(cell.w*0.6)), y: cell.y, w: Math.round(cell.w*1.2), h: cell.h};
+    try {
+      const txt = await ocrImageRegionToText(region);
+      dateLabels[r] = txt || dateLabels[r] || `R${r+1}`;
+    } catch(e){ dateLabels[r] = dateLabels[r] || `R${r+1}`; }
+  }
+  alert('OCR 完成：请检查并在结果表中进行必要的编辑（房名可编辑）');
+}
+
+/* OCR 单元函数：基于 canvas 获取区域图像并用 chi_sim 识别 */
+async function ocrImageRegionToText(region){
+  const tmp = document.createElement('canvas');
+  tmp.width = region.w; tmp.height = region.h;
+  const tctx = tmp.getContext('2d');
+  tctx.drawImage(canvas, region.x, region.y, region.w, region.h, 0, 0, region.w, region.h);
+  const worker = Tesseract.createWorker({logger: m=>{/*console.log(m)*/}});
+  await worker.load();
+  await worker.loadLanguage('chi_sim');
+  await worker.initialize('chi_sim');
+  const { data: { text } } = await worker.recognize(tmp);
+  await worker.terminate();
+  return text.replace(/\n+/g,' ').trim();
+}
+
+/* 绑定计算与导出按钮 */
+calcBtn.onclick = ()=> {
+  if (!cells || cells.length===0) return alert('请先自动检测或手动划分表格（拖线）');
+  computeOccupancyMatrix();
+  calculateMetrics();
+};
+exportCSVBtn.onclick = exportCSV;
+exportXLSXBtn.onclick = exportXLSX;
+exportChartPNGBtn.onclick = exportChartPNG;
+
+/* 视图切换 */
+viewSelect.addEventListener('change', renderResults);
+
+/* 页面初始画面 */
+drawImageToCanvas(new Image()); // blank
+
+/* 最后：在控制台显示提示 */
+console.log('页面加载完成。请先加载图片 -> 自动检测 -> 手动校正（如需要）-> 识别房名 -> 计算入住率 -> 导出数据。');
+
+</script>
+</body>
+</html>
