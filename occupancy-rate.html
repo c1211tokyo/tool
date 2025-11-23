@@ -75,7 +75,7 @@
 
 <div class="container">
     <div class="header">
-        <h1 style="margin:0;">智能入住率分析系统 <span style="font-size:14px; background:#000; color:#fff; padding:2px 8px; border-radius:6px; vertical-align:middle;">Ultimate</span></h1>
+        <h1 style="margin:0;">智能入住率分析系统 <span style="font-size:14px; background:#000; color:#fff; padding:2px 8px; border-radius:6px; vertical-align:middle;">Ultimate V2</span></h1>
     </div>
 
     <div class="card">
@@ -124,6 +124,7 @@
             
             <div style="display:flex; gap:10px;">
                 <button class="btn btn-outline" onclick="openLinkModal()">🔗 关联组合房 (B+C)</button>
+                <button class="btn btn-secondary" onclick="exportImage()">🖼️ 导出图片</button>
                 <button class="btn btn-secondary" onclick="exportExcel()">📥 导出 Excel</button>
             </div>
         </div>
@@ -146,7 +147,7 @@
                         <tr>
                             <th>房间名称</th>
                             <th>统计总天数</th>
-                            <th>被主房占用 (不可售)</th>
+                            <th>被关联占用 (不可售)</th>
                             <th>有效售卖天数</th>
                             <th>实际入住天数</th>
                             <th>入住率 (基于有效天数)</th>
@@ -176,8 +177,9 @@
     <div class="modal-box">
         <h3 style="margin-top:0;">🔗 组合房关联设置</h3>
         <p style="font-size:13px; color:#666;">
-            设置后：当<strong>主房源</strong>(如B+C)入住时，子房源(B,C)将自动标记为不可售，不计入分母。<br>
-            主房源空闲时，子房源正常计算。
+            设置后（双向锁定）：<br>
+            1. 当<strong>主房源</strong>(如B+C)入住时，子房源(B,C)将自动不可售。<br>
+            2. 当<strong>任一子房源</strong>入住时，主房源也将自动不可售。
         </p>
         <div id="linkContainer" style="max-height:300px; overflow-y:auto; margin-bottom:20px;"></div>
         <div style="display:flex; justify-content:space-between;">
@@ -210,7 +212,11 @@ let validCols = [];
 let dateList = [];
 let linkConfig = []; // [{parent: colIdx, children: [colIdx, colIdx]}]
 
-// --- 1. 初始化与交互 (Bug修复核心) ---
+// 图表实例全局变量
+let chartBarIns = null;
+let chartLineIns = null;
+
+// --- 1. 初始化与交互 ---
 
 document.getElementById('startDate').valueAsDate = new Date();
 
@@ -220,10 +226,8 @@ document.getElementById('imgInput').addEventListener('change', e => {
         reader.onload = evt => {
             img.src = evt.target.result;
             img.onload = () => {
-                // 1. 设置Canvas物理尺寸为图片尺寸
                 canvas.width = img.width;
                 canvas.height = img.height;
-                // 2. 初始化红框位置 (屏幕居中 80%)
                 grid.x = img.width * 0.05;
                 grid.y = img.height * 0.15;
                 grid.w = img.width * 0.9;
@@ -248,19 +252,16 @@ function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0);
 
-    // 蒙版
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
     ctx.fillRect(0,0, canvas.width, grid.y);
     ctx.fillRect(0, grid.y+grid.h, canvas.width, canvas.height-(grid.y+grid.h));
     ctx.fillRect(0, grid.y, grid.x, grid.h);
     ctx.fillRect(grid.x+grid.w, grid.y, canvas.width-(grid.x+grid.w), grid.h);
 
-    // 红框
     ctx.strokeStyle = '#ff3b30';
     ctx.lineWidth = 3;
     ctx.strokeRect(grid.x, grid.y, grid.w, grid.h);
 
-    // 辅助行线
     const rows = parseInt(document.getElementById('rowCount').value) || 1;
     ctx.beginPath();
     ctx.strokeStyle = 'rgba(255, 59, 48, 0.3)';
@@ -272,7 +273,6 @@ function draw() {
     }
     ctx.stroke();
 
-    // 竖线
     ctx.beginPath();
     ctx.strokeStyle = '#ff3b30';
     ctx.lineWidth = 2;
@@ -283,22 +283,20 @@ function draw() {
     });
     ctx.stroke();
 
-    // 手柄
-    const handleR = img.width * 0.008; // 动态半径
+    const handleR = img.width * 0.008; 
     const drawDot = (x,y, color) => {
         ctx.beginPath(); ctx.arc(x,y, handleR < 8 ? 8 : handleR, 0, Math.PI*2);
         ctx.fillStyle=color; ctx.fill(); ctx.strokeStyle='#fff'; ctx.stroke();
     };
 
-    drawDot(grid.x, grid.y, '#007aff'); // TL
-    drawDot(grid.x+grid.w, grid.y+grid.h, '#007aff'); // BR
+    drawDot(grid.x, grid.y, '#007aff'); 
+    drawDot(grid.x+grid.w, grid.y+grid.h, '#007aff'); 
 
     colDividers.forEach(r => {
-        drawDot(grid.x + r * grid.w, grid.y, '#fff'); // Top dividers
+        drawDot(grid.x + r * grid.w, grid.y, '#fff'); 
     });
 }
 
-// 核心坐标映射 (Fix Bug)
 function getMousePos(e) {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
@@ -309,23 +307,19 @@ function getMousePos(e) {
     };
 }
 
-// 交互事件
 canvas.addEventListener('mousedown', e => {
     const {x, y} = getMousePos(e);
-    const R = Math.max(20, img.width * 0.015); // 增大点击判定范围
+    const R = Math.max(20, img.width * 0.015); 
 
-    // 1. 检查分割线手柄 (顶部)
     for(let i=0; i<colDividers.length; i++) {
         let lineX = grid.x + colDividers[i] * grid.w;
         if(Math.hypot(x - lineX, y - grid.y) < R) {
             isDragging = true; dragTarget = {type:'divider', index:i}; return;
         }
     }
-    // 2. 检查外框手柄
     if(Math.hypot(x - grid.x, y - grid.y) < R) { isDragging=true; dragTarget={type:'box', handle:'tl'}; return; }
     if(Math.hypot(x-(grid.x+grid.w), y-(grid.y+grid.h)) < R) { isDragging=true; dragTarget={type:'box', handle:'br'}; return; }
 
-    // 3. 移动整个框
     if(x > grid.x && x < grid.x+grid.w && y > grid.y && y < grid.y+grid.h) {
         isDragging = true; dragTarget = {type:'move'}; lastMouse = {x,y};
     }
@@ -334,7 +328,6 @@ canvas.addEventListener('mousedown', e => {
 canvas.addEventListener('mousemove', e => {
     const {x, y} = getMousePos(e);
     if(!isDragging) {
-        // 简单Hover效果
         canvas.style.cursor = 'default';
         const R = Math.max(20, img.width * 0.015);
         for(let r of colDividers) if(Math.hypot(x-(grid.x+r*grid.w), y-grid.y) < R) canvas.style.cursor = 'col-resize';
@@ -355,7 +348,6 @@ canvas.addEventListener('mousemove', e => {
     } else if(dragTarget.type === 'divider') {
         let i = dragTarget.index;
         let r = (x - grid.x) / grid.w;
-        // 限制边界
         let min = (i===0) ? 0 : colDividers[i-1];
         let max = (i===colDividers.length-1) ? 1 : colDividers[i+1];
         if(r > min+0.01 && r < max-0.01) colDividers[i] = r;
@@ -382,9 +374,8 @@ function runAnalysis() {
 
     const imgData = ctx.getImageData(0,0, canvas.width, canvas.height).data;
 
-    // 生成基础数据
     for(let c=0; c<cols; c++) {
-        roomNames.push(String.fromCharCode(65+c)); // A, B, C...
+        roomNames.push(String.fromCharCode(65+c)); 
         validCols.push(c);
     }
     
@@ -401,7 +392,6 @@ function runAnalysis() {
             let cellX = grid.x + r1 * grid.w;
             let cellW = (r2-r1) * grid.w;
             
-            // 采样中心 30% 区域，避免边缘线干扰
             let sx = cellX + cellW*0.35, sy = rowY + cellH*0.35;
             let sw = cellW*0.3, sh = cellH*0.3;
             
@@ -409,7 +399,6 @@ function runAnalysis() {
             for(let py=sy; py<sy+sh; py++) {
                 for(let px=sx; px<sx+sw; px++) {
                     let i = (Math.floor(py)*canvas.width + Math.floor(px))*4;
-                    // 检测非白色 (阈值230)
                     if(imgData[i]<230 || imgData[i+1]<230 || imgData[i+2]<230) count++;
                     total++;
                 }
@@ -421,10 +410,28 @@ function runAnalysis() {
 
     document.getElementById('resultCard').style.display = 'block';
     refreshAllViews();
-    
-    // 自动切到 Tab 1
     switchTab('daily');
     document.getElementById('resultCard').scrollIntoView({behavior:'smooth'});
+}
+
+// --- 核心辅助函数: 计算被占用的格子 (双向锁定逻辑) ---
+function getBlockedSet(r) {
+    let blockedSet = new Set();
+    
+    linkConfig.forEach(cfg => {
+        // 1. 父房有客 -> 锁定所有子房
+        if(rawData[r][cfg.parent] === 1) { 
+            cfg.children.forEach(child => blockedSet.add(child));
+        }
+        
+        // 2. 任意子房有客 -> 锁定父房 (新增逻辑)
+        let anyChildOccupied = cfg.children.some(childIdx => rawData[r][childIdx] === 1);
+        if(anyChildOccupied) {
+            blockedSet.add(cfg.parent);
+        }
+    });
+    
+    return blockedSet;
 }
 
 // --- 3. 视图渲染与数据计算 ---
@@ -435,32 +442,27 @@ function refreshAllViews() {
     renderCharts();
 }
 
-// 视图1：每日排期表
 function renderDailyTable() {
     const table = document.getElementById('dailyTable');
     table.innerHTML = '';
     
-    // Header
     let thead = document.createElement('thead');
     let tr = document.createElement('tr');
     tr.innerHTML = '<th style="z-index:11; left:0;">日期</th>';
     validCols.forEach(c => {
         let th = document.createElement('th');
-        // 输入框改名
         let inp = document.createElement('input');
         inp.className = 'th-input';
         inp.value = roomNames[c];
-        inp.onchange = (e) => { roomNames[c] = e.target.value; refreshAllViews(); }; // 改名后刷新所有
+        inp.onchange = (e) => { roomNames[c] = e.target.value; refreshAllViews(); }; 
         th.appendChild(inp);
         
-        // 删除列
         let btn = document.createElement('span');
         btn.innerText = ' ×';
         btn.style.color='red'; btn.style.cursor='pointer';
         btn.onclick = () => {
             if(confirm('删除此列？')) {
                 validCols = validCols.filter(x => x!==c);
-                // 清理关联
                 linkConfig = linkConfig.filter(l => l.parent!==c && !l.children.includes(c));
                 refreshAllViews();
             }
@@ -471,45 +473,34 @@ function renderDailyTable() {
     thead.appendChild(tr);
     table.appendChild(thead);
 
-    // Body
     let tbody = document.createElement('tbody');
     let totalSlots = 0, totalOcc = 0;
 
     for(let r=0; r<rawData.length; r++) {
         let tr = document.createElement('tr');
-        // 日期列
         let tdD = document.createElement('td'); 
         tdD.className = 'date-cell'; 
         tdD.innerText = dateList[r];
         tr.appendChild(tdD);
 
-        // 计算该日被 Block 的列 (作为子房被父房占用)
-        let blockedCols = new Set();
-        linkConfig.forEach(cfg => {
-            if(rawData[r][cfg.parent] === 1) { // 父房有客
-                cfg.children.forEach(child => blockedCols.add(child));
-            }
-        });
+        // 使用通用逻辑获取被锁定集合
+        let blockedCols = getBlockedSet(r);
 
-        // 房间格
         validCols.forEach(c => {
             let td = document.createElement('td');
             let isOcc = rawData[r][c] === 1;
             let isBlocked = blockedCols.has(c);
 
-            // 样式处理
             if(isBlocked) {
                 td.className = 'cell-blocked';
-                td.innerText = '🔒'; // 关联占用
-                // 不计入可售房晚
+                td.innerText = '🔒'; 
             } else {
                 if(isOcc) {
                     td.className = 'cell-occupied';
                     td.innerText = '住';
                     totalOcc++;
                 }
-                totalSlots++; // 有效可售
-                // 点击切换
+                totalSlots++; 
                 td.onclick = () => {
                     rawData[r][c] = isOcc ? 0 : 1;
                     refreshAllViews();
@@ -522,39 +513,23 @@ function renderDailyTable() {
     }
     table.appendChild(tbody);
 
-    // 顶部汇总更新
     document.getElementById('valTotalSlots').innerText = totalSlots;
     document.getElementById('valTotalOcc').innerText = totalOcc;
     document.getElementById('valTotalRate').innerText = totalSlots ? (totalOcc/totalSlots*100).toFixed(1)+'%' : '0%';
 }
 
-// 视图2：房间详细统计表 (NEW)
 function renderStatsTable() {
     const tbody = document.getElementById('statsTableBody');
     tbody.innerHTML = '';
     const totalDays = rawData.length;
 
     validCols.forEach(c => {
-        let stats = {
-            name: roomNames[c],
-            total: totalDays,
-            blocked: 0,
-            valid: 0,
-            occupied: 0
-        };
+        let stats = { name: roomNames[c], total: totalDays, blocked: 0, valid: 0, occupied: 0 };
 
-        // 遍历每一天
         for(let r=0; r<totalDays; r++) {
-            // 检查是否被父房占用
-            let isBlocked = false;
-            // 找到所有以此房为child的配置
-            for(let cfg of linkConfig) {
-                if(cfg.children.includes(c) && rawData[r][cfg.parent] === 1) {
-                    isBlocked = true; break;
-                }
-            }
-
-            if(isBlocked) {
+            let blockedCols = getBlockedSet(r);
+            
+            if(blockedCols.has(c)) {
                 stats.blocked++;
             } else {
                 stats.valid++;
@@ -577,42 +552,40 @@ function renderStatsTable() {
     });
 }
 
-// 视图3：图表
 function renderCharts() {
-    // 柱状图：基于有效天数的入住率
     let barX = [], barY = [];
-    // 复用 Stats Table 的逻辑计算数据
     validCols.forEach(c => {
         barX.push(roomNames[c]);
-        // 快速计算一次
         let valid=0, occ=0;
         for(let r=0; r<rawData.length; r++) {
-            let blocked = false;
-            for(let cfg of linkConfig) if(cfg.children.includes(c) && rawData[r][cfg.parent]===1) blocked=true;
-            if(!blocked) { valid++; if(rawData[r][c]) occ++; }
+            let blockedCols = getBlockedSet(r);
+            if(!blockedCols.has(c)) { valid++; if(rawData[r][c]) occ++; }
         }
         barY.push(valid>0 ? (occ/valid*100).toFixed(1) : 0);
     });
 
-    let chartBar = echarts.init(document.getElementById('chartBar'));
-    chartBar.setOption({
+    // 修复图表初始化：销毁旧实例，创建新实例
+    if (chartBarIns) chartBarIns.dispose();
+    chartBarIns = echarts.init(document.getElementById('chartBar'));
+    
+    chartBarIns.setOption({
         tooltip: { trigger: 'axis', formatter: '{b}: {c}%' },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
         xAxis: { type: 'category', data: barX, axisLabel: {rotate:45} },
         yAxis: { type: 'value', max:100, name:'入住率%' },
         series: [{ type:'bar', data:barY, itemStyle:{color:'#007aff'}, label:{show:true, position:'top', formatter:'{c}%'} }]
     });
+    // 强制resize，修复初始变形
+    chartBarIns.resize();
 
-    // 折线图：每日总入住率 (动态分母)
     let lineX = dateList;
     let lineY = [];
     for(let r=0; r<rawData.length; r++) {
         let daySlots=0, dayOcc=0;
-        // 计算当天 blocked 集合
-        let blockedSet = new Set();
-        linkConfig.forEach(cfg => { if(rawData[r][cfg.parent]) cfg.children.forEach(ch=>blockedSet.add(ch)); });
+        let blockedCols = getBlockedSet(r);
         
         validCols.forEach(c => {
-            if(!blockedSet.has(c)) {
+            if(!blockedCols.has(c)) {
                 daySlots++;
                 if(rawData[r][c]) dayOcc++;
             }
@@ -620,16 +593,23 @@ function renderCharts() {
         lineY.push(daySlots>0 ? (dayOcc/daySlots*100).toFixed(1) : 0);
     }
 
-    let chartLine = echarts.init(document.getElementById('chartLine'));
-    chartLine.setOption({
+    if (chartLineIns) chartLineIns.dispose();
+    chartLineIns = echarts.init(document.getElementById('chartLine'));
+    
+    chartLineIns.setOption({
         tooltip: { trigger: 'axis', formatter: '{b}: {c}%' },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
         xAxis: { type: 'category', data: lineX },
         yAxis: { type: 'value', max:100 },
         series: [{ type:'line', smooth:true, data:lineY, itemStyle:{color:'#34c759'}, areaStyle:{opacity:0.2} }]
     });
+    // 强制resize
+    chartLineIns.resize();
     
-    // 窗口缩放自适应
-    window.addEventListener('resize', () => { chartBar.resize(); chartLine.resize(); });
+    window.addEventListener('resize', () => { 
+        if(chartBarIns) chartBarIns.resize(); 
+        if(chartLineIns) chartLineIns.resize(); 
+    });
 }
 
 // --- 4. 辅助功能 ---
@@ -638,15 +618,13 @@ function switchTab(name) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.view-content').forEach(c => c.classList.remove('active'));
     
-    // 找到对应的按钮和内容
-    // 简单实现：
     const tabs = ['daily', 'stats', 'charts'];
     const idx = tabs.indexOf(name);
     document.querySelectorAll('.tab-btn')[idx].classList.add('active');
     document.getElementById('view-'+name).classList.add('active');
     
     if(name === 'charts') {
-        setTimeout(renderCharts, 100); // 确保容器可见后渲染
+        setTimeout(renderCharts, 50); // 确保容器可见后渲染，内部包含resize
     }
 }
 
@@ -661,11 +639,10 @@ function exportExcel() {
     for(let r=0; r<rawData.length; r++) {
         let row = [dateList[r]];
         let daySlots=0, dayOcc=0;
-        let blockedSet = new Set();
-        linkConfig.forEach(cfg => { if(rawData[r][cfg.parent]) cfg.children.forEach(ch=>blockedSet.add(ch)); });
+        let blockedCols = getBlockedSet(r);
 
         validCols.forEach(c => {
-            if(blockedSet.has(c)) {
+            if(blockedCols.has(c)) {
                 row.push('🔒'); 
             } else {
                 daySlots++;
@@ -679,14 +656,11 @@ function exportExcel() {
 
     // Sheet 2: 房间统计
     let ws2Data = [['房间名', '总天数', '被占用(关联)', '有效天数', '入住天数', '入住率']];
-    // 这里简单抓取 table 数据，或者重算一遍逻辑
-    // 既然逻辑在 renderStatsTable 写过，这里简化重算
     validCols.forEach(c => {
         let valid=0, occ=0, block=0;
         for(let r=0; r<rawData.length; r++) {
-            let isBlock = false;
-            for(let cfg of linkConfig) if(cfg.children.includes(c) && rawData[r][cfg.parent]) isBlock=true;
-            if(isBlock) block++;
+            let blockedCols = getBlockedSet(r);
+            if(blockedCols.has(c)) block++;
             else { valid++; if(rawData[r][c]) occ++; }
         }
         ws2Data.push([roomNames[c], rawData.length, block, valid, occ, (valid? (occ/valid*100).toFixed(1)+'%': '0%')]);
@@ -694,6 +668,25 @@ function exportExcel() {
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ws2Data), "房间统计");
     
     XLSX.writeFile(wb, "入住分析报表.xlsx");
+}
+
+// 导出图片功能
+function exportImage() {
+    const card = document.getElementById('resultCard');
+    // 临时移除阴影以获得更干净的边缘
+    const originalShadow = card.style.boxShadow;
+    card.style.boxShadow = 'none';
+    
+    html2canvas(card, {
+        backgroundColor: '#ffffff', // 强制白底
+        scale: 2 // 高清
+    }).then(canvas => {
+        card.style.boxShadow = originalShadow;
+        const link = document.createElement('a');
+        link.download = '入住率分析结果.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    });
 }
 
 // 关联模态框逻辑
@@ -709,14 +702,12 @@ function addLinkRow(data = null) {
     let div = document.createElement('div');
     div.style.cssText = 'background:#f2f2f7; padding:10px; border-radius:8px; margin-bottom:10px;';
     
-    // 主房 Select
     let html = `<div style="margin-bottom:5px; font-weight:600;">主房源 (如B+C):</div><select class="link-parent" style="padding:5px; width:100%; margin-bottom:10px;">`;
     validCols.forEach(c => {
         html += `<option value="${c}" ${data && data.parent==c ? 'selected':''}>${roomNames[c]}</option>`;
     });
     html += `</select>`;
     
-    // 子房 Checkbox
     html += `<div style="margin-bottom:5px; font-weight:600;">包含子房 (如B, C):</div><div style="display:flex; flex-wrap:wrap; gap:10px;">`;
     validCols.forEach(c => {
         let checked = (data && data.children.includes(c)) ? 'checked' : '';
@@ -724,7 +715,6 @@ function addLinkRow(data = null) {
     });
     html += `</div>`;
     
-    // 删除按钮
     html += `<div style="text-align:right; margin-top:5px;"><button class="btn btn-secondary" style="color:red; font-size:12px; padding:4px 10px;" onclick="this.parentElement.parentElement.remove()">删除此组</button></div>`;
     
     div.innerHTML = html;
@@ -737,7 +727,7 @@ function saveLinks() {
         let p = parseInt(div.querySelector('.link-parent').value);
         let kids = [];
         div.querySelectorAll('.link-child:checked').forEach(cb => kids.push(parseInt(cb.value)));
-        if(kids.length > 0 && !kids.includes(p)) { // 防止自己是自己的子
+        if(kids.length > 0 && !kids.includes(p)) { 
             newConfig.push({parent: p, children: kids});
         }
     });
