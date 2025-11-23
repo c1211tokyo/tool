@@ -3,22 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>智能入住率分析系统 (OCR版)</title>
+<title>智能入住率分析系统 (稳定版)</title>
 <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src='https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js'></script>
+<script src='https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js'></script>
 
 <style>
     :root { --primary: #0071e3; --bg: #f5f5f7; --card: #fff; --border: #d2d2d7; }
     body { font-family: -apple-system, sans-serif; background: var(--bg); color: #1d1d1f; margin: 0; padding: 20px; }
     .container { max-width: 1280px; margin: 0 auto; }
     
-    /* 顶部与卡片 */
     header { text-align: center; margin-bottom: 20px; }
-    h1 { margin: 0; font-size: 24px; font-weight: 600; }
     .card { background: var(--card); border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
     
-    /* 控制区 */
     .controls { display: flex; gap: 15px; flex-wrap: wrap; align-items: center; background: #f9f9f9; padding: 15px; border-radius: 8px; }
     .control-group { display: flex; flex-direction: column; gap: 4px; }
     .control-group label { font-size: 12px; color: #666; font-weight: 500; }
@@ -26,34 +23,31 @@
     
     .btn { background: var(--primary); color: white; border: none; padding: 8px 18px; border-radius: 6px; font-size: 13px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 6px; }
     .btn:hover { background: #0077ed; }
-    .btn:disabled { background: #ccc; cursor: not-allowed; }
-    .btn-danger { background: #ff3b30; padding: 2px 6px; font-size: 11px; margin-left: 4px; border-radius: 4px; }
-
-    /* 画布 */
+    .btn-danger { background: #ff3b30; padding: 2px 8px; font-size: 12px; margin-left: 4px; border-radius: 4px; cursor: pointer; color:white; border:none;}
+    
     .canvas-container { position: relative; overflow: auto; text-align: center; background: #333; border-radius: 8px; padding: 10px; max-height: 80vh; }
     canvas { max-width: 100%; box-shadow: 0 0 10px rgba(0,0,0,0.3); }
 
-    /* 结果区 */
     .tabs { display: flex; gap: 10px; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 15px; }
     .tab { padding: 6px 16px; border-radius: 20px; cursor: pointer; font-size: 13px; background: #f0f0f0; color: #666; }
     .tab.active { background: var(--primary); color: white; }
 
-    /* 表格 */
-    .table-wrap { overflow-x: auto; }
+    /* 表格样式 */
+    .table-wrap { overflow-x: auto; max-height: 600px; }
     table { width: 100%; border-collapse: collapse; font-size: 12px; white-space: nowrap; }
     th, td { border: 1px solid #e5e5e5; padding: 6px 4px; text-align: center; }
     th { background: #f2f2f7; font-weight: 600; position: sticky; top: 0; z-index: 10; }
     
-    /* 状态与加载 */
-    .occupied { background-color: rgba(52, 199, 89, 0.25) !important; } /* 绿色背景 */
-    .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 999; display: none; flex-direction: column; justify-content: center; align-items: center; }
+    .occupied { background-color: rgba(52, 199, 89, 0.25) !important; } 
+    
+    /* 加载遮罩 */
+    .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 999; display: none; flex-direction: column; justify-content: center; align-items: center; }
     .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-    /* 提示信息 */
-    .tip { font-size: 12px; color: #86868b; margin-top: 5px; background: #fffbe6; border: 1px solid #ffe58f; padding: 8px; border-radius: 4px; }
     
-    /* 房名输入框 */
+    .skip-btn { margin-top: 20px; padding: 8px 20px; background: #fff; border: 1px solid #ccc; color: #666; border-radius: 20px; cursor: pointer; font-size: 13px; }
+    .skip-btn:hover { background: #eee; color: #333; }
+
     .th-input { border: none; background: transparent; font-weight: bold; width: 80px; text-align: center; font-size: 12px; }
     .th-input:focus { outline: 2px solid var(--primary); background: #fff; }
 </style>
@@ -62,12 +56,14 @@
 
 <div class="loading-overlay" id="loading">
     <div class="spinner"></div>
-    <p id="loadingText" style="margin-top:15px; font-weight:500;">正在加载 OCR 引擎...</p>
+    <p id="loadingText" style="margin-top:15px; font-weight:500; color:#333">正在初始化...</p>
+    <p style="font-size:12px; color:#999; margin-top:5px;">如果卡住超过10秒，请点击下方按钮跳过</p>
+    <button class="skip-btn" onclick="forceSkipOCR()">跳过 OCR (直接生成表格)</button>
 </div>
 
 <div class="container">
     <header>
-        <h1>智能入住率分析系统 <span style="font-size:14px; color:#fff; background:#ff9500; padding:2px 6px; border-radius:4px; vertical-align:middle;">OCR增强版</span></h1>
+        <h1>智能入住率分析系统 <span style="font-size:14px; color:#fff; background:#34c759; padding:2px 6px; border-radius:4px; vertical-align:middle;">稳定版</span></h1>
     </header>
 
     <div class="card">
@@ -90,17 +86,13 @@
             </div>
             <div style="flex-grow:1; text-align:right;">
                 <button class="btn" onclick="runAnalysis()">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                    开始分析 & 识别房名
+                    ⚡ 开始分析
                 </button>
             </div>
         </div>
         
-        <div class="tip">
-            <strong>操作指南：</strong>
-            1. 上传图片后，拖动红框覆盖<b>纯格子区域</b>（不含表头文字）。
-            2. 调整“房间数”直到红色竖线与图片中的列线完全重合（包含空白列）。
-            3. 系统会自动向上扫描识别房名。如果中间有空白分隔列，结果生成后点击表头的删除按钮即可。
+        <div style="font-size: 12px; color: #86868b; margin-top: 5px; background: #fffbe6; border: 1px solid #ffe58f; padding: 8px; border-radius: 4px;">
+            <strong>提示：</strong> 上传后，请调整<strong>红框</strong>仅覆盖中间的彩色格子区域。请调整<strong>列数</strong>确保红色竖线对齐每一列（包括空白列）。
         </div>
 
         <div class="canvas-container">
@@ -110,14 +102,14 @@
 
     <div class="card" id="resultCard" style="display:none;">
         <div class="tabs">
-            <div class="tab active" onclick="switchTab('table')">📊 数据表格 (可修正)</div>
+            <div class="tab active" onclick="switchTab('table')">📊 数据表格</div>
             <div class="tab" onclick="switchTab('chart')">📈 统计图表</div>
             <button class="btn" style="margin-left:auto; background:#34c759;" onclick="exportExcel()">📥 导出 Excel</button>
         </div>
 
         <div style="display:flex; gap:20px; margin-bottom:15px; padding:10px; background:#f5f7fa; border-radius:8px; font-size:13px;">
             <div>总房晚: <strong id="valTotalSlots">-</strong></div>
-            <div>入住: <strong id="valOccupied" style="color:#34c759">-</strong></div>
+            <div>实际入住: <strong id="valOccupied" style="color:#34c759">-</strong></div>
             <div>总入住率: <strong id="valRate" style="color:#0071e3">-</strong></div>
         </div>
 
@@ -136,20 +128,18 @@
 let img = new Image();
 let canvas = document.getElementById('mainCanvas');
 let ctx = canvas.getContext('2d');
-// 网格状态
 let grid = { x: 50, y: 100, w: 0, h: 0 }; 
 let isDragging = false;
 let dragHandle = null;
-// 数据状态
-let rawData = []; // 0/1 矩阵
-let roomNames = []; 
+let rawData = [];
+let roomNames = [];
 let dateList = [];
-let validCols = []; // 存储当前有效的列索引（用于删除列功能）
+let validCols = [];
+let skipOCRFlag = false; // 跳过标记
 
-// 初始化日期
 document.getElementById('startDate').valueAsDate = new Date();
 
-// --- 1. 图片处理 ---
+// --- 图片处理 ---
 document.getElementById('imgInput').addEventListener('change', function(e) {
     if(!e.target.files[0]) return;
     const reader = new FileReader();
@@ -161,189 +151,140 @@ document.getElementById('imgInput').addEventListener('change', function(e) {
 });
 
 function initCanvas() {
-    // 高清屏适配，但保持逻辑尺寸可控
     const maxWidth = 1200;
     const scale = Math.min(1, maxWidth / img.width);
     canvas.width = img.width * scale;
     canvas.height = img.height * scale;
     
-    // 默认网格位置：留出顶部空间给OCR识别
     grid.x = canvas.width * 0.05;
-    grid.y = canvas.height * 0.15; // 往下一点，给表头留位置
+    grid.y = canvas.height * 0.15; 
     grid.w = canvas.width * 0.9;
     grid.h = canvas.height * 0.8;
-
     draw();
 }
 
-// --- 2. 交互式绘图系统 ---
+// --- 绘图与交互 ---
 function draw() {
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-    // 遮罩层
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
     ctx.fillRect(0,0,canvas.width, grid.y);
     ctx.fillRect(0,grid.y+grid.h,canvas.width, canvas.height-(grid.y+grid.h));
     ctx.fillRect(0,grid.y,grid.x,grid.h);
     ctx.fillRect(grid.x+grid.w, grid.y, canvas.width-(grid.x+grid.w), grid.h);
 
-    // 主网格
     ctx.strokeStyle = '#ff3b30';
     ctx.lineWidth = 2;
     ctx.strokeRect(grid.x, grid.y, grid.w, grid.h);
 
-    // OCR 扫描区域预示 (上方黄色虚线框)
-    ctx.save();
-    ctx.strokeStyle = '#ffcc00';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([5, 5]);
-    // 假设表头高度大约是 grid 高度的 1/rows * 2 (两行高) 或者固定像素
+    // 绘制OCR区域提示(黄色)
     const headerHeight = Math.min(grid.y, 80); 
-    ctx.strokeRect(grid.x, grid.y - headerHeight, grid.w, headerHeight);
-    ctx.fillStyle = 'rgba(255, 204, 0, 0.2)';
-    ctx.fillRect(grid.x, grid.y - headerHeight, grid.w, headerHeight);
+    ctx.save();
+    ctx.strokeStyle = '#ffcc00'; ctx.setLineDash([4, 4]); ctx.strokeRect(grid.x, grid.y - headerHeight, grid.w, headerHeight);
     ctx.restore();
 
-    // 绘制内部分割线
     const cols = parseInt(document.getElementById('colCount').value) || 1;
     const rows = parseInt(document.getElementById('rowCount').value) || 1;
     
     ctx.beginPath();
     ctx.strokeStyle = 'rgba(255, 59, 48, 0.5)';
     ctx.lineWidth = 1;
-
-    // 竖线
     const cellW = grid.w / cols;
-    for(let i=1; i<cols; i++) {
-        let x = grid.x + i * cellW;
-        ctx.moveTo(x, grid.y);
-        ctx.lineTo(x, grid.y + grid.h);
-    }
-    // 横线
+    for(let i=1; i<cols; i++) { let x = grid.x + i * cellW; ctx.moveTo(x, grid.y); ctx.lineTo(x, grid.y + grid.h); }
     const cellH = grid.h / rows;
-    for(let i=1; i<rows; i++) {
-        let y = grid.y + i * cellH;
-        ctx.moveTo(grid.x, y);
-        ctx.lineTo(grid.x + grid.w, y);
-    }
+    for(let i=1; i<rows; i++) { let y = grid.y + i * cellH; ctx.moveTo(grid.x, y); ctx.lineTo(grid.x + grid.w, y); }
     ctx.stroke();
 
-    // 拖拽手柄
     drawHandle(grid.x, grid.y);
     drawHandle(grid.x+grid.w, grid.y+grid.h);
 }
 
 function drawHandle(x, y) {
-    ctx.beginPath();
-    ctx.arc(x, y, 8, 0, Math.PI*2);
-    ctx.fillStyle = '#fff';
-    ctx.fill();
-    ctx.strokeStyle = '#0071e3';
-    ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI*2); ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = '#0071e3'; ctx.stroke();
 }
 
-// 拖拽逻辑
 canvas.addEventListener('mousedown', e => {
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (canvas.width / rect.width); // 坐标映射
+    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
     const y = (e.clientY - rect.top) * (canvas.height / rect.height);
-    
     if(dist(x,y, grid.x, grid.y) < 20) dragHandle = 'tl';
     else if(dist(x,y, grid.x+grid.w, grid.y+grid.h) < 20) dragHandle = 'br';
-    else if(x>grid.x && x<grid.x+grid.w && y>grid.y && y<grid.y+grid.h) {
-        dragHandle = 'move';
-        canvas.lastX = x; canvas.lastY = y;
-    }
+    else if(x>grid.x && x<grid.x+grid.w && y>grid.y && y<grid.y+grid.h) { dragHandle = 'move'; canvas.lastX = x; canvas.lastY = y; }
     if(dragHandle) isDragging = true;
 });
-
 canvas.addEventListener('mousemove', e => {
     if(!isDragging) return;
     const rect = canvas.getBoundingClientRect();
     const x = (e.clientX - rect.left) * (canvas.width / rect.width);
     const y = (e.clientY - rect.top) * (canvas.height / rect.height);
-
-    if(dragHandle === 'move') {
-        grid.x += x - canvas.lastX;
-        grid.y += y - canvas.lastY;
-        canvas.lastX = x; canvas.lastY = y;
-    } else if(dragHandle === 'tl') {
-        let oldR = grid.x + grid.w; let oldB = grid.y + grid.h;
-        grid.x = x; grid.y = y;
-        grid.w = oldR - grid.x; grid.h = oldB - grid.y;
-    } else if(dragHandle === 'br') {
-        grid.w = x - grid.x; grid.h = y - grid.y;
-    }
+    if(dragHandle === 'move') { grid.x += x - canvas.lastX; grid.y += y - canvas.lastY; canvas.lastX = x; canvas.lastY = y; }
+    else if(dragHandle === 'tl') { let oldR = grid.x + grid.w; let oldB = grid.y + grid.h; grid.x = x; grid.y = y; grid.w = oldR - grid.x; grid.h = oldB - grid.y; }
+    else if(dragHandle === 'br') { grid.w = x - grid.x; grid.h = y - grid.y; }
     draw();
 });
 canvas.addEventListener('mouseup', () => { isDragging = false; dragHandle = null; });
 const dist = (x1,y1,x2,y2) => Math.sqrt((x1-x2)**2 + (y1-y2)**2);
-
 document.getElementById('colCount').addEventListener('input', draw);
 document.getElementById('rowCount').addEventListener('input', draw);
 
+// --- 强制跳过 OCR ---
+function forceSkipOCR() {
+    skipOCRFlag = true;
+}
 
-// --- 3. 核心分析逻辑 ---
+// --- 核心分析 ---
 async function runAnalysis() {
     if(!img.src) { alert("请先上传图片"); return; }
     
-    showLoading(true, "正在分析像素...");
-    
-    // 0. 准备数据
     const cols = parseInt(document.getElementById('colCount').value);
     const rows = parseInt(document.getElementById('rowCount').value);
     const cellW = grid.w / cols;
     const cellH = grid.h / rows;
     
-    // 初始化有效列 (初始状态所有列都有效)
-    validCols = Array.from({length: cols}, (_, i) => i);
-    
-    // 1. 颜色识别 (入住判断)
+    // 0. 像素颜色分析 (立即执行)
+    showLoading(true, "正在分析像素入住状态...");
     rawData = [];
     const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
     
     for(let r=0; r<rows; r++) {
         let rowData = [];
         for(let c=0; c<cols; c++) {
-            // 定义采样区域：格子的中间 50% 区域，避开边框干扰
             const startX = Math.floor(grid.x + c*cellW + cellW*0.25);
             const startY = Math.floor(grid.y + r*cellH + cellH*0.25);
             const w = Math.floor(cellW * 0.5);
             const h = Math.floor(cellH * 0.5);
-            
-            let coloredPixels = 0;
-            let totalPixels = 0;
-            
+            let colored = 0, total = 0;
             for(let py=startY; py<startY+h; py++) {
                 for(let px=startX; px<startX+w; px++) {
                     const i = (py * canvas.width + px) * 4;
-                    const R = imgData[i], G = imgData[i+1], B = imgData[i+2];
-                    
-                    // 颜色判断算法：
-                    // 背景通常是白色/浅灰 (240~255)。
-                    // 如果 RGB 任意一个分量 < 235，说明有颜色。
-                    if(R < 235 || G < 235 || B < 235) {
-                        coloredPixels++;
-                    }
-                    totalPixels++;
+                    // 只要 RGB 任意分量小于 235，就认为不是白色背景
+                    if(imgData[i] < 235 || imgData[i+1] < 235 || imgData[i+2] < 235) colored++;
+                    total++;
                 }
             }
-            
-            // 密度阈值：如果区域内超过 5% 的像素有颜色，则判定为入住
-            // 这解决了“向岛202”这种纯白格子被误判的问题
-            const density = coloredPixels / totalPixels;
-            rowData.push(density > 0.05 ? 1 : 0);
+            // 密度 > 5% 判定为入住 (解决空白列和空房问题)
+            rowData.push( (colored/total) > 0.05 ? 1 : 0 );
         }
         rawData.push(rowData);
     }
 
-    // 2. OCR 识别表头
-    showLoading(true, "正在识别房名 (OCR)...");
-    roomNames = await performOCR(cols, cellW);
-    
-    // 3. 生成日期
+    // 1. OCR 识别 (带跳过功能)
+    skipOCRFlag = false;
+    roomNames = [];
+    validCols = Array.from({length: cols}, (_, i) => i); // 默认全选
+
+    // 尝试 OCR
+    try {
+        await runOCRWithSkip(cols, cellW);
+    } catch (e) {
+        console.warn("OCR Error or Skipped", e);
+        // 补全默认名称
+        for(let i=roomNames.length; i<cols; i++) roomNames.push(`房${i+1}`);
+    }
+
+    // 2. 生成日期
     dateList = [];
     const startD = new Date(document.getElementById('startDate').value);
     for(let i=0; i<rows; i++) {
@@ -358,130 +299,123 @@ async function runAnalysis() {
     updateCharts();
 }
 
-// OCR 逻辑
-async function performOCR(cols, cellW) {
-    const names = [];
-    const worker = await Tesseract.createWorker('chi_sim'); // 加载中文模型
+// 封装 OCR 逻辑，支持中断
+async function runOCRWithSkip(cols, cellW) {
+    const worker = await Tesseract.createWorker();
     
-    // 计算表头区域高度 (假设在网格上方 60px 范围内)
+    document.getElementById('loadingText').innerText = "正在加载语言包 (chi_sim)...";
+    // 如果这里卡住，用户可以点跳过，skipOCRFlag 会变 true
+    
+    // 检查跳过
+    if(skipOCRFlag) throw new Error("Skipped");
+
+    await worker.loadLanguage('chi_sim');
+    await worker.initialize('chi_sim');
+
     const headerH = Math.min(80, grid.y);
     const headerY = grid.y - headerH;
-    
-    // 遍历每一列进行识别
+
     for(let i=0; i<cols; i++) {
-        // 更新加载进度
+        if(skipOCRFlag) { await worker.terminate(); throw new Error("Skipped"); }
+
         document.getElementById('loadingText').innerText = `正在识别第 ${i+1}/${cols} 列房名...`;
         
-        // 裁剪该列顶部的图像
-        const x = grid.x + i * cellW;
-        
-        // 创建临时画布存裁剪图
+        // 裁剪小图
         const tmpCan = document.createElement('canvas');
-        tmpCan.width = cellW; 
-        tmpCan.height = headerH;
+        // 缩小一倍以加速 OCR
+        const scaleFactor = 0.8; 
+        tmpCan.width = cellW * scaleFactor; 
+        tmpCan.height = headerH * scaleFactor;
         const tCtx = tmpCan.getContext('2d');
-        // 从原图绘制到临时画布
+        
+        // 绘制裁剪区
         tCtx.drawImage(img, 
-            x / (canvas.width/img.width), headerY / (canvas.height/img.height), // source x,y (mapping back to raw img)
-            cellW / (canvas.width/img.width), headerH / (canvas.height/img.height), // source w,h
-            0, 0, cellW, headerH // dest
+            (grid.x + i*cellW) / (canvas.width/img.width), 
+            headerY / (canvas.height/img.height), 
+            cellW / (canvas.width/img.width), 
+            headerH / (canvas.height/img.height), 
+            0, 0, tmpCan.width, tmpCan.height
         );
         
         // 识别
         const { data: { text } } = await worker.recognize(tmpCan);
-        // 清理换行符和空格
-        let cleanText = text.replace(/\s/g, '');
-        names.push(cleanText || `房${i+1}`); // 识别失败则回退默认
+        let name = text.replace(/\s/g, '').replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, ''); // 仅保留中文英文数字
+        roomNames.push(name || `房${i+1}`);
     }
-    
     await worker.terminate();
-    return names;
 }
 
-// --- 4. 渲染结果 & 动态列管理 ---
 
+// --- 渲染结果 ---
 function renderResultTable() {
     const table = document.getElementById('dataTable');
     table.innerHTML = '';
     
-    // THEAD
     let thead = document.createElement('thead');
     let trHead = document.createElement('tr');
     trHead.innerHTML = '<th>日期</th>';
     
     validCols.forEach(colIdx => {
         let th = document.createElement('th');
-        // 输入框允许修改房名
+        let div = document.createElement('div');
+        div.style.display = 'flex'; div.style.alignItems='center'; div.style.justifyContent='center'; div.style.gap='4px';
+
         let input = document.createElement('input');
         input.className = 'th-input';
         input.value = roomNames[colIdx];
         input.onchange = (e) => { roomNames[colIdx] = e.target.value; updateCharts(); };
         
-        // 删除按钮
         let delBtn = document.createElement('button');
         delBtn.className = 'btn-danger';
-        delBtn.innerText = '🗑️';
+        delBtn.innerText = 'X';
         delBtn.title = "删除此列 (如空白间隔)";
-        delBtn.onclick = () => deleteColumn(colIdx);
+        delBtn.onclick = () => {
+            if(confirm("确认删除此列？")) {
+                validCols = validCols.filter(c => c !== colIdx);
+                renderResultTable();
+            }
+        };
         
-        th.appendChild(input);
-        th.appendChild(delBtn);
+        div.appendChild(input);
+        div.appendChild(delBtn);
+        th.appendChild(div);
         trHead.appendChild(th);
     });
     thead.appendChild(trHead);
     table.appendChild(thead);
 
-    // TBODY
     let tbody = document.createElement('tbody');
     for(let r=0; r<rawData.length; r++) {
         let tr = document.createElement('tr');
-        // 日期列
         let tdDate = document.createElement('td');
         tdDate.innerText = dateList[r];
         tr.appendChild(tdDate);
         
-        // 数据列
         validCols.forEach(c => {
             let td = document.createElement('td');
             let isOcc = rawData[r][c] === 1;
             if(isOcc) td.className = 'occupied';
-            
-            // 点击切换状态 (修正误判)
             td.onclick = function() {
                 rawData[r][c] = rawData[r][c] ? 0 : 1;
                 this.className = rawData[r][c] ? 'occupied' : '';
                 updateCharts();
             };
-            
-            // 可选：显示 ✓
-            td.innerText = isOcc ? '✓' : '';
             tr.appendChild(td);
         });
         tbody.appendChild(tr);
     }
     table.appendChild(tbody);
-    
     updateCharts();
 }
 
-function deleteColumn(colIndex) {
-    if(confirm("确定要删除这一列吗？(通常用于删除中间的空白间隔)")) {
-        validCols = validCols.filter(c => c !== colIndex);
-        renderResultTable(); // 重绘表格
-    }
-}
-
-// --- 5. 统计与图表 ---
 function updateCharts() {
     const rows = rawData.length;
     const realCols = validCols.length;
     if(realCols === 0) return;
 
-    // 统计数据
     let totalSlots = rows * realCols;
     let totalOccupied = 0;
     
-    // 各房入住率
     let roomSeries = validCols.map(c => {
         let occ = 0;
         for(let r=0; r<rows; r++) occ += rawData[r][c];
@@ -489,7 +423,6 @@ function updateCharts() {
         return (occ / rows * 100).toFixed(1);
     });
     
-    // 每日入住率
     let dateSeries = [];
     for(let r=0; r<rows; r++) {
         let occ = 0;
@@ -497,12 +430,10 @@ function updateCharts() {
         dateSeries.push((occ / realCols * 100).toFixed(1));
     }
 
-    // 更新面板
     document.getElementById('valTotalSlots').innerText = totalSlots;
     document.getElementById('valOccupied').innerText = totalOccupied;
     document.getElementById('valRate').innerText = (totalOccupied/totalSlots*100).toFixed(1) + "%";
 
-    // 绘制 ECharts
     renderEChart(roomSeries, dateSeries);
 }
 
@@ -510,48 +441,28 @@ let myChart = null;
 function renderEChart(roomData, dateData) {
     if(myChart) myChart.dispose();
     myChart = echarts.init(document.getElementById('chartMain'));
-    
     const validNames = validCols.map(c => roomNames[c]);
     
     const option = {
         tooltip: { trigger: 'axis' },
         legend: { data: ['房间入住率', '每日趋势'] },
-        grid: { bottom: 80 },
+        grid: { bottom: 80, left: 50, right: 20 },
         xAxis: [
-            { type: 'category', data: validNames, axisLabel: { rotate: 45 } },
-            { type: 'category', data: dateList, show: false } // 隐藏的轴用于折线图映射
+            { type: 'category', data: validNames, axisLabel: { rotate: 45, fontSize: 11 } },
+            { type: 'category', data: dateList, show: false }
         ],
-        yAxis: { type: 'value', max: 100, name: '百分比 %' },
+        yAxis: { type: 'value', max: 100, name: '%' },
         series: [
-            {
-                name: '房间入住率',
-                type: 'bar',
-                data: roomData,
-                itemStyle: { color: '#0071e3' },
-                label: { show: true, position: 'top', formatter: '{c}%' }
-            },
-            {
-                name: '每日趋势',
-                type: 'line',
-                smooth: true,
-                data: dateData,
-                xAxisIndex: 0, // 这里的逻辑是混合显示，简化起见暂用同一X轴，实际应用中建议分tab显示
-                itemStyle: { color: '#34c759' },
-                lineStyle: { width: 3 }
-            }
+            { name: '房间入住率', type: 'bar', data: roomData, itemStyle: { color: '#0071e3' }, label: { show: true, position: 'top', formatter: '{c}%' } },
+            { name: '每日趋势', type: 'line', smooth: true, data: dateData, xAxisIndex: 0, itemStyle: { color: '#34c759' } }
         ]
     };
-    
-    // 如果是 Chart Tab 模式，显示不同的图
-    // 这里为了简单，混合显示。若需分离可增加逻辑。
     myChart.setOption(option);
 }
 
-// --- 6. 工具函数 ---
 function switchTab(mode) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     event.target.classList.add('active');
-    
     document.getElementById('viewTable').style.display = mode === 'table' ? 'block' : 'none';
     document.getElementById('viewChart').style.display = mode === 'chart' ? 'block' : 'none';
     if(mode === 'chart') setTimeout(() => myChart && myChart.resize(), 100);
@@ -560,26 +471,21 @@ function switchTab(mode) {
 function exportExcel() {
     let wb = XLSX.utils.book_new();
     let wsData = [];
-    
-    // Header
     let headers = ['日期'];
     validCols.forEach(c => headers.push(roomNames[c]));
     headers.push('当日入住率');
     wsData.push(headers);
-    
-    // Rows
     for(let r=0; r<rawData.length; r++) {
         let row = [dateList[r]];
         let dayOcc = 0;
         validCols.forEach(c => {
             let isOcc = rawData[r][c] === 1;
-            row.push(isOcc ? '1' : ''); // Excel里显示1方便统计
+            row.push(isOcc ? '1' : ''); 
             if(isOcc) dayOcc++;
         });
         row.push((dayOcc/validCols.length*100).toFixed(1)+'%');
         wsData.push(row);
     }
-    
     let ws = XLSX.utils.aoa_to_sheet(wsData);
     XLSX.utils.book_append_sheet(wb, ws, "入住统计");
     XLSX.writeFile(wb, "入住率分析报告.xlsx");
