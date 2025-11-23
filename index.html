@@ -23,7 +23,7 @@
       color: var(--text-main);
       display: flex;
       flex-direction: column;
-      align-items: center;
+      align-items: center; /* 确保整体内容水平居中 */
       min-height: 100vh;
       padding: 40px 20px;
     }
@@ -36,13 +36,15 @@
       color: #fff;
     }
 
-    /* 网格布局：自适应列宽，保持整齐 */
+    /* 网格布局 */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      /* 电脑端默认：强制 4 列，每列等宽 */
+      grid-template-columns: repeat(4, 1fr);
       gap: 16px;
       width: 100%;
-      max-width: 800px;
+      /* 限制最大宽度，确保在宽屏上居中且不散得太开 */
+      max-width: 960px; 
     }
 
     /* 按钮样式：扁平、有边框、无阴影 */
@@ -58,15 +60,21 @@
       text-decoration: none;
       color: var(--text-main);
       font-size: 0.95rem;
-      transition: all 0.2s ease;
+      /* 增加平滑过渡时间，让放大效果更顺滑 */
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
       position: relative;
     }
 
-    /* 悬停效果：变亮一点点 */
+    /* 悬停效果：变亮 + 放大 */
     .btn:hover {
       background: var(--btn-hover);
       border-color: var(--btn-hover-border);
       color: #fff;
+      /* 核心修改：放大 1.05 倍 */
+      transform: scale(1.05);
+      /* 增加一点阴影，增加立体感 */
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      z-index: 10; /* 保证放大的时候覆盖在其他元素上面 */
     }
 
     /* 外部链接标记 (右上角小点) */
@@ -79,9 +87,10 @@
       height: 4px;
       background-color: var(--btn-border);
       border-radius: 50%;
+      transition: background-color 0.3s;
     }
     .btn:hover.external::after {
-      background-color: #888;
+      background-color: #aaa;
     }
 
     /* 页脚 */
@@ -95,15 +104,29 @@
       opacity: 0.6;
     }
 
-    /* 手机端适配：一行两个 */
+    /* --- 响应式适配 --- */
+    
+    /* 平板/中等屏幕：调整为 3 列 */
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: repeat(3, 1fr);
+        max-width: 700px;
+      }
+    }
+
+    /* 手机/小屏幕：调整为 2 列 */
     @media (max-width: 600px) {
       .grid {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(2, 1fr); 
         gap: 12px;
       }
       .btn {
         height: 55px;
         font-size: 0.9rem;
+      }
+      /* 手机上为了防止误触，放大效果可以稍微收敛一点，或者保持不变 */
+      .btn:hover {
+        transform: scale(1.02); 
       }
     }
   </style>
