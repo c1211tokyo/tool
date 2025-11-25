@@ -5,122 +5,72 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>日本不动产节税测算工具 | 蘇的工具箱</title>
     <style>
-        /* --- V7.5 配色系统 --- */
+        /* --- V8.0 配色系统 (保持 V7 的高级感) --- */
         :root {
-            --primary: #334155;
-            --primary-light: #475569;
-            --accent: #0284c7;        
-            --bg-body: #f1f5f9;
-            --bg-card: #ffffff;
-            --text-main: #0f172a;
-            --text-sub: #64748b;
-            --border: #e2e8f0;
-            --success: #059669;
-            --neutral: #94a3b8;
+            --primary: #334155; --primary-light: #475569; --accent: #0284c7;        
+            --bg-body: #f1f5f9; --bg-card: #ffffff;
+            --text-main: #0f172a; --text-sub: #64748b; --border: #e2e8f0;
+            --success: #059669; --neutral: #94a3b8; --warning: #d97706;
         }
         
         * { box-sizing: border-box; }
-
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            background: var(--bg-body); 
-            color: var(--text-main); 
-            padding: 20px; 
-            margin: 0;
-            line-height: 1.6;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-body); color: var(--text-main); padding: 20px; margin: 0; line-height: 1.6; min-height: 100vh; display: flex; flex-direction: column; }
         .container { max-width: 1024px; margin: 0 auto; width: 100%; flex: 1; }
 
         /* --- Header --- */
         header { text-align: center; margin-bottom: 30px; padding-top: 10px; }
         h1 { margin: 0; font-size: 1.5rem; color: var(--primary); font-weight: 800; }
-        .subtitle-link { 
-            display: inline-block; margin-top: 6px; font-size: 0.9rem; color: var(--text-sub); 
-            text-decoration: none; border-bottom: 1px dashed transparent; transition: all 0.2s;
-        }
+        .subtitle-link { display: inline-block; margin-top: 6px; font-size: 0.9rem; color: var(--text-sub); text-decoration: none; border-bottom: 1px dashed transparent; transition: all 0.2s; }
         .subtitle-link:hover { color: var(--accent); border-bottom-color: var(--accent); }
 
-        /* --- 布局 --- */
+        /* --- Layout --- */
         .grid-layout { display: grid; gap: 24px; grid-template-columns: 1fr; }
         @media(min-width: 850px) { .grid-layout { grid-template-columns: 420px 1fr; } }
-
-        /* --- 卡片 --- */
-        .card { 
-            background: var(--bg-card); 
-            padding: 24px; 
-            border-radius: 12px; 
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
-            margin-bottom: 24px; 
-            border: 1px solid var(--border);
-        }
-        h2 { 
-            font-size: 0.95rem; border-bottom: 2px solid var(--bg-body); padding-bottom: 12px; 
-            margin: 0 0 20px 0; color: var(--primary); font-weight: 700;
-        }
+        .card { background: var(--bg-card); padding: 24px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 24px; border: 1px solid var(--border); }
+        h2 { font-size: 0.95rem; border-bottom: 2px solid var(--bg-body); padding-bottom: 12px; margin: 0 0 20px 0; color: var(--primary); font-weight: 700; display: flex; align-items: center; justify-content: space-between; }
 
         /* --- Tabs --- */
         .mode-tabs { display: flex; background: var(--bg-body); border-radius: 8px; padding: 4px; }
-        .tab-btn { 
-            flex: 1; border: none; padding: 8px; border-radius: 6px; cursor: pointer; 
-            font-weight: 600; font-size: 0.85rem; color: var(--text-sub); background: transparent; transition: all 0.2s; 
-        }
+        .tab-btn { flex: 1; border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; color: var(--text-sub); background: transparent; transition: all 0.2s; }
         .tab-btn.active { background: white; color: var(--accent); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
 
-        /* --- 表单 --- */
+        /* --- Forms --- */
         .form-row { margin-bottom: 18px; }
         label { display: flex; align-items: center; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--primary-light); }
-        .input-group { position: relative; display: flex; align-items: center; }
-        input, select { 
-            width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; 
-            font-size: 0.95rem; background: #fff; transition: border-color 0.2s;
-        }
+        .input-group { position: relative; display: flex; align-items: center; flex: 1; }
+        input, select { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem; background: #fff; transition: border-color 0.2s; }
         input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1); }
         .suffix { position: absolute; right: 12px; color: #94a3b8; font-size: 0.85rem; pointer-events: none; }
+        
+        /* Auto Box & Custom Inputs */
         .auto-box { background: #f8fafc; border: 1px dashed var(--border); padding: 16px; border-radius: 8px; margin-top: 12px; }
         .auto-title { color: var(--accent); font-size: 0.75rem; font-weight: 700; margin-bottom: 12px; display: block; }
+        
+        /* 隐藏的自定义输入框样式 */
+        .custom-input-row { margin-top: 8px; display: flex; align-items: center; animation: slideDown 0.2s ease-out; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- V7.5 Tooltip (点击触发型) --- */
+        /* --- Tooltip (Click/Hover Hybrid) --- */
         .tooltip-wrap { position: relative; display: inline-flex; margin-left: 6px; cursor: pointer; }
-        .tooltip-icon { color: var(--accent); font-size: 0.9rem; opacity: 0.7; }
-        .tooltip-wrap:hover .tooltip-icon { opacity: 1; }
+        .tooltip-icon { color: var(--accent); font-size: 0.9rem; opacity: 0.7; transition: 0.2s; }
+        .tooltip-wrap:hover .tooltip-icon, .tooltip-wrap.active .tooltip-icon { opacity: 1; scale: 1.1; }
         
         .tooltip-content {
-            display: none; /* 默认隐藏，JS控制显示 */
-            position: absolute;
-            width: 280px;
-            background-color: rgba(15, 23, 42, 0.98);
-            color: #fff;
-            text-align: left;
-            border-radius: 8px;
-            padding: 14px;
-            z-index: 200;
-            bottom: 150%;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 0.8rem;
-            line-height: 1.5;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
-            font-weight: normal;
+            display: none; position: absolute; width: 280px; background-color: rgba(15, 23, 42, 0.98);
+            color: #fff; text-align: left; border-radius: 8px; padding: 14px; z-index: 200;
+            bottom: 150%; left: 50%; transform: translateX(-50%);
+            font-size: 0.8rem; line-height: 1.5; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2); font-weight: normal;
         }
-        .tooltip-content.active { display: block; animation: fadeIn 0.2s ease-out; }
+        .tooltip-content.show { display: block; animation: fadeIn 0.2s; }
         @keyframes fadeIn { from { opacity: 0; transform: translateX(-50%) translateY(5px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
-        
         .tooltip-content::after {
             content: ""; position: absolute; top: 100%; left: 50%; margin-left: -6px;
             border-width: 6px; border-style: solid; border-color: rgba(15, 23, 42, 0.98) transparent transparent transparent;
         }
         .tooltip-content a { color: #38bdf8; font-weight: bold; text-decoration: none; border-bottom: 1px solid #38bdf8; }
-        .tooltip-content b { color: var(--accent); color: #fbbf24; }
 
-        /* --- 结果区 --- */
-        .result-dashboard { 
-            background: var(--primary); color: white; padding: 24px; border-radius: 12px; 
-            text-align: center; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;
-        }
+        /* --- Result Dashboard --- */
+        .result-dashboard { background: var(--primary); color: white; padding: 24px; border-radius: 12px; text-align: center; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
         .res-badge { background: rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); }
         .res-badge .val { font-size: 1.8rem; font-weight: 700; color: #38bdf8; line-height: 1.2; }
         .res-badge .lbl { font-size: 0.75rem; opacity: 0.8; }
@@ -128,50 +78,29 @@
         .res-main .amount { font-size: 2rem; font-weight: 700; color: #fbbf24; }
         .res-main .desc { font-size: 0.85rem; opacity: 0.8; }
 
-        /* --- V7.5 交互式比例条 --- */
-        .ratio-bar-container { margin: 20px 0; position: relative; user-select: none; }
-        .ratio-bar { 
-            display: flex; height: 36px; border-radius: 6px; overflow: hidden; background: var(--bg-body); 
-            position: relative;
-        }
+        /* --- Draggable Ratio Bar --- */
+        .ratio-bar-container { margin: 20px 0; position: relative; user-select: none; padding-top: 10px; padding-bottom: 10px; }
+        .ratio-bar { display: flex; height: 36px; border-radius: 6px; overflow: hidden; background: var(--bg-body); position: relative; }
         
-        /* 拖拽模式下的光标 */
-        .ratio-bar-container.draggable { cursor: col-resize; }
-        .ratio-bar-container.draggable .ratio-bar { box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
-
-        .rb-seg { 
-            display: flex; align-items: center; justify-content: center; color: white; 
-            font-size: 0.8rem; font-weight: 600; white-space: nowrap; overflow: hidden; 
-            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
-            /* 去除 transition 以保证拖拽流畅性 */
+        /* 拖拽手柄样式增强 */
+        .drag-handle {
+            position: absolute; top: 10px; bottom: 10px; width: 20px; margin-left: -10px;
+            cursor: col-resize; z-index: 10; display: none;
+            align-items: center; justify-content: center;
         }
+        /* 仅在激活模式下显示手柄 */
+        .ratio-bar-container.draggable:hover .drag-handle, 
+        .ratio-bar-container.draggable .drag-handle.dragging { display: flex; }
+        
+        .drag-line { width: 4px; height: 100%; background: white; border-radius: 2px; box-shadow: 0 0 4px rgba(0,0,0,0.3); border: 1px solid var(--text-sub); }
+
+        .rb-seg { display: flex; align-items: center; justify-content: center; color: white; font-size: 0.8rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
         .rb-build { background: var(--success); }
         .rb-land { background: var(--neutral); }
-
-        /* 拖拽手柄 */
-        .drag-handle {
-            position: absolute;
-            top: 0; bottom: 0; width: 14px; margin-left: -7px;
-            background: white;
-            border: 1px solid var(--border);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            z-index: 10;
-            cursor: col-resize;
-            border-radius: 2px;
-            display: none; /* 默认隐藏 */
-            align-items: center;
-            justify-content: center;
-        }
-        .drag-handle::after {
-            content: ""; display: block; width: 2px; height: 16px; 
-            border-left: 2px double #cbd5e1;
-        }
-        /* 仅在 Manual 模式且总价>0 时显示手柄 */
-        .ratio-bar-container.draggable .drag-handle { display: flex; }
-
+        
         .ratio-legend { display: flex; justify-content: space-between; font-size: 0.8rem; margin-top: 6px; font-weight: 500;}
 
-        /* --- 表格 --- */
+        /* --- Table --- */
         table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
         th { text-align: left; color: var(--text-sub); font-weight: 600; padding: 12px 8px; border-bottom: 1px solid var(--border); font-size: 0.8rem; text-transform: uppercase; }
         td { padding: 12px 8px; border-bottom: 1px solid var(--bg-body); text-align: right; }
@@ -179,24 +108,12 @@
         .row-highlight { background-color: #f0fdf4; }
 
         /* --- Modal --- */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.8); z-index: 1000; display: none;
-            justify-content: center; align-items: center; padding: 20px;
-        }
-        .modal-content {
-            background: white; width: 100%; max-width: 800px; max-height: 90vh;
-            border-radius: 12px; display: flex; flex-direction: column; overflow: hidden;
-        }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.8); z-index: 1000; display: none; justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: white; width: 100%; max-width: 900px; max-height: 90vh; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
         .modal-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--bg-body); }
-        .modal-header h3 { margin: 0; color: var(--primary); }
-        .close-btn { background: transparent; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-sub); }
         .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
-        
-        .btn-full-sim {
-            width: 100%; padding: 12px; background: white; border: 1px solid var(--accent);
-            color: var(--accent); font-weight: 600; border-radius: 8px; cursor: pointer; margin-top: 15px; transition: all 0.2s;
-        }
+        .close-btn { background: transparent; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-sub); }
+        .btn-full-sim { width: 100%; padding: 12px; background: white; border: 1px solid var(--accent); color: var(--accent); font-weight: 600; border-radius: 8px; cursor: pointer; margin-top: 15px; transition: all 0.2s; }
         .btn-full-sim:hover { background: #f0f9ff; }
 
         footer { text-align: center; font-size: 0.8rem; color: var(--text-sub); padding: 40px 0 20px; border-top: 1px solid var(--border); margin-top: auto; opacity: 0.8; }
@@ -229,7 +146,7 @@
                         <div class="tooltip-wrap" onclick="tooltip.toggle(this)">
                             <span class="tooltip-icon">ℹ️</span>
                             <div class="tooltip-content">
-                                决定<b>法定耐用年数</b>。<br>RC(钢筋混凝土)为47年，轻钢为27年，木造为22年。
+                                <b>法定耐用年数：</b><br>• RC(钢筋混凝土): 47年<br>• 轻钢: 27年<br>• 木造: 22年
                             </div>
                         </div>
                     </label>
@@ -245,7 +162,7 @@
                         <div class="tooltip-wrap" onclick="tooltip.toggle(this)">
                             <span class="tooltip-icon">ℹ️</span>
                             <div class="tooltip-content">
-                                房屋建成至今的年数。<br>中古房折旧公式：<br><b>(法定寿命 - 筑年数) + 筑年数 × 0.2</b>
+                                <b>简便法折旧年数计算：</b><br>1. 筑年 ≥ 法定: 法定 × 0.2<br>2. 筑年 < 法定: (法定-筑年) + 筑年×0.2
                             </div>
                         </div>
                     </label>
@@ -257,22 +174,21 @@
 
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
                     <div class="form-row">
-                        <label>决算月</label>
-                        <select id="s_fiscalMonth"></select>
-                    </div>
-                    <div class="form-row">
-                        <label>买入月</label>
-                        <select id="s_buyMonth"></select>
+                        <label>决算月 / 买入月
+                            <div class="tooltip-wrap" onclick="tooltip.toggle(this)">
+                                <span class="tooltip-icon">ℹ️</span>
+                                <div class="tooltip-content">用于精确计算<b>第一年</b>可计入损金的月数（按月割）。</div>
+                            </div>
+                        </label>
+                        <div style="display:flex; gap:10px;">
+                            <select id="s_fiscalMonth"></select>
+                            <select id="s_buyMonth"></select>
+                        </div>
                     </div>
                 </div>
 
                 <div class="form-row">
-                    <label>法人有效税率
-                        <div class="tooltip-wrap" onclick="tooltip.toggle(this)">
-                            <span class="tooltip-icon">ℹ️</span>
-                            <div class="tooltip-content">东京中小企业综合税率约 <b>30% ~ 34%</b>。</div>
-                        </div>
-                    </label>
+                    <label>法人有效税率</label>
                     <div class="input-group">
                         <input type="number" id="s_taxRate" value="33.0" step="0.1">
                         <span class="suffix">%</span>
@@ -280,7 +196,16 @@
                 </div>
 
                 <div class="form-row">
-                    <label>折旧方法</label>
+                    <label>折旧方法
+                        <div class="tooltip-wrap" onclick="tooltip.toggle(this)">
+                            <span class="tooltip-icon">ℹ️</span>
+                            <div class="tooltip-content">
+                                • <b>简便法</b>: 中古房首选，回款快。<br>
+                                • <b>定率法</b>: 前期折旧极高，适合新房/设备。<br>
+                                • <b>直线法</b>: 每年平摊。
+                            </div>
+                        </div>
+                    </label>
                     <div style="display:flex; gap:10px;">
                         <select id="s_method" style="flex:1;">
                             <option value="simplified">简便法 (推荐)</option>
@@ -317,29 +242,36 @@
                     <div class="auto-box">
                         <span class="auto-title">📍 土地参数</span>
                         <div class="form-row">
-                            <label>土地面积</label>
-                            <div class="input-group"><input type="number" id="a_landArea" value="60"><span class="suffix">㎡</span></div>
-                        </div>
-                        <div class="form-row">
-                            <label>路线价 (基准地价)
+                            <label>土地面积 / 路线价
                                 <div class="tooltip-wrap" onclick="tooltip.toggle(this)">
                                     <span class="tooltip-icon">ℹ️</span>
                                     <div class="tooltip-content">
-                                        <a href="https://www.rosenka.nta.go.jp/" target="_blank">🔗 点击跳转国税厅查询</a><br><br>
-                                        注意：请输入<b>万円</b>为单位。<br>
-                                        如地图显示 "500C"，即 500千円 = <b>50</b> 万円。
+                                        <a href="https://www.rosenka.nta.go.jp/" target="_blank">🔗 国税厅路线价查询</a><br>
+                                        注意：单位为<b>万円</b> (例: 500C = 50万)
                                     </div>
                                 </div>
                             </label>
-                            <div class="input-group"><input type="number" id="a_rosenka" value="50" step="1"><span class="suffix">万円/㎡</span></div>
+                            <div style="display:flex; gap:10px;">
+                                <div class="input-group"><input type="number" id="a_landArea" value="60"><span class="suffix">㎡</span></div>
+                                <div class="input-group"><input type="number" id="a_rosenka" value="50" step="1"><span class="suffix">万/㎡</span></div>
+                            </div>
                         </div>
                         <div class="form-row">
-                            <label>市场修正系数</label>
+                            <label>市场修正系数
+                                <div class="tooltip-wrap" onclick="tooltip.toggle(this)">
+                                    <span class="tooltip-icon">ℹ️</span>
+                                    <div class="tooltip-content">路线价转市场价的倍率。<br>标准推荐 1.40。</div>
+                                </div>
+                            </label>
                             <select id="a_factor">
                                 <option value="1.25">1.25 (保守)</option>
                                 <option value="1.40" selected>1.40 (标准)</option>
                                 <option value="1.60">1.60 (积极)</option>
+                                <option value="custom">自定义...</option>
                             </select>
+                            <div class="input-group hidden custom-input-row" id="grp_factor_custom">
+                                <input type="number" id="a_factor_custom" value="1.50" step="0.01" placeholder="输入系数 (如 1.55)">
+                            </div>
                         </div>
                     </div>
 
@@ -350,26 +282,40 @@
                             <div class="input-group"><input type="number" id="a_buildArea" value="120"><span class="suffix">㎡</span></div>
                         </div>
                         <div class="form-row">
-                            <label>建造单价 (2025参考)</label>
+                            <label>建造单价 (2025参考)
+                                <div class="tooltip-wrap" onclick="tooltip.toggle(this)">
+                                    <span class="tooltip-icon">ℹ️</span>
+                                    <div class="tooltip-content">再调达成本参考。<br>RC标准: 43万/㎡</div>
+                                </div>
+                            </label>
                             <select id="a_unitCost">
                                 <option value="25">木造 (25万)</option>
                                 <option value="32">轻钢 (32万)</option>
                                 <option value="43" selected>RC (43万)</option>
+                                <option value="custom">自定义...</option>
                             </select>
+                            <div class="input-group hidden custom-input-row" id="grp_unitCost_custom">
+                                <input type="number" id="a_unitCost_custom" value="45" step="1" placeholder="输入单价 (万円/㎡)">
+                                <span class="suffix">万/㎡</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div id="panel-fixed" class="hidden">
                     <div class="form-row">
-                        <label>固都税评估额 (土地)</label>
-                        <div class="input-group"><input type="number" id="f_land" value="3000"><span class="suffix">万円</span></div>
+                        <label>固都税评估额 (土地/建物)
+                            <div class="tooltip-wrap" onclick="tooltip.toggle(this)">
+                                <span class="tooltip-icon">ℹ️</span>
+                                <div class="tooltip-content">参考每年纳税通知书上的<b>固定资产评价额</b>。<br>此模式下也<b>支持拖拽调整</b>最终比例！</div>
+                            </div>
+                        </label>
+                        <div style="display:flex; gap:10px;">
+                            <div class="input-group"><input type="number" id="f_land" value="3000"><span class="suffix">土(万)</span></div>
+                            <div class="input-group"><input type="number" id="f_build" value="2000"><span class="suffix">建(万)</span></div>
+                        </div>
                     </div>
-                    <div class="form-row">
-                        <label>固都税评估额 (建物)</label>
-                        <div class="input-group"><input type="number" id="f_build" value="2000"><span class="suffix">万円</span></div>
-                    </div>
-                    <div class="form-row" style="margin-top:8px;">
+                    <div class="form-row" style="margin-top:12px;">
                         <label>实际交易总价</label>
                         <div class="input-group"><input type="number" id="f_totalPrice" value="8000"><span class="suffix">万円</span></div>
                     </div>
@@ -391,18 +337,23 @@
             </div>
 
             <div class="card">
-                <h2>📊 拆分详情 (Mode A 可拖拽调整)</h2>
+                <h2>
+                    📊 拆分详情
+                    <span style="font-size:0.75rem; font-weight:normal; color:var(--neutral); margin-left:10px;">
+                        (可拖拽微调 <span style="font-size:1rem">↔</span>)
+                    </span>
+                </h2>
                 
-                <div class="ratio-bar-container" id="ratioContainer">
+                <div class="ratio-bar-container draggable" id="ratioContainer">
                     <div class="ratio-bar">
                         <div id="bar_build" class="rb-seg rb-build" style="width: 50%"></div>
                         <div id="bar_land" class="rb-seg rb-land" style="width: 50%"></div>
                     </div>
-                    <div class="drag-handle" id="dragHandle"></div>
+                    <div class="drag-handle" id="dragHandle"><div class="drag-line"></div></div>
                     
                     <div class="ratio-legend">
                         <span id="txt_build_ratio" style="color:var(--success)">建物: --%</span>
-                        <span id="txt_land_ratio" style="color:var(--neutral)">土地: --%</span>
+                        <span id="txt_land_ratio" style="color:var(--text-sub)">土地: --%</span>
                     </div>
                 </div>
 
@@ -430,7 +381,6 @@
                     </thead>
                     <tbody id="out_table_body"></tbody>
                 </table>
-                <div style="font-size:0.75rem; color:var(--text-sub); text-align:center; margin-top:15px;">* 首年按月割计算</div>
                 <button class="btn-full-sim" onclick="app.showFullModal()">🔎 查看完整折旧表 (全周期)</button>
             </div>
         </div>
@@ -462,115 +412,67 @@
 </div>
 
 <script>
-// --- V7.5 Tooltip Controller ---
+// --- V8.0 Controller ---
+
 const tooltip = {
-    activeEl: null,
-    
-    toggle(wrapper) {
-        const content = wrapper.querySelector('.tooltip-content');
+    active: null,
+    toggle(el) {
+        const content = el.querySelector('.tooltip-content');
         if (!content) return;
-
-        // 如果点击的是已经打开的，则关闭
-        if (this.activeEl === content) {
-            this.close();
-            return;
-        }
-
-        // 关闭之前的
-        if (this.activeEl) this.activeEl.classList.remove('active');
-
-        // 打开新的
-        content.classList.add('active');
-        this.activeEl = content;
-        
-        // 阻止冒泡，防止触发 document 点击
+        if (this.active === content) { this.close(); return; }
+        if (this.active) this.active.classList.remove('show');
+        content.classList.add('show');
+        this.active = content;
         event.stopPropagation();
     },
-
     close() {
-        if (this.activeEl) {
-            this.activeEl.classList.remove('active');
-            this.activeEl = null;
-        }
+        if (this.active) { this.active.classList.remove('show'); this.active = null; }
     },
-
     init() {
-        // 点击空白处关闭 Tooltip
         document.addEventListener('click', (e) => {
-            // 如果点击的不是 tooltip 内部，则关闭
-            if (this.activeEl && !e.target.closest('.tooltip-content')) {
-                this.close();
-            }
+            if (this.active && !e.target.closest('.tooltip-content')) this.close();
         });
-        
-        // 允许 tooltip 内部链接点击
-        const links = document.querySelectorAll('.tooltip-content a');
-        links.forEach(l => l.addEventListener('click', (e) => e.stopPropagation()));
+        document.querySelectorAll('.tooltip-content').forEach(el => el.addEventListener('click', e => e.stopPropagation()));
     }
 };
 
-// --- V7.5 Drag Controller ---
 const dragger = {
     isDragging: false,
-    container: null,
-    
     init() {
-        this.container = document.getElementById('ratioContainer');
-        const handle = document.getElementById('dragHandle');
+        const c = document.getElementById('ratioContainer');
+        const h = document.getElementById('dragHandle');
         
-        handle.addEventListener('mousedown', (e) => this.start(e));
-        document.addEventListener('mousemove', (e) => this.move(e));
-        document.addEventListener('mouseup', () => this.end());
-        
-        // Mobile touch support
-        handle.addEventListener('touchstart', (e) => this.start(e.touches[0]));
-        document.addEventListener('touchmove', (e) => this.move(e.touches[0]));
-        document.addEventListener('touchend', () => this.end());
-    },
+        const start = (e) => {
+            // Mode B 不支持拖拽 (因为它是纯估算)
+            if (app.state.mode === 'auto') return;
+            this.isDragging = true; 
+            h.classList.add('dragging');
+            document.body.style.cursor = 'col-resize';
+            e.preventDefault(); 
+        };
+        const move = (e) => {
+            if (!this.isDragging) return;
+            const rect = c.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            let pct = (clientX - rect.left) / rect.width;
+            if (pct < 0.05) pct = 0.05; if (pct > 0.95) pct = 0.95;
+            app.handleDrag(pct);
+        };
+        const end = () => { 
+            this.isDragging = false; 
+            h.classList.remove('dragging');
+            document.body.style.cursor = 'default'; 
+        };
 
-    start(e) {
-        if (app.state.mode !== 'manual') return;
-        this.isDragging = true;
-        document.body.style.cursor = 'col-resize';
-        e.preventDefault && e.preventDefault(); // Prevent text selection
-    },
-
-    move(e) {
-        if (!this.isDragging) return;
-        
-        const rect = this.container.getBoundingClientRect();
-        const offsetX = e.clientX - rect.left;
-        let pct = offsetX / rect.width;
-        
-        // Constrain
-        if (pct < 0.05) pct = 0.05;
-        if (pct > 0.95) pct = 0.95;
-
-        // Calculate based on current Total Price in Manual Mode
-        const currentLand = parseFloat(document.getElementById('m_landPrice').value) || 0;
-        const currentBuild = parseFloat(document.getElementById('m_buildPrice').value) || 0;
-        const total = currentLand + currentBuild;
-
-        if (total > 0) {
-            const newBuild = total * pct;
-            const newLand = total - newBuild;
-            
-            // Update Inputs
-            document.getElementById('m_buildPrice').value = Math.round(newBuild);
-            document.getElementById('m_landPrice').value = Math.round(newLand);
-            
-            // Trigger Calc
-            app.calc();
-        }
-    },
-
-    end() {
-        this.isDragging = false;
-        document.body.style.cursor = 'default';
+        h.addEventListener('mousedown', start);
+        document.addEventListener('mousemove', move);
+        document.addEventListener('mouseup', end);
+        h.addEventListener('touchstart', start);
+        document.addEventListener('touchmove', move);
+        document.addEventListener('touchend', end);
     }
 };
 
-// --- Main App ---
 const app = {
     config: { life: { wood: 22, steel: 27, rc: 47 } },
     state: { mode: 'manual', fullData: [] },
@@ -586,14 +488,18 @@ const app = {
             el.addEventListener('change', () => this.calc());
         });
 
-        document.getElementById('s_method').addEventListener('change', (e) => {
-            const isRate = e.target.value === 'rate';
-            document.getElementById('grp_depRate').classList.toggle('hidden', !isRate);
+        // 绑定 Custom 显示逻辑
+        document.getElementById('a_factor').addEventListener('change', (e) => {
+            document.getElementById('grp_factor_custom').classList.toggle('hidden', e.target.value !== 'custom');
             this.calc();
         });
-
-        document.getElementById('fullModal').addEventListener('click', (e) => {
-            if (e.target === document.getElementById('fullModal')) this.closeFullModal();
+        document.getElementById('a_unitCost').addEventListener('change', (e) => {
+            document.getElementById('grp_unitCost_custom').classList.toggle('hidden', e.target.value !== 'custom');
+            this.calc();
+        });
+        document.getElementById('s_method').addEventListener('change', (e) => {
+            document.getElementById('grp_depRate').classList.toggle('hidden', e.target.value !== 'rate');
+            this.calc();
         });
 
         this.calc();
@@ -601,208 +507,210 @@ const app = {
 
     fillMonths() {
         const opts = Array.from({length: 12}, (_, i) => `<option value="${i+1}">${i+1}月</option>`).join('');
-        const s1 = document.getElementById('s_fiscalMonth');
-        const s2 = document.getElementById('s_buyMonth');
-        s1.innerHTML = opts; s2.innerHTML = opts;
-        s1.value = "3"; s2.value = "4"; 
+        document.getElementById('s_fiscalMonth').innerHTML = opts;
+        document.getElementById('s_buyMonth').innerHTML = opts;
+        document.getElementById('s_fiscalMonth').value = "3";
+        document.getElementById('s_buyMonth').value = "4";
     },
 
     switchMode(mode) {
         this.state.mode = mode;
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(`btn-mode-${mode}`).classList.add('active');
-        document.getElementById('panel-manual').classList.add('hidden');
-        document.getElementById('panel-auto').classList.add('hidden');
-        document.getElementById('panel-fixed').classList.add('hidden');
+        ['manual','auto','fixed'].forEach(m => document.getElementById(`panel-${m}`).classList.add('hidden'));
         document.getElementById(`panel-${mode}`).classList.remove('hidden');
         
-        // Toggle Draggable State
-        const ratioContainer = document.getElementById('ratioContainer');
-        if (mode === 'manual') ratioContainer.classList.add('draggable');
-        else ratioContainer.classList.remove('draggable');
+        // Mode B 隐藏手柄
+        const handle = document.getElementById('dragHandle');
+        const container = document.getElementById('ratioContainer');
+        if (mode === 'auto') { handle.style.display = 'none'; container.classList.remove('draggable'); }
+        else { handle.style.display = 'flex'; container.classList.add('draggable'); }
 
         this.calc();
     },
 
-    val(id) {
-        const el = document.getElementById(id);
-        const v = parseFloat(el.value);
-        return isNaN(v) ? 0 : v;
+    val(id) { const v = parseFloat(document.getElementById(id).value); return isNaN(v) ? 0 : v; },
+
+    // 拖拽回调：核心逻辑
+    handleDrag(pct) {
+        let total = 0;
+        if (this.state.mode === 'manual') {
+            total = this.val('m_landPrice') + this.val('m_buildPrice');
+            if (total <= 0) total = 8000; // default backup
+        } else if (this.state.mode === 'fixed') {
+            total = this.val('f_totalPrice');
+        }
+
+        const newBuild = Math.round(total * pct);
+        const newLand = total - newBuild;
+
+        // 如果是 A 模式，回写 Input
+        if (this.state.mode === 'manual') {
+            document.getElementById('m_buildPrice').value = newBuild;
+            document.getElementById('m_landPrice').value = newLand;
+        } 
+        
+        // 无论 A 还是 C，都强制更新计算 (C模式下这相当于临时覆盖了固都税比例)
+        this.runCalc(newLand, newBuild);
     },
 
     calc() {
-        try {
-            const structure = document.getElementById('s_structure').value;
-            const age = this.val('s_age');
-            const method = document.getElementById('s_method').value;
-            const taxRate = this.val('s_taxRate') / 100;
-            const fiscalMonth = parseInt(document.getElementById('s_fiscalMonth').value);
-            const buyMonth = parseInt(document.getElementById('s_buyMonth').value);
+        const structure = document.getElementById('s_structure').value;
+        const age = this.val('s_age');
+        
+        let land = 0, build = 0;
 
-            let landPrice = 0, buildPrice = 0;
+        if (this.state.mode === 'manual') {
+            land = this.val('m_landPrice');
+            build = this.val('m_buildPrice');
+        } 
+        else if (this.state.mode === 'auto') {
+            const total = this.val('a_totalPrice');
+            // 获取系数 (Check custom)
+            let factor = this.val('a_factor');
+            if (document.getElementById('a_factor').value === 'custom') factor = this.val('a_factor_custom');
+            // 获取单价 (Check custom)
+            let unitCost = this.val('a_unitCost');
+            if (document.getElementById('a_unitCost').value === 'custom') unitCost = this.val('a_unitCost_custom');
 
-            if (this.state.mode === 'manual') {
-                landPrice = this.val('m_landPrice');
-                buildPrice = this.val('m_buildPrice');
-            } else if (this.state.mode === 'auto') {
-                const total = this.val('a_totalPrice');
-                const lArea = this.val('a_landArea');
-                const rosenka = this.val('a_rosenka');
-                const factor = this.val('a_factor');
-                const bArea = this.val('a_buildArea');
-                const unitCost = this.val('a_unitCost');
-                const lVal = lArea * rosenka * factor;
-                const statLife = this.config.life[structure];
-                const physLife = statLife * 1.5;
-                let rate = 1 - (age / physLife);
-                if (rate < 0.1) rate = 0.1;
-                const bVal = bArea * unitCost * rate;
-                const sum = lVal + bVal;
-                if (sum > 0) {
-                    buildPrice = total * (bVal / sum);
-                    landPrice = total * (lVal / sum);
-                }
-            } else if (this.state.mode === 'fixed') {
-                const fLand = this.val('f_land');
-                const fBuild = this.val('f_build');
-                const realTotal = this.val('f_totalPrice');
-                const sum = fLand + fBuild;
-                if (sum > 0) {
-                    buildPrice = realTotal * (fBuild / sum);
-                    landPrice = realTotal * (fLand / sum);
-                }
-            }
+            const lVal = this.val('a_landArea') * this.val('a_rosenka') * factor;
+            
+            const statLife = this.config.life[structure];
+            let rate = 1 - (age / (statLife * 1.5));
+            if (rate < 0.1) rate = 0.1;
+            const bVal = this.val('a_buildArea') * unitCost * rate;
 
-            this.updateSplitUI(landPrice, buildPrice);
-            this.generateData(buildPrice, structure, age, method, fiscalMonth, buyMonth, taxRate);
-            this.renderSmallTable();
+            const sum = lVal + bVal;
+            if (sum > 0) { build = total * (bVal/sum); land = total * (lVal/sum); }
+        }
+        else if (this.state.mode === 'fixed') {
+            const fLand = this.val('f_land');
+            const fBuild = this.val('f_build');
+            const realTotal = this.val('f_totalPrice');
+            const sum = fLand + fBuild;
+            if (sum > 0) { build = realTotal * (fBuild/sum); land = realTotal * (fLand/sum); }
+        }
 
-        } catch (e) { console.error(e); }
+        this.runCalc(land, build);
+    },
+
+    // 核心计算执行者
+    runCalc(land, build) {
+        const structure = document.getElementById('s_structure').value;
+        const age = this.val('s_age');
+        const method = document.getElementById('s_method').value;
+        const taxRate = this.val('s_taxRate') / 100;
+        
+        this.updateSplitUI(land, build);
+        this.generateData(build, structure, age, method, taxRate);
+        this.renderTables();
     },
 
     updateSplitUI(land, build) {
         const total = land + build;
-        const lPct = total > 0 ? (land/total)*100 : 0;
         const bPct = total > 0 ? (build/total)*100 : 0;
-        const fmt = (n) => Math.round(n).toLocaleString() + " 万";
-        
-        document.getElementById('out_landPrice').innerText = fmt(land);
-        document.getElementById('out_buildPrice').innerText = fmt(build);
+        const lPct = 100 - bPct;
+        const fmt = (n) => Math.round(n).toLocaleString();
+
+        document.getElementById('out_landPrice').innerText = fmt(land) + " 万";
+        document.getElementById('out_buildPrice').innerText = fmt(build) + " 万";
 
         const barB = document.getElementById('bar_build');
         const barL = document.getElementById('bar_land');
-        
-        // Update widths
         barB.style.width = bPct + "%";
         barL.style.width = lPct + "%";
         
-        // Labels inside bar
         barB.innerText = bPct > 15 ? fmt(build) : "";
         barL.innerText = lPct > 15 ? fmt(land) : "";
-
-        // Legend
+        
         document.getElementById('txt_build_ratio').innerText = `建物: ${bPct.toFixed(1)}%`;
         document.getElementById('txt_land_ratio').innerText = `土地: ${lPct.toFixed(1)}%`;
 
-        // Update Drag Handle Position
-        const handle = document.getElementById('dragHandle');
-        if (this.state.mode === 'manual' && total > 0) {
-            handle.style.left = bPct + "%";
+        // Update handle position
+        if (this.state.mode !== 'auto') {
+            document.getElementById('dragHandle').style.left = bPct + "%";
         }
     },
 
-    generateData(price, structure, age, method, fMonth, bMonth, taxRate) {
+    generateData(price, structure, age, method, taxRate) {
         this.state.fullData = [];
         if (price <= 0) return;
 
         const statLife = this.config.life[structure];
         let years = statLife;
-
         if (method === 'simplified') {
-            if (age >= statLife) years = Math.floor(statLife * 0.2);
-            else years = Math.floor((statLife - age) + (age * 0.2));
+            years = (age >= statLife) ? Math.floor(statLife*0.2) : Math.floor((statLife-age) + age*0.2);
             if (years < 2) years = 2;
         }
         document.getElementById('out_years').innerText = years + " 年";
 
-        let months1 = 0;
-        if (bMonth <= fMonth) months1 = fMonth - bMonth + 1;
-        else months1 = (12 - bMonth + 1) + fMonth;
+        const fMonth = parseInt(document.getElementById('s_fiscalMonth').value);
+        const bMonth = parseInt(document.getElementById('s_buyMonth').value);
+        let m1 = (bMonth <= fMonth) ? (fMonth - bMonth + 1) : ((12 - bMonth + 1) + fMonth);
 
-        const maxDep = price - 1; 
-        const dbRate = this.val('s_depRate'); 
-        let currentBook = price;
-        let accDep = 0;
-        let i = 1;
-
-        while (currentBook > 1 && i <= 100) {
+        const maxDep = price - 1;
+        const dbRate = this.val('s_depRate');
+        let cur = price, acc = 0;
+        
+        for (let i = 1; i <= 60; i++) { // Max 60 years calc
             let dep = 0;
-            if (method === 'rate') dep = currentBook * dbRate;
+            if (method === 'rate') dep = cur * dbRate;
             else dep = price / years;
 
-            if (i === 1) dep = dep * (months1 / 12);
-            if (method !== 'rate' && i > years && i > 1 && accDep < maxDep) {
-                // optional cleanup for leftover due to monthly calc
+            if (i === 1) dep = dep * (m1 / 12);
+            
+            // 简便/直线到期停止
+            if (method !== 'rate' && i > years && i > 1 && acc < maxDep) {
+                 // 通常到这里已折完，但如果有尾数，最后一年补齐? 
+                 // 简化处理：不再计提
+                 dep = 0;
             }
-
-            if (accDep + dep > maxDep) dep = maxDep - accDep;
+            
+            if (acc + dep > maxDep) dep = maxDep - acc;
             if (dep < 0) dep = 0;
 
-            accDep += dep;
-            currentBook -= dep;
+            acc += dep;
+            cur -= dep;
             
-            this.state.fullData.push({
-                year: i, dep: dep, save: dep * taxRate, book: currentBook
-            });
-
-            if (currentBook <= 1) break; 
-            i++;
+            this.state.fullData.push({ y: i, dep: dep, save: dep*taxRate, book: cur });
+            if (cur <= 1) break;
         }
     },
 
-    renderSmallTable() {
-        const data = this.state.fullData.slice(0, 5);
-        let html = "";
+    renderTables() {
+        const d = this.state.fullData;
+        let htmlSmall = "";
         let totalSave = 0;
-        data.forEach(d => {
-            totalSave += d.save;
-            html += `
-                <tr class="${d.year===1?'row-highlight':''}">
-                    <td>第 ${d.year} 年</td>
-                    <td>${Math.round(d.dep).toLocaleString()} 万</td>
-                    <td style="color:var(--success)">+${Math.round(d.save).toLocaleString()} 万</td>
-                </tr>
-            `;
+        
+        // Small Table (5 years)
+        d.slice(0, 5).forEach(r => {
+            totalSave += r.save;
+            htmlSmall += `
+                <tr class="${r.y===1?'row-highlight':''}">
+                    <td>第 ${r.y} 年</td>
+                    <td>${Math.round(r.dep).toLocaleString()} 万</td>
+                    <td style="color:var(--success)">+${Math.round(r.save).toLocaleString()} 万</td>
+                </tr>`;
         });
-        const y1 = this.state.fullData[0];
-        document.getElementById('out_year1').innerText = y1 ? Math.round(y1.dep).toLocaleString() : 0;
+        document.getElementById('out_table_body').innerHTML = htmlSmall;
         document.getElementById('out_totalSave').innerText = Math.round(totalSave).toLocaleString() + " 万";
-        document.getElementById('out_table_body').innerHTML = html;
-    },
+        document.getElementById('out_year1').innerText = d[0] ? Math.round(d[0].dep).toLocaleString() : 0;
 
-    renderFullTable() {
-        let html = "";
-        this.state.fullData.forEach(d => {
-            html += `
-                <tr>
-                    <td>第 ${d.year} 年</td>
-                    <td>${Math.round(d.dep).toLocaleString()} 万</td>
-                    <td style="color:var(--success)">+${Math.round(d.save).toLocaleString()} 万</td>
-                    <td style="color:var(--text-sub)">${Math.round(d.book).toLocaleString()} 万</td>
-                </tr>
-            `;
+        // Full Table
+        let htmlFull = "";
+        d.forEach(r => {
+            htmlFull += `<tr>
+                <td>第 ${r.y} 年</td>
+                <td>${Math.round(r.dep).toLocaleString()} 万</td>
+                <td style="color:var(--success)">+${Math.round(r.save).toLocaleString()} 万</td>
+                <td style="color:var(--text-sub)">${Math.round(r.book).toLocaleString()} 万</td>
+            </tr>`;
         });
-        document.getElementById('full_table_body').innerHTML = html;
+        document.getElementById('full_table_body').innerHTML = htmlFull;
     },
 
-    showFullModal() {
-        this.renderFullTable();
-        document.getElementById('fullModal').style.display = 'flex';
-    },
-
-    closeFullModal() {
-        document.getElementById('fullModal').style.display = 'none';
-    }
+    showFullModal() { document.getElementById('fullModal').style.display = 'flex'; },
+    closeFullModal() { document.getElementById('fullModal').style.display = 'none'; }
 };
 
 document.addEventListener('DOMContentLoaded', () => app.init());
