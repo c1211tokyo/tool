@@ -3,16 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI NEXUS: Liquid Future</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
+    <title>AI NEXUS: Matrix Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     <style>
         :root {
             /* 极致深黑背景 */
             --bg-deep: #000000; 
-            /* 极微弱的星云色，几乎不可见，只在光照下显现 */
-            --nebula-1: rgba(20, 20, 30, 0.4); 
-            --nebula-2: rgba(10, 10, 15, 0.2); 
-            --accent-color: #00f3ff;
+            /* 极微弱的星云色 */
+            --nebula-1: rgba(30, 30, 45, 0.4); 
+            --nebula-2: rgba(10, 15, 25, 0.3); 
         }
 
         * {
@@ -26,18 +25,13 @@
             overflow: hidden;
             font-family: 'Rajdhani', sans-serif;
             position: relative;
-            /* 极简深空渐变：中心微亮，四周纯黑 */
-            background-image: radial-gradient(circle at center, #0a0a12 0%, #000000 80%);
+            background-image: radial-gradient(circle at center, #0b0b14 0%, #000000 90%);
         }
 
-        /* --- 背景层：幽暗星云 (调整得更隐秘) --- */
+        /* --- 背景层：星云 --- */
         .nebula-container {
             position: absolute; width: 100%; height: 100%;
-            filter: blur(80px); 
-            z-index: 0; 
-            opacity: 0.6; 
-            will-change: transform;
-            pointer-events: none;
+            filter: blur(90px); z-index: 0; opacity: 0.5; pointer-events: none;
         }
 
         .nebula-layer {
@@ -58,7 +52,7 @@
 
         @keyframes nebulaSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-        /* 星星 */
+        /* 星星容器 (静态星 + 动态流星) */
         #stars-container {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none;
         }
@@ -68,90 +62,89 @@
         }
         @keyframes twinkle { 0% { opacity: 0.3; } 100% { opacity: 1; } }
 
+        /* 流星样式 */
+        .shooting-star-trail {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,1));
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(255,255,255,0.8);
+            opacity: 0;
+            z-index: 2; /* 确保在星云之上 */
+            pointer-events: none;
+            /* 动画由JS动态插入 */
+        }
+
         /* 舞台 */
         #stage {
             position: relative; width: 100%; height: 100%; z-index: 10;
         }
 
-        /* --- 核心：Liquid Glass (液态玻璃) 样式 --- */
+        /* --- 核心：Liquid Glass (液态玻璃) 样式优化 --- */
         .orb {
             position: absolute;
             border-radius: 50%;
-            /* 1. 基础通透感 */
-            background: rgba(255, 255, 255, 0.01); 
-            /* 2. 混合模式增加亮度 */
-            backdrop-filter: blur(8px) saturate(120%); 
-            -webkit-backdrop-filter: blur(8px) saturate(120%);
+            /* 1. 调亮底色：增加不透明度，偏冷白，不再死黑 */
+            background: rgba(220, 235, 255, 0.08); 
             
-            /* 3. 液态光影层：多重内阴影模拟厚度 */
+            /* 2. 混合模式：提高饱和度和亮度 */
+            backdrop-filter: blur(10px) saturate(150%) brightness(1.1); 
+            -webkit-backdrop-filter: blur(10px) saturate(150%) brightness(1.1);
+            
+            /* 3. 光影层：增强轮廓光 */
             box-shadow: 
-                inset 0 0 15px rgba(255, 255, 255, 0.05), /* 整体微光 */
-                inset 2px 4px 10px rgba(255, 255, 255, 0.2), /* 左上高光边缘 */
-                inset -2px -4px 15px rgba(0, 0, 0, 0.6), /* 右下深邃厚度 */
-                0 0 20px var(--glow-color-dim); /* 外部辉光 (在JS里设置变量) */
+                inset 0 0 20px rgba(255, 255, 255, 0.1), /* 内部辉光 */
+                inset 2px 4px 8px rgba(255, 255, 255, 0.25), /* 顶部高光 */
+                inset -2px -4px 10px rgba(0, 0, 0, 0.5), /* 底部阴影 */
+                0 0 15px var(--glow-color-dim); /* 外部辉光 */
 
-            border: 1px solid rgba(255, 255, 255, 0.15); /* 极细的外框 */
-            border-top: 1px solid rgba(255, 255, 255, 0.4); /* 顶部更亮，模拟光源 */
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.25); /* 边框更明显 */
+            border-top: 1px solid rgba(255, 255, 255, 0.5); /* 顶边框加强 */
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             cursor: pointer;
             
-            /* 物理引擎控制位置，这里只过渡视觉属性 */
             transition: box-shadow 0.4s ease, border-color 0.4s ease, filter 0.4s ease;
             will-change: transform;
         }
 
-        /* 液态高光 (Specular Highlight) */
+        /* 高光点 */
         .orb::after {
             content: ''; position: absolute;
-            top: 5%; left: 12%; width: 50%; height: 30%;
+            top: 8%; left: 15%; width: 40%; height: 25%;
             border-radius: 50%;
-            background: radial-gradient(ellipse at center, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 60%);
-            transform: rotate(-45deg); opacity: 0.6; filter: blur(1px);
-            pointer-events: none;
-        }
-        
-        /* 底部反光 (Rim Light) */
-        .orb::before {
-            content: ''; position: absolute;
-            bottom: 5%; right: 10%; width: 60%; height: 30%;
-            border-radius: 50%;
-            background: radial-gradient(ellipse at center, var(--glow-color), transparent 70%);
-            transform: rotate(-45deg); opacity: 0.3; filter: blur(5px);
-            pointer-events: none;
+            background: radial-gradient(ellipse at center, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 70%);
+            transform: rotate(-45deg); opacity: 0.7; pointer-events: none;
         }
 
         .orb img {
             width: 55%; height: 55%;
             object-fit: contain; pointer-events: none; z-index: 2;
-            /* Logo 也有轻微的玻璃投影 */
-            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
-            transition: opacity 0.2s, transform 0.3s;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+            transition: transform 0.3s;
         }
 
         /* 悬浮信息 */
         .orb-info {
             position: absolute; bottom: -60px; left: 50%; transform: translateX(-50%);
-            width: 200px; text-align: center; opacity: 0; pointer-events: none;
+            width: 180px; text-align: center; opacity: 0; pointer-events: none;
             transition: opacity 0.3s; z-index: 20;
-            /* 磨砂黑底 */
-            background: rgba(10, 10, 10, 0.8); backdrop-filter: blur(10px);
+            background: rgba(15, 15, 20, 0.9); backdrop-filter: blur(10px);
             border: 1px solid rgba(255,255,255,0.2); border-radius: 8px;
             padding: 6px 10px;
         }
         .orb-name { font-family: 'Orbitron', sans-serif; font-size: 14px; color: #fff; letter-spacing: 1px; }
-        .orb-desc { font-size: 10px; color: #aaa; }
+        .orb-desc { font-size: 10px; color: #ccc; }
 
         /* --- 交互状态 --- */
-        
-        /* 悬停：液态感增强 */
         .orb.hovered {
             z-index: 1000 !important;
-            border-color: rgba(255,255,255,0.8);
+            border-color: rgba(255,255,255,0.9);
+            background: rgba(220, 235, 255, 0.15); /* 悬浮时更亮 */
             box-shadow: 
-                inset 0 0 20px rgba(255, 255, 255, 0.2),
-                0 0 50px var(--glow-color); /* 强烈的外发光 */
+                inset 0 0 30px rgba(255, 255, 255, 0.3),
+                0 0 60px var(--glow-color); 
         }
         .orb.hovered img { transform: scale(1.1); }
         .orb.hovered .orb-info { opacity: 1; bottom: -70px; }
@@ -159,38 +152,37 @@
         /* 黑洞特效 */
         .orb.blackhole-active { z-index: 9999 !important; animation: blackhole 0.8s cubic-bezier(0.7,0,0.2,1) forwards; }
         @keyframes blackhole {
-            0% { transform: scale(1.2); filter: brightness(1.5); }
-            40% { transform: scale(0.1); filter: brightness(50); background: #fff; } /* 坍缩成奇点 */
+            0% { transform: scale(1.2); filter: brightness(2); }
+            40% { transform: scale(0.1); filter: brightness(50); background: #fff; } 
             100% { transform: scale(0); opacity: 0; }
         }
         .orb.sucked { transition: transform 0.6s ease, opacity 0.6s; transform: scale(0.3) !important; opacity: 0; }
 
         /* --- UI控件：归位按钮 --- */
         .control-btn {
-            position: absolute; bottom: 20px; left: 20px;
-            width: 44px; height: 44px;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.05);
+            position: absolute; bottom: 25px; left: 25px;
+            width: 48px; height: 48px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             display: flex; justify-content: center; align-items: center;
             cursor: pointer; z-index: 100;
             transition: all 0.3s ease;
-            color: rgba(255,255,255,0.6);
+            color: rgba(255,255,255,0.7);
         }
         .control-btn:hover {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 255, 255, 0.4);
-            color: #fff;
-            transform: scale(1.05);
-            box-shadow: 0 0 15px rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.6);
+            color: #fff; transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(255,255,255,0.15);
         }
-        .control-btn svg { width: 20px; height: 20px; fill: currentColor; }
+        .control-btn svg { width: 22px; height: 22px; fill: currentColor; }
 
         .footer-mark {
-            position: absolute; bottom: 20px; right: 20px;
-            color: rgba(255, 255, 255, 0.2); font-family: 'Orbitron', sans-serif;
-            font-size: 10px; letter-spacing: 2px; z-index: 5; pointer-events: none;
+            position: absolute; bottom: 25px; right: 25px;
+            color: rgba(255, 255, 255, 0.25); font-family: 'Orbitron', sans-serif;
+            font-size: 11px; letter-spacing: 2px; z-index: 5; pointer-events: none;
         }
 
     </style>
@@ -237,13 +229,12 @@
         const dockBtn = document.getElementById('dock-btn');
         const orbs = [];
         
-        let isTransitioning = false; // 页面跳转动画锁
-        let isDocked = false; // 是否处于归位状态
-        let animationId;
+        let isTransitioning = false;
+        let isDocked = false;
 
-        // 星星初始化
+        // 1. 静态背景星初始化
         function initStars() {
-            const count = 100;
+            const count = 120;
             for (let i = 0; i < count; i++) {
                 const s = document.createElement('div');
                 s.className = 'star';
@@ -255,30 +246,65 @@
             }
         }
 
+        // 2. 动态流星系统 (修复可见性)
+        function spawnShootingStar() {
+            const star = document.createElement('div');
+            star.className = 'shooting-star-trail';
+            
+            // 随机起始位置 (主要在右上方或左上方)
+            const startX = Math.random() * window.innerWidth;
+            const startY = Math.random() * (window.innerHeight * 0.5);
+            
+            // 随机长度和角度
+            const length = 100 + Math.random() * 200;
+            const angle = 45; // 向右下角划过
+            
+            star.style.width = length + 'px';
+            star.style.left = startX + 'px';
+            star.style.top = startY + 'px';
+            star.style.transform = `rotate(${angle}deg)`;
+            
+            // 动态注入动画
+            star.animate([
+                { transform: `translate(0, 0) rotate(${angle}deg)`, opacity: 0 },
+                { transform: `translate(100px, 100px) rotate(${angle}deg)`, opacity: 1, offset: 0.1 },
+                { transform: `translate(600px, 600px) rotate(${angle}deg)`, opacity: 0 }
+            ], {
+                duration: 1500 + Math.random() * 1000,
+                easing: 'ease-out'
+            }).onfinish = () => star.remove();
+
+            starsContainer.appendChild(star);
+
+            // 随机时间再次生成
+            setTimeout(spawnShootingStar, 2000 + Math.random() * 4000);
+        }
+
         class Orb {
             constructor(data, index) {
                 this.data = data;
-                this.index = index;
                 
-                // 尺寸设定
+                // 【修改点】三种固定大小 logic
                 const isMobile = window.innerWidth < 768;
-                const baseSize = isMobile ? 80 : 120;
-                this.realRadius = (baseSize * (0.9 + Math.random() * 0.2)) / 2;
-                this.radius = this.realRadius; 
+                // 定义三种基准尺寸 (半径)
+                // Desktop: 大=70(宽140), 中=55(宽110), 小=45(宽90)
+                // Mobile: 大=45(宽90), 中=38(宽76), 小=30(宽60)
+                const sizes = isMobile ? [30, 38, 45] : [45, 55, 70];
+                // 随机分配一个尺寸等级 (0:小, 1:中, 2:大)
+                this.sizeTier = Math.floor(Math.random() * 3);
+                this.realRadius = sizes[this.sizeTier];
+                this.radius = this.realRadius;
                 
-                // 随机位置
+                // 初始位置
                 this.x = Math.random() * (window.innerWidth - this.realRadius * 2);
                 this.y = Math.random() * (window.innerHeight - this.realRadius * 2);
                 
-                // 随机速度
                 const v = 0.5;
                 this.vx = (Math.random() - 0.5) * v;
                 this.vy = (Math.random() - 0.5) * v;
 
-                // 归位目标坐标
                 this.targetX = 0;
                 this.targetY = 0;
-
                 this.element = null;
                 this.imgElement = null;
                 this.isHovered = false;
@@ -294,10 +320,8 @@
                 this.element.style.width = this.realRadius * 2 + 'px';
                 this.element.style.height = this.realRadius * 2 + 'px';
                 
-                // 设置光晕变量，用于CSS
                 this.element.style.setProperty('--glow-color', this.data.color);
-                // 设置一个暗一点的颜色用于常态
-                this.element.style.setProperty('--glow-color-dim', this.data.color + '40'); // 40 is hex opacity
+                this.element.style.setProperty('--glow-color-dim', this.data.color + '40'); 
 
                 this.imgElement = document.createElement('img');
                 this.imgElement.src = `pic/${this.data.id}.png`;
@@ -305,7 +329,7 @@
                     this.imgElement.style.display = 'none';
                     const t = document.createElement('div');
                     t.innerText = this.data.name[0];
-                    t.style.fontSize = '2em'; t.style.color = 'rgba(255,255,255,0.5)'; t.style.fontWeight = 'bold';
+                    t.style.fontSize = '1.8em'; t.style.color = 'rgba(255,255,255,0.7)'; t.style.fontWeight = 'bold';
                     this.element.appendChild(t);
                 };
                 this.element.appendChild(this.imgElement);
@@ -315,7 +339,6 @@
                 info.innerHTML = `<div class="orb-name">${this.data.name}</div><div class="orb-desc">${this.data.desc}</div>`;
                 this.element.appendChild(info);
 
-                // 事件
                 this.element.addEventListener('mouseenter', () => this.onEnter());
                 this.element.addEventListener('mouseleave', () => this.onLeave());
                 this.element.addEventListener('touchstart', () => this.onEnter(), {passive: true});
@@ -330,7 +353,6 @@
                 this.element.classList.add('hovered');
                 this.scale = 1.15;
                 
-                // 仅在非归位模式下启用冲击波，防止破坏矩阵
                 if (!isDocked) {
                     if (this.hoverTimer) clearTimeout(this.hoverTimer);
                     this.hoverTimer = setTimeout(() => this.triggerShockwave(), 3000);
@@ -365,7 +387,6 @@
                 isTransitioning = true;
                 if (this.hoverTimer) clearTimeout(this.hoverTimer);
 
-                // 锁定位置
                 this.element.style.left = this.x + 'px';
                 this.element.style.top = this.y + 'px';
                 this.element.style.transform = 'none';
@@ -390,24 +411,17 @@
                 });
             }
 
-            // 计算归位模式下的移动 (Lerp)
             updateDocking() {
-                // 平滑移动系数
                 const easing = 0.05; 
                 this.x += (this.targetX - this.x) * easing;
                 this.y += (this.targetY - this.y) * easing;
-                
-                // 归位模式下，速度归零，防止切回物理模式时乱飞
                 this.vx = 0; this.vy = 0;
             }
 
-            // 物理模式
             updatePhysics() {
-                if (this.isHovered) return; // 悬停不动
-                this.x += this.vx;
-                this.y += this.vy;
+                if (this.isHovered) return;
+                this.x += this.vx; this.y += this.vy;
 
-                // 简单的边界
                 if (this.x <= 0) { this.x = 0; this.vx *= -1; }
                 if (this.x + this.realRadius*2 >= window.innerWidth) { this.x = window.innerWidth - this.realRadius*2; this.vx *= -1; }
                 if (this.y <= 0) { this.y = 0; this.vy *= -1; }
@@ -420,41 +434,120 @@
             }
         }
 
-        // ================= 归位计算逻辑 =================
+        // ================= 归位计算逻辑 (核心修改) =================
         function calculateDockPositions() {
-            const isMobile = window.innerWidth < 768;
-            const cols = isMobile ? 4 : 8; // 每行个数
-            const gap = 10; // 间隙
-            const margin = 20; 
-            const bottomAreaHeight = isMobile ? 300 : 250; // 底部预留高度
-            
-            // 基础网格大小
-            const cellW = (window.innerWidth - margin * 2) / cols;
-            // 垂直起始点
-            const startY = window.innerHeight - bottomAreaHeight;
+            // 1. 排序：按尺寸从小到大 (小球在前，大球在后)
+            // 这样我们在填充行时，先填充第一行(小)，最后填充最后一行(大)
+            // 从而实现：小球在上面，大球在下面
+            const sortedOrbs = [...orbs].sort((a, b) => a.realRadius - b.realRadius);
 
-            orbs.forEach((orb, i) => {
-                const col = i % cols;
-                const row = Math.floor(i / cols);
+            const isMobile = window.innerWidth < 768;
+            const gap = isMobile ? 8 : 15; // 间距
+            const bottomMargin = 100; // 距离底部
+            
+            // 我们固定分 3 排
+            const rowCount = 3;
+            const itemsPerRow = Math.ceil(sortedOrbs.length / rowCount); // 计算每排大概多少个(约5个)
+
+            // 计算所有行的总高度，以便垂直居中或贴底
+            // 但需求是 "靠底"，所以我们从下往上计算 Y
+            
+            let currentIdx = 0;
+            
+            // 遍历每一排 (Row 0 是最上面/小球，Row 2 是最下面/大球)
+            for (let r = 0; r < rowCount; r++) {
+                // 取出这一排的球
+                // 注意：如果总数除不尽，最后一排(大球)可能会少几个，或者第一排少几个
+                // 为了让大球沉底且填满，我们建议平均分配
                 
-                // 目标 X: 居中对齐
-                const centerX = margin + col * cellW + cellW/2;
-                orb.targetX = centerX - orb.realRadius;
+                // 截取当前行的球
+                const start = r * itemsPerRow;
+                const end = Math.min(start + itemsPerRow, sortedOrbs.length);
+                const rowOrbs = sortedOrbs.slice(start, end);
                 
-                // 目标 Y: 从下往上排，还是从上往下？这里从设定线开始往下排
-                const centerY = startY + row * (orb.realRadius * 2 + gap * 2) + orb.realRadius;
-                orb.targetY = centerY - orb.realRadius;
-            });
+                if (rowOrbs.length === 0) continue;
+
+                // 计算这一排的总宽度，用于水平居中
+                let rowWidth = 0;
+                rowOrbs.forEach(o => rowWidth += (o.realRadius * 2 + gap));
+                rowWidth -= gap; // 减去最后一个多余间距
+
+                let startX = (window.innerWidth - rowWidth) / 2;
+                
+                // 计算这一排的 Y 坐标
+                // 既然 Row 0 是小球(上)，Row 2 是大球(下)
+                // 我们需要确定每一排的高度基准
+                // 简单起见，设定固定行高或基于该行最大球体
+                // 这里我们倒着算 Y：从屏幕底部往上推
+                
+                // 重新思考：Row 2 (大) 在最下面。
+                // 屏幕底部位置
+                // Y offset from bottom: 
+                // Row 2 Y = H - bottomMargin - rowHeight
+                // Row 1 Y = Row 2 Y - gap - rowHeight
+                // ...
+                
+                // 为了简单，我们手动指定每一排距离底部的距离
+                // Row 0 (Top/Small): Bottom + 250
+                // Row 1 (Mid/Mid): Bottom + 140
+                // Row 2 (Btm/Large): Bottom + 20
+                // 具体数值根据球体大小动态算
+                
+                // 这里我们统一用一种从上往下排列的思路，然后整体往下压
+                // 或者直接按顺序排，因为我们已经把 array sort 好了 (小->大)
+                
+            }
+
+            // 重新实作：按 "排" 分配
+            // Row 0 (Top): Smallest
+            // Row 1 (Mid): Medium
+            // Row 2 (Btm): Largest
+            
+            // 预设行高中心线距离底部的距离
+            const rowBottomOffsets = isMobile ? [220, 140, 60] : [300, 180, 60]; 
+            
+            for (let r = 0; r < rowCount; r++) {
+                const start = r * itemsPerRow;
+                const end = Math.min(start + itemsPerRow, sortedOrbs.length);
+                const rowOrbs = sortedOrbs.slice(start, end);
+                
+                if (rowOrbs.length === 0) continue;
+
+                let rowWidth = 0;
+                rowOrbs.forEach(o => rowWidth += (o.realRadius * 2 + gap));
+                rowWidth -= gap;
+
+                let currentX = (window.innerWidth - rowWidth) / 2;
+                // Y 坐标：屏幕高度 - 预设的偏移量 - 球半径(因为y是左上角)
+                // rowBottomOffsets[0] 是最上面的行(距离底部最远)
+                // 但我们的数组 rowBottomOffsets[0] 写的是 220，是最大的，刚好对应
+                // 实际上 r=0 是小球，rowBottomOffsets[0] 应该是最高的距离
+                
+                // 修正：sortedOrbs 是 小->大
+                // r=0 处理小球，放在最上面 (距离底部远)
+                // r=2 处理大球，放在最下面 (距离底部近)
+                // rowBottomOffsets 需要是 [远, 中, 近] -> [300, 180, 60]
+                
+                const bottomOffset = rowBottomOffsets[r] || 60; 
+                const centerY = window.innerHeight - bottomOffset;
+
+                rowOrbs.forEach(orb => {
+                    orb.targetX = currentX;
+                    orb.targetY = centerY - orb.realRadius; // 居中修正
+                    
+                    currentX += (orb.realRadius * 2 + gap);
+                });
+            }
         }
 
         dockBtn.addEventListener('click', () => {
             isDocked = !isDocked;
             dockBtn.style.opacity = isDocked ? '1' : '0.6';
+            dockBtn.style.color = isDocked ? '#fff' : 'rgba(255,255,255,0.7)';
             
             if (isDocked) {
                 calculateDockPositions();
             } else {
-                // 散开：给每个球一个随机微小速度，重新激活物理
                 orbs.forEach(o => {
                     o.vx = (Math.random() - 0.5) * 2;
                     o.vy = (Math.random() - 0.5) * 2;
@@ -470,14 +563,10 @@
         // ================= 主循环 =================
         function loop() {
             if (!isTransitioning) {
-                
                 if (isDocked) {
-                    // 模式 A: 归位模式 (无碰撞，平滑移动)
                     orbs.forEach(o => o.updateDocking());
                 } else {
-                    // 模式 B: 物理漂浮模式 (有碰撞)
-                    
-                    // 1. 碰撞检测
+                    // 碰撞检测
                     for (let i = 0; i < orbs.length; i++) {
                         for (let j = i + 1; j < orbs.length; j++) {
                             const b1 = orbs[i]; const b2 = orbs[j];
@@ -505,19 +594,15 @@
                             }
                         }
                     }
-                    
-                    // 2. 物理运动
                     orbs.forEach(o => o.updatePhysics());
                 }
             }
-
-            // 渲染
             orbs.forEach(o => o.updateRenderer());
             requestAnimationFrame(loop);
         }
 
-        // 启动
         initStars();
+        spawnShootingStar(); // 启动流星
         aiTools.forEach((d, i) => orbs.push(new Orb(d, i)));
         loop();
 
