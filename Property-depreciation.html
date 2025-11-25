@@ -3,143 +3,213 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>蘇的工具箱|日本不动产节税测算</title>
+    <title>日本不动产节税测算 | 蘇的工具箱</title>
     <style>
-        /* V5.0 核心样式 - 保持美观和响应式 */
+        /* --- 核心样式库 (恢复 V5.0 高质量视觉) --- */
         :root {
-            --primary: #2563eb;
-            --primary-dark: #1e40af;
-            --bg: #f8fafc;
-            --card: #ffffff;
-            --text: #0f172a;
-            --border: #e2e8f0;
-            --accent: #f59e0b;
-            --info: #3b82f6;
-            --build-color: #059669; /* 建物绿色 */
-            --land-color: #64748b; /* 土地灰色 */
-            --table-header: #f1f5f9;
+            --primary: #2563eb;       /* 主蓝 */
+            --primary-dark: #1e40af;  /* 深蓝 */
+            --bg: #f8fafc;            /* 背景灰 */
+            --card: #ffffff;          /* 卡片白 */
+            --text: #0f172a;          /* 主黑 */
+            --text-sub: #64748b;      /* 次灰 */
+            --border: #e2e8f0;        /* 边框 */
+            --accent: #f59e0b;        /* 强调黄 */
+            --build-color: #059669;   /* 建物绿 */
+            --land-color: #64748b;    /* 土地灰 */
         }
         
         * { box-sizing: border-box; }
 
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
             background: var(--bg); 
             color: var(--text); 
             padding: 20px; 
             margin: 0;
-            line-height: 1.5;
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
-        .container { max-width: 1000px; margin: 0 auto; }
-        header { text-align: center; margin-bottom: 25px; }
-        h1 { margin: 0; font-size: 1.6rem; color: var(--primary); }
-        h1 span { font-size: 0.9em; font-weight: 300; }
-        p.subtitle { margin: 5px 0 0; font-size: 0.9rem; color: #64748b; }
+        .container { max-width: 1024px; margin: 0 auto; width: 100%; flex: 1; }
 
-        .grid-layout { display: grid; gap: 20px; grid-template-columns: 1fr; }
-        @media(min-width: 768px) { .grid-layout { grid-template-columns: 1fr 1fr; } }
+        /* --- Header --- */
+        header { text-align: center; margin-bottom: 30px; }
+        h1 { margin: 0; font-size: 1.6rem; color: var(--primary); letter-spacing: -0.5px; }
+        
+        /* 需求 3: 首页跳转链接样式 */
+        .home-link { text-decoration: none; color: inherit; cursor: pointer; transition: opacity 0.2s; }
+        .home-link:hover { opacity: 0.8; }
+        
+        p.subtitle { margin: 8px 0 0; font-size: 0.9rem; color: var(--text-sub); }
 
-        .card { background: var(--card); padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        
-        h2 { font-size: 1rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; margin-top: 0; color: #334155; display: flex; align-items: center; justify-content: space-between; }
-        
-        .mode-tabs { display: flex; background: #e2e8f0; border-radius: 8px; padding: 4px; margin-bottom: 20px; }
-        .tab-btn { flex: 1; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem; color: #64748b; background: transparent; transition: all 0.2s; }
-        .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        /* --- 布局网格 --- */
+        .grid-layout { display: grid; gap: 24px; grid-template-columns: 1fr; }
+        @media(min-width: 850px) { .grid-layout { grid-template-columns: 420px 1fr; } }
 
-        .form-row { margin-bottom: 15px; }
-        label { display: flex; align-items: center; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; color: #475569; }
-        .input-wrapper { position: relative; display: flex; align-items: center; } /* 确保输入框和单位对齐 */
-        .input-wrapper input[type=number], .input-wrapper select { flex: 1; max-width: 100%; }
+        /* --- 卡片组件 --- */
+        .card { 
+            background: var(--card); 
+            padding: 24px; 
+            border-radius: 16px; 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03); 
+            margin-bottom: 24px; 
+            border: 1px solid rgba(255,255,255,0.5);
+        }
         
-        input, select { padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 1rem; background: #fff; }
-        .suffix { margin-left: 8px; color: #94a3b8; font-size: 0.85rem; pointer-events: none; }
+        h2 { 
+            font-size: 1rem; 
+            border-bottom: 1px solid var(--border); 
+            padding-bottom: 12px; 
+            margin-top: 0; 
+            margin-bottom: 20px;
+            color: #334155; 
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* --- 模式切换 Tabs --- */
+        .mode-tabs { display: flex; background: #f1f5f9; border-radius: 10px; padding: 4px; margin-bottom: 24px; }
+        .tab-btn { 
+            flex: 1; 
+            border: none; 
+            padding: 10px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            font-size: 0.85rem; 
+            color: var(--text-sub); 
+            background: transparent; 
+            transition: all 0.2s; 
+        }
+        .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+        /* --- 表单元素 --- */
+        .form-row { margin-bottom: 16px; }
+        label { display: flex; align-items: center; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: #475569; }
         
-        .auto-box { background: #eff6ff; border: 1px dashed #bfdbfe; padding: 15px; border-radius: 8px; margin-top: 10px; }
-        .auto-title { color: var(--primary); font-size: 0.85rem; font-weight: 700; margin-bottom: 10px; display: block; }
-        
-        /* Tooltip 样式 */
-        .tooltip-container { position: relative; display: inline-block; margin-left: 5px; }
-        .tooltip-icon { color: var(--info); cursor: pointer; font-size: 0.9rem; font-weight: 700; transition: color 0.2s;}
-        .tooltip-icon:hover { color: var(--primary-dark); }
-        .tooltip-content {
+        .input-group { position: relative; display: flex; align-items: center; }
+        input, select { 
+            width: 100%; 
+            padding: 10px 12px; 
+            border: 1px solid var(--border); 
+            border-radius: 8px; 
+            font-size: 0.95rem; 
+            background: #fff; 
+            transition: border-color 0.2s;
+        }
+        input:focus, select:focus { outline: none; border-color: var(--primary); ring: 2px var(--primary); }
+        .suffix { position: absolute; right: 12px; color: #94a3b8; font-size: 0.85rem; pointer-events: none; }
+
+        /* 自动估算高亮区 */
+        .auto-box { 
+            background: #eff6ff; 
+            border: 1px dashed #bfdbfe; 
+            padding: 16px; 
+            border-radius: 10px; 
+            margin-top: 12px; 
+        }
+        .auto-title { color: var(--primary); font-size: 0.8rem; font-weight: 700; margin-bottom: 12px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* --- Tooltip --- */
+        .tooltip-wrap { position: relative; display: inline-flex; margin-left: 6px; }
+        .tooltip-icon { color: var(--info); cursor: help; font-size: 0.9rem; }
+        .tooltip-text {
             visibility: hidden;
-            width: 320px;
-            background-color: #333;
+            width: 260px;
+            background-color: #1e293b;
             color: #fff;
             text-align: left;
             border-radius: 6px;
             padding: 12px;
             position: absolute;
             z-index: 100;
-            bottom: 150%; 
+            bottom: 140%;
             left: 50%;
-            margin-left: -160px;
+            transform: translateX(-50%);
             opacity: 0;
-            transition: opacity 0.3s;
-            font-size: 0.8rem;
+            transition: opacity 0.2s;
+            font-size: 0.75rem;
             line-height: 1.4;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            white-space: normal;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            font-weight: normal;
         }
-        .tooltip-container:hover .tooltip-content {
-            visibility: visible;
-            opacity: 1;
+        .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%; left: 50%; margin-left: -5px;
+            border-width: 5px; border-style: solid;
+            border-color: #1e293b transparent transparent transparent;
         }
-        .tooltip-content a { color: #818cf8; text-decoration: none; font-weight: bold; }
-        
-        /* 核心结果 */
-        .result-header { 
+        .tooltip-wrap:hover .tooltip-text { visibility: visible; opacity: 1; }
+
+        /* --- 结果显示区 --- */
+        .result-dashboard { 
             background: #1e293b; 
             color: white; 
-            padding: 20px; 
-            border-radius: 10px; 
+            padding: 24px; 
+            border-radius: 16px; 
             text-align: center; 
-            margin-bottom: 20px;
+            margin-bottom: 24px;
             display: flex;
-            justify-content: space-around;
+            justify-content: space-between;
             align-items: center;
         }
-        .big-number { font-size: 1.8rem; font-weight: 700; color: var(--accent); margin: 5px 0; }
-        .dep-period-display { 
-            background: var(--primary-dark); 
-            padding: 10px 15px; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        .res-badge {
+            background: rgba(255,255,255,0.1);
+            padding: 8px 16px;
+            border-radius: 8px;
             text-align: center;
         }
-        .dep-period-display .val { font-size: 2rem; font-weight: 900; color: #10b981; line-height: 1; }
-        .dep-period-display .label { font-size: 0.8rem; color: #e5e7eb; margin-top: 5px; }
+        .res-badge .val { font-size: 1.8rem; font-weight: 700; color: #34d399; line-height: 1.2; }
+        .res-badge .lbl { font-size: 0.75rem; opacity: 0.7; }
 
-        /* 优化横条图 */
-        .ratio-visual { margin: 15px 0; }
-        .bar-wrapper-full { display: flex; height: 35px; border-radius: 8px; overflow: hidden; margin-bottom: 5px; }
-        .bar-segment { display: flex; flex-direction: column; justify-content: center; padding: 0 10px; min-width: 5%; font-weight: 600; white-space: nowrap; transition: width 0.3s; }
-        .bar-segment.build { background-color: var(--build-color); color: white; }
-        .bar-segment.land { background-color: var(--land-color); color: white; }
-        .bar-label { font-size: 0.7rem; opacity: 0.8; }
-        .bar-value { font-size: 0.85rem; line-height: 1; }
+        .res-main { text-align: right; }
+        .res-main .amount { font-size: 2rem; font-weight: 800; color: var(--accent); }
+        .res-main .desc { font-size: 0.85rem; opacity: 0.8; }
+
+        /* --- 比例可视化条 --- */
+        .ratio-bar-container { margin: 20px 0; }
+        .ratio-bar { display: flex; height: 32px; border-radius: 8px; overflow: hidden; background: #f1f5f9; }
+        .rb-seg { display: flex; align-items: center; justify-content: center; color: white; font-size: 0.75rem; font-weight: 600; transition: width 0.4s ease; white-space: nowrap; overflow: hidden; }
+        .rb-build { background: var(--build-color); }
+        .rb-land { background: var(--land-color); }
         
-        .bar-scale { display: flex; justify-content: space-between; font-size: 0.7rem; color: #64748b; padding: 0 5px; }
+        .ratio-legend { display: flex; justify-content: space-between; font-size: 0.8rem; margin-top: 8px; color: var(--text-sub); }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        table th, table td { padding: 10px; text-align: center; border-bottom: 1px solid var(--border); }
-        table th { background: var(--table-header); text-align: left; color: #475569; }
-        table td { text-align: right; }
-        table td:first-child { text-align: left; }
+        /* --- 表格 --- */
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th { text-align: left; color: var(--text-sub); font-weight: 500; padding: 12px 8px; border-bottom: 1px solid var(--border); }
+        td { padding: 12px 8px; border-bottom: 1px solid #f1f5f9; text-align: right; font-feature-settings: "tnum"; }
+        td:first-child { text-align: left; }
+        tr:last-child td { border-bottom: none; }
+        .row-highlight { background-color: #fefce8; font-weight: 600; }
+
+        /* --- Footer --- */
+        footer {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #94a3b8;
+            padding: 40px 0 20px;
+            border-top: 1px solid var(--border);
+            margin-top: auto;
+        }
 
         .hidden { display: none !important; }
-        /* 修正：确保自定义输入框在隐藏时不占空间 */
-        #customFactorInput, #dep_rate_input { display: flex; gap: 8px; align-items: center; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <h1>蘇的工具箱|日本不动产节税测算<span>V5.1</span></h1>
-        <p class="subtitle">🏗️ 估值模型升级 & 💰 增加固定资产评估输入/折旧方法选择</p>
+        <h1>
+            <a href="/" class="index.html">蘇的工具箱</a>
+        </h1>
+        <p class="subtitle">日本不动产节税测算工具 V6.0</p>
     </header>
 
     <div class="grid-layout">
@@ -147,252 +217,129 @@
         <div>
             <div class="card" style="padding: 10px;">
                 <div class="mode-tabs">
-                    <button id="btn-mode-manual" class="tab-btn active" onclick="switchMode('manual')">模式 A: 已知拆分价</button>
-                    <button id="btn-mode-auto" class="tab-btn" onclick="switchMode('auto')">模式 B: 估算比例</button>
-                    <button id="btn-mode-fixed" class="tab-btn" onclick="switchMode('fixed')">模式 C: 固定资产评估</button>
+                    <button id="btn-mode-manual" class="tab-btn active" onclick="app.switchMode('manual')">A: 已知拆分</button>
+                    <button id="btn-mode-auto" class="tab-btn" onclick="app.switchMode('auto')">B: 估算比例</button>
+                    <button id="btn-mode-fixed" class="tab-btn" onclick="app.switchMode('fixed')">C: 固都税评估</button>
                 </div>
             </div>
 
             <div class="card">
-                <h2>1. 基础税务设定</h2>
+                <h2>⚙️ 基础税务设定</h2>
+                
                 <div class="form-row">
-                    <label>建筑构造 (决定法定耐用年数)</label>
-                    <select id="common_structure">
+                    <label>建筑构造 (决定法定寿命)</label>
+                    <select id="s_structure">
                         <option value="wood">🌲 木造 (法定22年)</option>
                         <option value="steel">🏢 轻钢 (法定27年)</option>
                         <option value="rc" selected>🏙 RC/SRC (法定47年)</option>
                     </select>
                 </div>
+
                 <div class="form-row">
-                    <label>筑年数 (已使用年数)
-                        <span class="tooltip-container">
-                            <span class="tooltip-icon">ℹ️</span>
-                            <span class="tooltip-content">填写房屋建成至今的年数。影响折旧年数（简便法）的计算。</span>
-                        </span>
+                    <label>筑年数
+                        <div class="tooltip-wrap"><span class="tooltip-icon">ℹ️</span><span class="tooltip-text">房屋建成至今的年数。中古房通过简便法计算折旧年数时以此为准。</span></div>
                     </label>
-                    <div class="input-wrapper">
-                        <input type="number" id="common_age" value="25" min="0">
+                    <div class="input-group">
+                        <input type="number" id="s_age" value="25" min="0">
                         <span class="suffix">年</span>
                     </div>
                 </div>
-                <div class="form-row" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                    <div>
-                        <label>公司决算月
-                            <span class="tooltip-container">
-                                <span class="tooltip-icon">ℹ️</span>
-                                <span class="tooltip-content">您公司财年结束的月份（如：3月）。用于计算购买当年可计提折旧的月数。</span>
-                            </span>
-                        </label>
-                        <select id="common_fiscalMonth">
-                            <option value="1">1月</option><option value="2">2月</option><option value="3" selected>3月</option>
-                            <option value="4">4月</option><option value="5">5月</option><option value="6">6月</option>
-                            <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
-                            <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
-                        </select>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+                    <div class="form-row">
+                        <label>决算月</label>
+                        <select id="s_fiscalMonth">
+                            <option value="3" selected>3月</option>
+                            <option value="12">12月</option>
+                            </select>
                     </div>
-                    <div>
-                        <label>买入/交付月
-                            <span class="tooltip-container">
-                                <span class="tooltip-icon">ℹ️</span>
-                                <span class="tooltip-content">房屋正式交付并开始计提折旧的月份。购买当月计入折旧。</span>
-                            </span>
-                        </label>
-                        <select id="common_purchaseMonth">
-                            <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
-                            <option value="4" selected>4月</option><option value="5">5月</option><option value="6">6月</option>
-                            <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
-                            <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
-                        </select>
+                    <div class="form-row">
+                        <label>买入月</label>
+                        <select id="s_buyMonth">
+                            <option value="4" selected>4月</option>
+                            </select>
                     </div>
                 </div>
+
                 <div class="form-row">
-                    <label>法人有效税率
-                        <span class="tooltip-container">
-                            <span class="tooltip-icon">ℹ️</span>
-                            <span class="tooltip-content">您公司适用的法人税、事业税和住民税等合计税率。通常在30%到34%之间，输入百分比数字即可。</span>
-                        </span>
-                    </label>
-                    <div class="input-wrapper">
-                        <input type="number" id="common_taxRate" value="33.0" step="0.1">
+                    <label>法人有效税率</label>
+                    <div class="input-group">
+                        <input type="number" id="s_taxRate" value="33.0" step="0.1">
                         <span class="suffix">%</span>
                     </div>
                 </div>
+
                 <div class="form-row">
                     <label>折旧方法
-                        <span class="tooltip-container">
-                            <span class="tooltip-icon">ℹ️</span>
-                            <span class="tooltip-content">
-                                选择折旧计算方法。<br>
-                                • **简便法**: 适用于中古房，最大化首年折旧。<br>
-                                • **直线法**: 每年折旧额固定。<br>
-                                • **定率法**: 需输入折旧率（如新房可查国税厅折旧率表）。
-                            </span>
-                        </span>
+                        <div class="tooltip-wrap"><span class="tooltip-icon">ℹ️</span><span class="tooltip-text">中古房通常使用「简便法」以最大化前期折旧。新房或特殊情况可选定率法或直线法。</span></div>
                     </label>
-                    <div style="display:flex; align-items:center;">
-                        <select id="dep_method">
-                            <option value="simplified">简便法</option>
-                            <option value="straight">直线法 (仅限新房/特殊情况)</option>
-                            <option value="rate">定率法 (仅限新房/特殊情况)</option>
+                    <div style="display:flex; gap:10px;">
+                        <select id="s_method" style="flex:1;">
+                            <option value="simplified">简便法 (推荐)</option>
+                            <option value="straight">直线法</option>
+                            <option value="rate">定率法</option>
                         </select>
-                        <div class="input-wrapper hidden" id="dep_rate_input" style="margin-left:10px;">
-                            <label style="margin:0;">定率:</label>
-                            <input type="number" id="dep_rate" value="0.25" step="0.01" min="0" style="width:70px;">
-                            <span class="suffix"></span>
+                        <div class="input-group hidden" id="grp_depRate" style="width: 100px;">
+                            <input type="number" id="s_depRate" value="0.043" step="0.001" placeholder="率">
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="card">
-                <h2>2. 价格与面积</h2>
+                <h2>💰 价格与估值</h2>
 
                 <div id="panel-manual">
                     <div class="form-row">
-                        <label>土地价格
-                            <span class="tooltip-container">
-                                <span class="tooltip-icon">ℹ️</span>
-                                <span class="tooltip-content">填写合同中明确标注的土地价格（万円）。如无明确拆分，请使用「模式B」自动估算。</span>
-                            </span>
-                        </label>
-                        <div class="input-wrapper">
-                            <input type="number" id="man_landPrice" value="4464">
-                            <span class="suffix">万円</span>
-                        </div>
+                        <label>土地价格 (合同)</label>
+                        <div class="input-group"><input type="number" id="m_landPrice" value="4500"><span class="suffix">万円</span></div>
                     </div>
                     <div class="form-row">
-                        <label>建物价格 (可折旧基数)
-                            <span class="tooltip-container">
-                                <span class="tooltip-icon">ℹ️</span>
-                                <span class="tooltip-content">填写可计提折旧的建物价格（万円）。通常为：总价 - 土地价格。</span>
-                            </span>
-                        </label>
-                        <div class="input-wrapper">
-                            <input type="number" id="man_buildPrice" value="3536">
-                            <span class="suffix">万円</span>
-                        </div>
-                    </div>
-                    <div style="font-size:0.9rem; color:#64748b; text-align:right;">
-                        总价: <strong id="man_total_display">8,000</strong> 万円
+                        <label>建物价格 (合同/可折旧)</label>
+                        <div class="input-group"><input type="number" id="m_buildPrice" value="3500"><span class="suffix">万円</span></div>
                     </div>
                 </div>
 
                 <div id="panel-auto" class="hidden">
                     <div class="form-row">
-                        <label>交易总价
-                            <span class="tooltip-container">
-                                <span class="tooltip-icon">ℹ️</span>
-                                <span class="tooltip-content">填写房产购买合同的总金额（万円）。包含土地+建物，不含中介费、登记费等附加费用。</span>
-                            </span>
-                        </label>
-                        <div class="input-wrapper">
-                            <input type="number" id="auto_totalPrice" value="8000">
-                            <span class="suffix">万円</span>
+                        <label>交易总价</label>
+                        <div class="input-group"><input type="number" id="a_totalPrice" value="8000"><span class="suffix">万円</span></div>
+                    </div>
+                    
+                    <div class="auto-box">
+                        <span class="auto-title">📍 土地参数</span>
+                        <div class="form-row">
+                            <label>土地面积</label>
+                            <div class="input-group"><input type="number" id="a_landArea" value="60"><span class="suffix">㎡</span></div>
+                        </div>
+                        <div class="form-row">
+                            <label>路线价 (基准地价)
+                                <div class="tooltip-wrap"><span class="tooltip-icon">ℹ️</span><span class="tooltip-text">从国税厅路线价图查到的单价。工具会自动乘以系数还原为市场价。</span></div>
+                            </label>
+                            <div class="input-group"><input type="number" id="a_rosenka" value="500000" step="1000"><span class="suffix">円/㎡</span></div>
+                        </div>
+                        <div class="form-row">
+                            <label>市场修正系数</label>
+                            <select id="a_factor">
+                                <option value="1.25">1.25 (保守)</option>
+                                <option value="1.40" selected>1.40 (标准)</option>
+                                <option value="1.60">1.60 (积极)</option>
+                            </select>
                         </div>
                     </div>
 
                     <div class="auto-box">
-                        <span class="auto-title">📍 土地参数 (估算权重)</span>
+                        <span class="auto-title">🏠 建物参数</span>
                         <div class="form-row">
-                            <label>土地面积
-                                <span class="tooltip-container">
-                                    <span class="tooltip-icon">ℹ️</span>
-                                    <span class="tooltip-content">填写土地登记簿上的实测面积（㎡）。<br>【查询方法】登记事项证明书「土地の面积」栏<br>示例：60㎡（约18坪）</span>
-                                </span>
-                            </label>
-                            <div class="input-wrapper">
-                                <input type="number" id="auto_landArea" value="60">
-                                <span class="suffix">㎡</span>
-                            </div>
+                            <label>建物面积</label>
+                            <div class="input-group"><input type="number" id="a_buildArea" value="120"><span class="suffix">㎡</span></div>
                         </div>
                         <div class="form-row">
-                            <label>土地公允评估基础价（路线价）
-                                <span class="tooltip-container">
-                                    <span class="tooltip-icon">ℹ️</span>
-                                    <span class="tooltip-content">
-                                        从国税厅路线价图查询该地块的评估单价（円/㎡）。<br>
-                                        【如何查询】<a href="https://www.rosenka.nta.go.jp/" target="_blank">🔗 查询路线価</a><br>
-                                        地图显示「500C」→ 填入 500,000 円/㎡<br>
-                                        💡 提示：路线价通常为市场价的70-80%
-                                    </span>
-                                </span>
-                            </label>
-                            <div class="input-wrapper">
-                                <input type="number" id="auto_landBasePrice" value="500000" step="10000">
-                                <span class="suffix">円/㎡</span>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <label>市场修正系数
-                                <span class="tooltip-container">
-                                    <span class="tooltip-icon">ℹ️</span>
-                                    <span class="tooltip-content">
-                                        将路线价转换为实际市场价格的调整倍率。<br>
-                                        <strong>【推荐选择】</strong><br>
-                                        • 1.25 - 保守（路线价÷80%的基础换算）<br>
-                                        • 1.40 - <strong>标准（推荐，考虑10%市场溢价）★</strong><br>
-                                        • 1.50 - 积极（热门地段，考虑20%溢价）
-                                    </span>
-                                </span>
-                            </label>
-                            <select id="auto_marketFactor">
-                                <option value="1.25">1.25 (保守估算)</option>
-                                <option value="1.40" selected>1.40 (标准估算)</option>
-                                <option value="1.50">1.50 (积极估算)</option>
-                                <option value="custom">自定义系数 (1.1 - 1.8)</option>
-                            </select>
-                            <div class="input-wrapper hidden" id="customFactorInput" style="margin-top:5px;">
-                                <input type="number" id="auto_customFactor" value="1.6" step="0.05" min="1.1" max="1.8" style="width:70px;">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="auto-box">
-                        <span class="auto-title">🏠 建物参数 (估算权重)</span>
-                        <div class="form-row">
-                            <label>建物面积
-                                <span class="tooltip-container">
-                                    <span class="tooltip-icon">ℹ️</span>
-                                    <span class="tooltip-content">填写建筑物登记面积（専有面積，㎡）。<br>【查询方法】登记事项证明书「建物の床面积」<br>示例：120㎡（3LDK典型尺寸）</span>
-                                </span>
-                            </label>
-                            <div class="input-wrapper">
-                                <input type="number" id="auto_buildArea" value="120">
-                                <span class="suffix">㎡</span>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <label>建造单价
-                                <span class="tooltip-container">
-                                    <span class="tooltip-icon">ℹ️</span>
-                                    <span class="tooltip-content">
-                                        该构造类型的每平米建造成本（円/㎡），已更新至2024-2025年行情。<br>
-                                        <strong>RC标准：430,000円/㎡</strong>；都心高品质公寓可提高到500,000+。
-                                    </span>
-                                </span>
-                            </label>
-                            <select id="auto_buildCost" >
-                                <option value="250000">木造 (标准: 25万)</option>
-                                <option value="320000">轻钢 (标准: 32万)</option>
-                                <option value="430000" selected>RC/SRC (标准: 43万)</option>
-                                <option value="500000">RC/SRC (高级: 50万)</option>
-                            </select>
-                        </div>
-                        <div class="form-row">
-                            <label>残值下限 (Salvage Floor)
-                                <span class="tooltip-container">
-                                    <span class="tooltip-icon">ℹ️</span>
-                                    <span class="tooltip-content">
-                                        超高龄建筑物在物理折旧完毕后的最低残存价值率。<br>
-                                        • 10% - <strong>标准（推荐）★</strong><br>
-                                        • 5% - 超高龄物件（筑年>50年）
-                                    </span>
-                                </span>
-                            </label>
-                            <select id="auto_salvageFloor">
-                                <option value="0.05">5% (超高龄物件)</option>
-                                <option value="0.10" selected>10% (标准)</option>
-                                <option value="0.15">15% (保守估算)</option>
+                            <label>建造单价 (2025参考)</label>
+                            <select id="a_unitCost">
+                                <option value="250000">木造 (25万)</option>
+                                <option value="320000">轻钢 (32万)</option>
+                                <option value="430000" selected>RC (43万)</option>
                             </select>
                         </div>
                     </div>
@@ -400,419 +347,342 @@
 
                 <div id="panel-fixed" class="hidden">
                     <div class="form-row">
-                        <label>土地价格 (固定资产评估)
-                            <span class="tooltip-container">
-                                <span class="tooltip-icon">ℹ️</span>
-                                <span class="tooltip-content">填写固定资产税评估的土地价格 (万円)。这种方法税务认可度较高，但通常分摊的建物价值较低。</span>
-                            </span>
-                        </label>
-                        <div class="input-wrapper">
-                            <input type="number" id="fixed_landPrice" value="4500">
-                            <span class="suffix">万円</span>
-                        </div>
+                        <label>固都税评估额 (土地)</label>
+                        <div class="input-group"><input type="number" id="f_land" value="3000"><span class="suffix">万円</span></div>
                     </div>
                     <div class="form-row">
-                        <label>建物价格 (固定资产评估)
-                            <span class="tooltip-container">
-                                <span class="tooltip-icon">ℹ️</span>
-                                <span class="tooltip-content">填写固定资产税评估的建物价格 (万円)。</span>
-                            </span>
-                        </label>
-                        <div class="input-wrapper">
-                            <input type="number" id="fixed_buildPrice" value="3000">
-                            <span class="suffix">万円</span>
-                        </div>
+                        <label>固都税评估额 (建物)</label>
+                        <div class="input-group"><input type="number" id="f_build" value="2000"><span class="suffix">万円</span></div>
                     </div>
-                    <div style="font-size:0.9rem; color:#64748b; text-align:right;">
-                        总价: <strong id="fixed_total_display">7,500</strong> 万円
+                    <div style="font-size:0.85rem; color:#64748b; margin-top:8px;">* 系统将按固都税比例拆分上方输入的交易总价</div>
+                    <div class="form-row" style="margin-top:8px;">
+                        <label>实际交易总价</label>
+                        <div class="input-group"><input type="number" id="f_totalPrice" value="8000"><span class="suffix">万円</span></div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div>
-            <div class="result-header">
-                <div class="dep-period-display">
-                    <div class="val" id="res_depYears">27</div>
-                    <div class="label">折旧年数 (用于计算)</div>
+            <div class="result-dashboard">
+                <div class="res-badge">
+                    <div class="val" id="out_years">--</div>
+                    <div class="lbl">折旧年数</div>
                 </div>
-                
-                <div style="text-align:right;">
-                    <div style="font-size:0.9rem; opacity:0.8;">前 5 年累计节税额</div>
-                    <div class="big-number" id="res_totalTaxSave">216 万円</div>
-                    <div style="font-size:0.85rem; margin-top:5px;">
-                        首年折旧额: <span id="res_year1Dep" style="color:#fbbf24; font-weight:bold;">131</span> 万円
-                    </div>
+                <div class="res-main">
+                    <div class="desc">5年累计节税 (现金流)</div>
+                    <div class="amount" id="out_totalSave">--</div>
+                    <div class="desc" style="margin-top:5px; color:#94a3b8;">首年折旧: <span id="out_year1" style="color:#fbbf24; font-weight:bold;">--</span> 万</div>
                 </div>
             </div>
 
             <div class="card">
-                <h2>📊 资产拆分详情</h2>
+                <h2>📊 拆分详情</h2>
                 
-                <div class="ratio-visual">
-                    <div class="bar-wrapper-full">
-                        <div class="bar-segment build" id="bar_build" style="width: 44.22%">
-                            <span class="bar-label">🏢 建物（可折旧）</span>
-                            <span class="bar-value" id="bar_build_value">3,538万 (44.2%)</span>
-                        </div>
-                        <div class="bar-segment land" id="bar_land" style="width: 55.78%">
-                            <span class="bar-label">📍 土地（不可折旧）</span>
-                            <span class="bar-value" id="bar_land_value">4,462万 (55.8%)</span>
-                        </div>
+                <div class="ratio-bar-container">
+                    <div class="ratio-bar">
+                        <div id="bar_build" class="rb-seg rb-build" style="width: 50%">建</div>
+                        <div id="bar_land" class="rb-seg rb-land" style="width: 50%">土</div>
                     </div>
-                    <div class="bar-scale">
-                        <span>0%</span>
-                        <span>25%</span>
-                        <span>50%</span>
-                        <span>75%</span>
-                        <span>100%</span>
+                    <div class="ratio-legend">
+                        <span id="txt_build_ratio">建物: --%</span>
+                        <span id="txt_land_ratio">土地: --%</span>
                     </div>
                 </div>
 
-                <table style="width:100%; font-size:0.9rem;">
+                <table>
                     <tr>
-                        <th style="text-align:left; color:var(--build-color); background:none; border-bottom:1px solid var(--border);">建物价格 (可折旧基数)</th>
-                        <td style="font-weight:bold; color:var(--build-color);" id="res_buildPrice">3,538 万円</td>
+                        <th>建物 (可折旧)</th>
+                        <td style="font-weight:700; color:var(--build-color);" id="out_buildPrice">--</td>
                     </tr>
                     <tr>
-                        <th style="text-align:left; color:var(--land-color); background:none; border-bottom:1px solid var(--border);">土地价格 (不可折旧)</th>
-                        <td id="res_landPrice">4,462 万円</td>
-                    </tr>
-                    <tr>
-                        <th style="text-align:left; color:#334155; background:none;">建物/土地比例</th>
-                        <td id="res_ratio">44.2% / 55.8%</td>
+                        <th>土地 (不可折旧)</th>
+                        <td id="out_landPrice">--</td>
                     </tr>
                 </table>
             </div>
 
             <div class="card">
-                <h2>📅 5年节税模拟</h2>
-                <table style="width:100%; font-size:0.9rem;">
+                <h2>📅 5年模拟表</h2>
+                <table>
                     <thead>
                         <tr>
-                            <th style="text-align:left;">年度</th>
-                            <th>折旧额 (损金)</th>
-                            <th>节税 (现金流)</th>
+                            <th>年度</th>
+                            <th>折旧 (损金)</th>
+                            <th>节税 (现金)</th>
                         </tr>
                     </thead>
-                    <tbody id="schedule_body">
+                    <tbody id="out_table_body">
                         </tbody>
                 </table>
-                <div style="font-size:0.75rem; color:#94a3b8; margin-top:10px; text-align:center;">
-                    * 首年按月割计算。假设公司利润足以抵扣折旧额。
+                <div style="font-size:0.75rem; color:#94a3b8; text-align:center; margin-top:15px;">
+                    * 首年按月割计算（包含购买月）。结果仅供模拟参考。
                 </div>
             </div>
         </div>
     </div>
 
-    <div style="text-align:center; font-size:0.8rem; color:#6b7280; margin-top:20px;">
-        免责声明：本计算结果仅供参考，具体结果请以实际税务机关核算为准。
-    </div>
+    <footer>
+        蘇的工具箱 · SUYU.2025
+    </footer>
 </div>
 
 <script>
-    // --- 配置与常量 ---
-    const CONFIG = {
-        // 法定耐用年数
-        life: { wood: 22, steel: 27, rc: 47 }, 
-        // 市场修正系数
-        LAND_MARKET_FACTOR_DEFAULT: 1.40, 
-    };
+/**
+ * V6.0 核心逻辑 - 稳健版
+ */
+const app = {
+    // 基础配置
+    config: {
+        life: { wood: 22, steel: 27, rc: 47 },
+    },
+    state: {
+        mode: 'manual'
+    },
 
-    let currentMode = 'manual';
-
-    // --- 1. 初始化与事件绑定 ---
-    document.addEventListener('DOMContentLoaded', () => {
-        // 绑定所有输入框的 input/change 事件，触发全局计算
-        const allInputs = document.querySelectorAll('input, select');
-        allInputs.forEach(el => {
-            el.addEventListener('input', calculateAll);
-            el.addEventListener('change', calculateAll);
-        });
-
-        // 绑定自定义系数的显示/隐藏逻辑
-        document.getElementById('auto_marketFactor').addEventListener('change', function() {
-            const isCustom = this.value === 'custom';
-            document.getElementById('customFactorInput').classList.toggle('hidden', !isCustom);
-            calculateAll();
-        });
-
-        // 绑定折旧方法下拉的显示/隐藏逻辑
-        document.getElementById('dep_method').addEventListener('change', function() {
-            const isRate = this.value === 'rate';
-            document.getElementById('dep_rate_input').classList.toggle('hidden', !isRate);
-            
-            // 切换方法时，更新折旧年数显示
-            const method = this.value;
-            const depYearsLabel = document.querySelector('.dep-period-display .label');
-            if (method === 'simplified') {
-                depYearsLabel.innerText = "简便法折旧期";
-            } else if (method === 'straight') {
-                depYearsLabel.innerText = "直线法折旧期 (法定/剩余)";
-            } else {
-                depYearsLabel.innerText = "定率法折旧期 (法定/剩余)";
-            }
-            calculateAll();
-        });
-
-        // 初始计算一次，确保显示测试用例的结果
-        calculateAll();
-    });
-
-    // --- 2. 模式切换 ---
-    window.switchMode = function(mode) {
-        currentMode = mode;
+    init() {
+        // 填充月份选项 (1-12月)
+        this.fillMonths();
         
-        document.getElementById('btn-mode-manual').className = mode === 'manual' ? 'tab-btn active' : 'tab-btn';
-        document.getElementById('btn-mode-auto').className = mode === 'auto' ? 'tab-btn active' : 'tab-btn';
-        document.getElementById('btn-mode-fixed').className = mode === 'fixed' ? 'tab-btn active' : 'tab-btn';
+        // 绑定事件
+        const inputs = document.querySelectorAll('input, select');
+        inputs.forEach(el => {
+            el.addEventListener('input', () => this.calc());
+            el.addEventListener('change', () => this.calc());
+        });
 
-        document.getElementById('panel-manual').classList.toggle('hidden', mode !== 'manual');
-        document.getElementById('panel-auto').classList.toggle('hidden', mode !== 'auto');
-        document.getElementById('panel-fixed').classList.toggle('hidden', mode !== 'fixed');
+        // 绑定折旧方法显隐
+        document.getElementById('s_method').addEventListener('change', (e) => {
+            const isRate = e.target.value === 'rate';
+            document.getElementById('grp_depRate').classList.toggle('hidden', !isRate);
+        });
 
-        calculateAll();
-    }
+        // 初始计算
+        this.calc();
+    },
 
-    // --- 3. 核心计算逻辑 ---
-    function calculateAll() {
-        // A. 读取公共参数 (使用 safeFloat 防止 NaN)
-        const structure = document.getElementById('common_structure').value;
-        const age = safeFloat(document.getElementById('common_age').value);
-        const fiscalMonth = parseInt(document.getElementById('common_fiscalMonth').value);
-        const purchaseMonth = parseInt(document.getElementById('common_purchaseMonth').value);
-        const taxRate = safeFloat(document.getElementById('common_taxRate').value) / 100;
-        const salvageFloor = safeFloat(document.getElementById('auto_salvageFloor').value || 0.1); // 使用默认残值下限
+    fillMonths() {
+        const opts = Array.from({length: 12}, (_, i) => `<option value="${i+1}">${i+1}月</option>`).join('');
+        const s1 = document.getElementById('s_fiscalMonth');
+        const s2 = document.getElementById('s_buyMonth');
+        // 保存当前值
+        const v1 = s1.value, v2 = s2.value;
+        s1.innerHTML = opts; s2.innerHTML = opts;
+        // 恢复默认 (3月决算, 4月买入)
+        s1.value = "3"; s2.value = "4"; 
+    },
 
-        let finalLandPrice = 0;
-        let finalBuildPrice = 0;
+    switchMode(mode) {
+        this.state.mode = mode;
+        
+        // UI 切换
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(`btn-mode-${mode}`).classList.add('active');
 
-        // B. 根据模式确定 Land/Build 价格
-        if (currentMode === 'manual') {
-            finalLandPrice = safeFloat(document.getElementById('man_landPrice').value);
-            finalBuildPrice = safeFloat(document.getElementById('man_buildPrice').value);
-            // 更新 Manual 区域的总价显示
-            document.getElementById('man_total_display').innerText = (finalLandPrice + finalBuildPrice).toLocaleString();
+        document.getElementById('panel-manual').classList.add('hidden');
+        document.getElementById('panel-auto').classList.add('hidden');
+        document.getElementById('panel-fixed').classList.add('hidden');
+        document.getElementById(`panel-${mode}`).classList.remove('hidden');
 
-        } else if (currentMode === 'fixed') {
-            finalLandPrice = safeFloat(document.getElementById('fixed_landPrice').value);
-            finalBuildPrice = safeFloat(document.getElementById('fixed_buildPrice').value);
-            // 更新 Fixed 区域的总价显示
-            document.getElementById('fixed_total_display').innerText = (finalLandPrice + finalBuildPrice).toLocaleString();
+        this.calc();
+    },
 
-        } else {
-            // 自动模式：估算逻辑
-            const totalPrice = safeFloat(document.getElementById('auto_totalPrice').value);
-            const landArea = safeFloat(document.getElementById('auto_landArea').value);
-            const buildArea = safeFloat(document.getElementById('auto_buildArea').value);
-            const landBasePrice = safeFloat(document.getElementById('auto_landBasePrice').value); // 円/m2
-            const buildCost = safeFloat(document.getElementById('auto_buildCost').value); // 円/m2
-            
-            // 读取市场修正系数
-            let factor = safeFloat(document.getElementById('auto_marketFactor').value);
-            if (document.getElementById('auto_marketFactor').value === 'custom') {
-                factor = safeFloat(document.getElementById('auto_customFactor').value);
-                // 限制自定义系数在 1.1 到 1.8 之间
-                if (factor < 1.1) factor = 1.1;
-                if (factor > 1.8) factor = 1.8;
+    // 安全浮点数解析
+    val(id) {
+        const el = document.getElementById(id);
+        const v = parseFloat(el.value);
+        return isNaN(v) ? 0 : v;
+    },
+
+    calc() {
+        try {
+            // 1. 获取基础参数
+            const structure = document.getElementById('s_structure').value;
+            const age = this.val('s_age');
+            const method = document.getElementById('s_method').value;
+            const taxRate = this.val('s_taxRate') / 100;
+            const fiscalMonth = parseInt(document.getElementById('s_fiscalMonth').value);
+            const buyMonth = parseInt(document.getElementById('s_buyMonth').value);
+
+            let landPrice = 0, buildPrice = 0;
+
+            // 2. 计算拆分 (Land vs Build)
+            if (this.state.mode === 'manual') {
+                landPrice = this.val('m_landPrice');
+                buildPrice = this.val('m_buildPrice');
+            } 
+            else if (this.state.mode === 'auto') {
+                const total = this.val('a_totalPrice');
+                const lArea = this.val('a_landArea');
+                const rosenka = this.val('a_rosenka');
+                const factor = this.val('a_factor');
+                const bArea = this.val('a_buildArea');
+                const unitCost = this.val('a_unitCost');
+
+                // 土地估值 = 面积 * 路线价 * 系数 / 10000(换算为万)
+                const lVal = (lArea * rosenka * factor) / 10000;
+                
+                // 建物估值 = 面积 * 单价 * 残值率
+                const statLife = this.config.life[structure];
+                const physLife = statLife * 1.5;
+                let rate = 1 - (age / physLife);
+                if (rate < 0.1) rate = 0.1; // 保底10%
+                const bVal = (bArea * unitCost * rate) / 10000;
+
+                const sum = lVal + bVal;
+                if (sum > 0) {
+                    buildPrice = total * (bVal / sum);
+                    landPrice = total * (lVal / sum);
+                }
+            } 
+            else if (this.state.mode === 'fixed') {
+                const fLand = this.val('f_land');
+                const fBuild = this.val('f_build');
+                const realTotal = this.val('f_totalPrice');
+                const sum = fLand + fBuild;
+                if (sum > 0) {
+                    buildPrice = realTotal * (fBuild / sum);
+                    landPrice = realTotal * (fLand / sum);
+                }
             }
 
-            // --- 土地估值 ---
-            const landVal = (landArea * landBasePrice * factor) / 10000; 
+            // 3. 更新拆分 UI
+            this.updateSplitUI(landPrice, buildPrice);
 
-            // --- 建物估值 (再调达成本法) ---
-            const statLife = CONFIG.life[structure];
-            const physLife = statLife * 1.5; 
-            let residualRate = 1 - (age / physLife);
-            if (residualRate < salvageFloor) residualRate = salvageFloor;
-            const buildVal = (buildArea * buildCost * residualRate) / 10000; 
+            // 4. 计算折旧 (核心)
+            this.calcDepreciation(buildPrice, structure, age, method, fiscalMonth, buyMonth, taxRate);
 
-            // --- 按分比例应用到总价 ---
-            const totalVal = landVal + buildVal;
-            let buildRatio = 0;
-            if (totalVal > 0) {
-                buildRatio = buildVal / totalVal;
-            }
-
-            finalBuildPrice = totalPrice * buildRatio;
-            finalLandPrice = totalPrice * (1 - buildRatio);
+        } catch (e) {
+            console.error("Calculation error:", e);
         }
+    },
 
-        // C. 更新结果显示 (拆分部分)
-        updateSplitResult(finalLandPrice, finalBuildPrice);
-
-        // D. 计算折旧表
-        calculateDepreciation(finalBuildPrice, structure, age, fiscalMonth, purchaseMonth, taxRate, salvageFloor);
-    }
-
-    // --- 4. 结果更新函数 ---
-    function updateSplitResult(land, build) {
+    updateSplitUI(land, build) {
         const total = land + build;
-        const landPct = total > 0 ? (land / total * 100) : 0;
-        const buildPct = 100 - landPct;
+        const lPct = total > 0 ? (land/total)*100 : 0;
+        const bPct = total > 0 ? (build/total)*100 : 0;
 
-        const roundLand = Math.round(land);
-        const roundBuild = Math.round(build);
-
-        // 更新表格
-        document.getElementById('res_landPrice').innerText = roundLand.toLocaleString() + " 万円";
-        document.getElementById('res_buildPrice').innerText = roundBuild.toLocaleString() + " 万円";
-        document.getElementById('res_ratio').innerText = `${buildPct.toFixed(1)}% / ${landPct.toFixed(1)}%`;
-
-        // 更新横条图数据
-        document.getElementById('bar_land').style.width = landPct + "%";
-        document.getElementById('bar_build').style.width = buildPct + "%";
-
-        // 更新横条图数值 (如果比例太小，可能需要隐藏)
-        document.getElementById('bar_land_value').innerText = `${roundLand.toLocaleString()}万 (${landPct.toFixed(1)}%)`;
-        document.getElementById('bar_build_value').innerText = `${roundBuild.toLocaleString()}万 (${buildPct.toFixed(1)}%)`;
+        // 格式化数字
+        const fmt = (n) => Math.round(n).toLocaleString() + " 万";
         
-        // 确保小的部分能显示标签
-        document.getElementById('bar_land').style.minWidth = landPct > 5 ? '5%' : '0%';
-        document.getElementById('bar_build').style.minWidth = buildPct > 5 ? '5%' : '0%';
+        document.getElementById('out_landPrice').innerText = fmt(land);
+        document.getElementById('out_buildPrice').innerText = fmt(build);
 
-        document.querySelector('#bar_land .bar-label').style.display = landPct > 5 ? 'block' : 'none';
-        document.querySelector('#bar_build .bar-label').style.display = buildPct > 5 ? 'block' : 'none';
-    }
-
-    function calculateDepreciation(price, structure, age, fiscalMonth, purchaseMonth, taxRate, salvageFloor) {
-        if (price <= 0 || taxRate <= 0) {
-            clearTable();
-            return;
-        }
-        const method = document.getElementById('dep_method').value;
-        const depRate = safeFloat(document.getElementById('dep_rate').value);
+        // 更新条形图
+        const barB = document.getElementById('bar_build');
+        const barL = document.getElementById('bar_land');
         
-        const statLife = CONFIG.life[structure];
-        let depYears;
+        barB.style.width = bPct + "%";
+        barB.innerText = bPct > 10 ? `建 ${Math.round(bPct)}%` : "";
+        
+        barL.style.width = lPct + "%";
+        barL.innerText = lPct > 10 ? `土 ${Math.round(lPct)}%` : "";
 
-        // 1. 确定用于计算的折旧年数
+        document.getElementById('txt_build_ratio').innerText = `建物: ${bPct.toFixed(1)}%`;
+        document.getElementById('txt_land_ratio').innerText = `土地: ${lPct.toFixed(1)}%`;
+    },
+
+    calcDepreciation(price, structure, age, method, fMonth, bMonth, taxRate) {
+        if (price <= 0) return;
+
+        const statLife = this.config.life[structure];
+        let years = statLife; // 默认
+
+        // --- A. 确定折旧年数 ---
         if (method === 'simplified') {
-            // 简便法：折旧期 = (法定年数 - 筑年数) + (筑年数 * 0.2)
+            // 简便法: (法定-经过) + 经过*0.2
             if (age >= statLife) {
-                depYears = Math.floor(statLife * 0.2);
+                years = Math.floor(statLife * 0.2);
             } else {
-                depYears = Math.floor((statLife - age) + (age * 0.2));
+                years = Math.floor((statLife - age) + (age * 0.2));
             }
-            if (depYears < 2) depYears = 2; // 最少2年
-        } else if (method === 'straight' || method === 'rate') {
-             // 直线法/定率法：对于中古房，理论上应使用剩余耐用年数 (法定年数 - 筑年数 + 筑年数 * 0.2)
-             // 但为了简化，这里使用法定年数，用户应在输入时考虑剩余折旧期。
-             depYears = statLife; 
+            if (years < 2) years = 2;
         }
-        document.getElementById('res_depYears').innerText = depYears;
+        document.getElementById('out_years').innerText = years + " 年";
 
-        // 2. 计算第一年折旧月数 (包含购买当月)
-        let monthsYear1;
-        if (purchaseMonth <= fiscalMonth) {
-            monthsYear1 = fiscalMonth - purchaseMonth + 1;
+        // --- B. 计算首年折旧月数 ---
+        // 例子: 决算3月, 买入4月 -> 4,5,6...1,2,3 共12个月
+        // 例子: 决算3月, 买入2月 -> 2,3 共2个月
+        let months1 = 0;
+        if (bMonth <= fMonth) {
+            months1 = fMonth - bMonth + 1;
         } else {
-            monthsYear1 = (12 - purchaseMonth + 1) + fiscalMonth;
+            months1 = (12 - bMonth + 1) + fMonth;
         }
 
-        // 3. 生成表数据
+        // --- C. 生成5年表 ---
         let html = "";
-        let totalTaxSave = 0;
+        let totalSave = 0;
         let year1Dep = 0;
-        let totalDepreciated = 0;
-        const maxDep = price * (1 - salvageFloor);
+        let accumulatedDep = 0;
+        
+        // 现代日本税法允许折旧至1円 (备忘价额)
+        // 旧法可能限制为95%，这里按 100% - 1円 处理
+        const maxDep = price - 1; 
 
-        if (method === 'rate') {
-            // 定率法
-            let remaining = price;
-            for (let i = 1; i <= 5; i++) {
-                let currentDep = 0;
-                if (i === 1) {
-                    currentDep = remaining * depRate * (monthsYear1 / 12);
-                    year1Dep = currentDep;
-                } else {
-                    currentDep = remaining * depRate;
-                }
-                
-                // 确保不超过可折旧总额
-                if (totalDepreciated + currentDep > maxDep) {
-                    currentDep = maxDep - totalDepreciated;
-                }
-                currentDep = Math.max(0, currentDep); // 确保不为负
+        // 定率法需要的折旧率 (简单处理：读取输入框)
+        const dbRate = this.val('s_depRate'); 
 
-                totalDepreciated += currentDep;
-                remaining -= currentDep;
+        // 临时变量用于定率法
+        let currentBookValue = price; 
 
-                const taxSave = currentDep * taxRate;
-                totalTaxSave += taxSave;
-                appendTableRow(i, currentDep, taxSave, html);
+        for (let i = 1; i <= 5; i++) {
+            let dep = 0;
+
+            if (method === 'rate') {
+                // 定率法 (简化版: 账面 * 率)
+                // 注意: 实际税法有"保证率"和"改定偿却率"，这里做 Web 模拟简化
+                dep = currentBookValue * dbRate;
+            } else {
+                // 直线法 / 简便法 (定额)
+                // 简便法其实就是缩短了年限的定额法
+                dep = price / years;
             }
 
-        } else {  
-            // 简便法 or 直线法
-            const annualDep = price / depYears;
-            for (let i = 1; i <= 5; i++) {
-                let currentDep = 0;
-                
-                if (i === 1) {
-                    currentDep = annualDep * (monthsYear1 / 12);
-                    year1Dep = currentDep;
-                } else if (method === 'simplified' && i <= depYears) {
-                    currentDep = annualDep;
-                } else if (method === 'straight' && i <= statLife) { // 直线法使用法定耐用年数
-                    currentDep = price / statLife;
-                }
-                
-                // 简便法/直线法：处理最后一年补齐或残值限制
-                if (totalDepreciated + currentDep > maxDep) {
-                    currentDep = maxDep - totalDepreciated;
-                }
-
-                currentDep = Math.max(0, currentDep);
-
-                totalDepreciated += currentDep;
-
-                const taxSave = currentDep * taxRate;
-                totalTaxSave += taxSave;
-                appendTableRow(i, currentDep, taxSave, html);
+            // 首年按月
+            if (i === 1) {
+                dep = dep * (months1 / 12);
             }
-        }
+            // 简便法/直线法：超过年限停止
+            if (method !== 'rate' && i > years && i > 1) { // i>1防止首年即过期的极端情况
+                 // 需要检查上一年是否没提满（因月割），补齐
+                 // 这里简化：超过年限就不提了，除非总额未满
+                 if (accumulatedDep >= maxDep) dep = 0;
+            }
 
-        document.getElementById('schedule_body').innerHTML = html;
-        document.getElementById('res_totalTaxSave').innerText = Math.round(totalTaxSave).toLocaleString();
-        document.getElementById('res_year1Dep').innerText = Math.round(year1Dep).toLocaleString();
-    }
-    
-    // 辅助函数：生成表格行 HTML
-    function appendTableRow(i, currentDep, taxSave, html) {
-         // 使用数组作为容器，并在外部更新 innerHTML，以绕过作用域问题
-         if (Array.isArray(html)) {
-            html.push(`
-                <tr style="border-bottom: 1px solid var(--border);">
+            // 边界检查：不能超过总折旧额
+            if (accumulatedDep + dep > maxDep) {
+                dep = maxDep - accumulatedDep;
+            }
+            if (dep < 0) dep = 0;
+
+            // 更新状态
+            accumulatedDep += dep;
+            currentBookValue -= dep;
+            
+            if (i === 1) year1Dep = dep;
+            const save = dep * taxRate;
+            totalSave += save;
+
+            // 渲染行
+            html += `
+                <tr class="${i===1?'row-highlight':''}">
                     <td>第 ${i} 年</td>
-                    <td>${Math.round(currentDep).toLocaleString()} 万</td>
-                    <td style="color:${taxSave>0 ? '#10b981' : 'inherit'}">+${Math.round(taxSave).toLocaleString()} 万</td>
-                </tr>
-            `);
-        } else {
-            // 如果传入的不是数组（可能是旧代码的习惯），直接返回字符串
-            return `
-                <tr style="border-bottom: 1px solid var(--border);">
-                    <td>第 ${i} 年</td>
-                    <td>${Math.round(currentDep).toLocaleString()} 万</td>
-                    <td style="color:${taxSave>0 ? '#10b981' : 'inherit'}">+${Math.round(taxSave).toLocaleString()} 万</td>
+                    <td>${Math.round(dep).toLocaleString()} 万</td>
+                    <td style="color:#10b981">+${Math.round(save).toLocaleString()} 万</td>
                 </tr>
             `;
         }
-    }
 
-    function safeFloat(val) {
-        const f = parseFloat(val);
-        return isNaN(f) ? 0 : f;
+        document.getElementById('out_table_body').innerHTML = html;
+        document.getElementById('out_totalSave').innerText = Math.round(totalSave).toLocaleString() + " 万";
+        document.getElementById('out_year1').innerText = Math.round(year1Dep).toLocaleString();
     }
-    function clearTable() {
-        document.getElementById('schedule_body').innerHTML = "<tr><td colspan='3' style='text-align:center; padding:10px;'>请输入有效金额或税率</td></tr>";
-        document.getElementById('res_totalTaxSave').innerText = "0";
-        document.getElementById('res_year1Dep').innerText = "0";
-        document.getElementById('res_depYears').innerText = "0";
-        updateSplitResult(0, 0); // 清空拆分比例
-    }
+};
+
+// 启动
+document.addEventListener('DOMContentLoaded', () => app.init());
+
 </script>
-
 </body>
 </html>
