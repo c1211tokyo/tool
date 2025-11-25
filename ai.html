@@ -14,20 +14,21 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            user-select: none; /* 禁止选中文本 */
+            user-select: none;
             -webkit-tap-highlight-color: transparent;
         }
 
         body {
             width: 100vw;
             height: 100vh;
-            background: radial-gradient(circle at center, #1a1a3a 0%, #050510 100%);
+            /* 背景更深邃，突出光影 */
+            background: radial-gradient(circle at center, #15152a 0%, #020205 100%);
             overflow: hidden;
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             position: relative;
         }
 
-        /* 动态星空背景层 */
+        /* 动态星空 */
         #stars-container {
             position: absolute;
             top: 0;
@@ -47,11 +48,11 @@
         }
 
         @keyframes twinkle {
-            0% { opacity: 0.3; transform: scale(0.8); }
-            100% { opacity: 0.8; transform: scale(1.2); }
+            0% { opacity: 0.2; transform: scale(0.8); }
+            100% { opacity: 0.9; transform: scale(1.2); }
         }
 
-        /* 舞台容器 */
+        /* 舞台 */
         #stage {
             position: relative;
             width: 100%;
@@ -59,83 +60,126 @@
             z-index: 1;
         }
 
-        /* 圆球样式 */
+        /* --- 核心：3D圆球样式 --- */
         .orb {
             position: absolute;
             border-radius: 50%;
-            /* 毛玻璃效果核心 */
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1), inset 0 0 20px rgba(255, 255, 255, 0.05);
             
+            /* 3D 质感核心：混合模式与多重阴影 */
+            /* 1. 基础半透明底色 */
+            background: rgba(255, 255, 255, 0.03); 
+            /* 2. 模拟球面光照：左上亮，右下暗 */
+            background-image: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.01) 50%, rgba(0, 0, 0, 0.4) 100%);
+            
+            backdrop-filter: blur(4px); /* 模糊降低，保持通透感 */
+            -webkit-backdrop-filter: blur(4px);
+            
+            /* 3. 复杂的边框和阴影 */
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-bottom-color: rgba(255, 255, 255, 0.05); /* 底部边框弱化 */
+            
+            box-shadow: 
+                inset 10px 10px 20px rgba(255, 255, 255, 0.1), /* 内部高光 */
+                inset -10px -10px 20px rgba(0, 0, 0, 0.5),    /* 内部阴影，增加厚度感 */
+                0 15px 35px rgba(0, 0, 0, 0.6);               /* 外部投影，增加悬浮感 */
+
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             cursor: pointer;
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.27), 
-                        box-shadow 0.3s ease, 
-                        border-color 0.3s ease;
+            
+            transition: 
+                transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.27),
+                box-shadow 0.4s ease,
+                filter 0.4s ease;
             will-change: transform, left, top;
         }
 
-        /* 圆球内的Logo图片 */
+        /* 3D 高光反射点 (Specular Highlight) */
+        .orb::before {
+            content: '';
+            position: absolute;
+            top: 15%;
+            left: 18%;
+            width: 25%;
+            height: 15%;
+            border-radius: 50%;
+            background: radial-gradient(ellipse at center, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 70%);
+            transform: rotate(-45deg);
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        /* Logo 图片 */
         .orb img {
-            width: 60%;
-            height: 60%;
+            width: 55%;
+            height: 55%;
             object-fit: contain;
             pointer-events: none;
-            transition: opacity 0.3s;
+            transition: opacity 0.3s, transform 0.5s;
+            filter: drop-shadow(0 0 5px rgba(255,255,255,0.2)); /* Logo自带微光 */
+            z-index: 2;
         }
 
-        /* 图片缺失时的文字兜底 */
+        /* 兜底文字 */
         .orb-fallback-text {
-            font-size: 1.5rem;
-            font-weight: bold;
+            font-size: 2.5rem;
+            font-weight: 800;
             color: rgba(255,255,255,0.8);
-            text-shadow: 0 0 10px currentColor;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            font-family: 'Arial Black', sans-serif;
         }
 
-        /* 悬浮显示的文字信息 */
+        /* 悬浮信息 */
         .orb-info {
             position: absolute;
-            bottom: -40px;
+            bottom: -50px;
             left: 50%;
             transform: translateX(-50%);
             text-align: center;
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.3s;
-            width: 200px;
+            width: 220px;
+            z-index: 10;
         }
 
         .orb-name {
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
             color: #fff;
-            text-shadow: 0 0 10px rgba(0,0,0,0.8);
+            text-shadow: 0 0 10px rgba(0,0,0,1);
+            letter-spacing: 1px;
         }
         
         .orb-desc {
-            font-size: 10px;
+            font-size: 11px;
             color: #ccc;
-            margin-top: 2px;
+            margin-top: 4px;
+            background: rgba(0,0,0,0.6);
+            padding: 2px 8px;
+            border-radius: 10px;
+            display: inline-block;
         }
 
-        /* 交互状态：悬停 */
+        /* --- 交互状态 --- */
+
+        /* 悬停 Hover */
         .orb.hovered {
-            z-index: 1000 !important; /* 浮到最上层 */
-            box-shadow: 0 0 30px var(--glow-color), inset 0 0 20px rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.8);
+            z-index: 1000 !important;
+            transform: scale(1.15) !important; /* 放大比例不用太大，保持精致 */
+            box-shadow: 
+                0 0 40px var(--glow-color), 
+                inset 0 0 30px rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.9);
         }
 
         .orb.hovered .orb-info {
             opacity: 1;
         }
 
-        /* 交互状态：冲击波蓄力可视化 */
+        /* 蓄力波纹 */
         .orb.charging::after {
             content: '';
             position: absolute;
@@ -148,33 +192,73 @@
             border: 2px solid var(--glow-color);
             opacity: 0;
             animation: chargeRipple 1s infinite;
+            z-index: 0;
         }
 
         @keyframes chargeRipple {
-            0% { width: 100%; height: 100%; opacity: 0.8; }
-            100% { width: 200%; height: 200%; opacity: 0; }
+            0% { width: 100%; height: 100%; opacity: 0.6; border-width: 4px;}
+            100% { width: 180%; height: 180%; opacity: 0; border-width: 0px;}
         }
 
-        /* 黑洞穿越效果：被点击的球 */
+        /* --- 点击：黑洞穿越特效 --- */
         .orb.blackhole-active {
-            transition: transform 1.5s cubic-bezier(0.7, 0, 0.3, 1);
-            transform: scale(50) !important; /* 巨大化填满屏幕 */
             z-index: 9999 !important;
-            background: #000 !important;
-            border-color: #000 !important;
+            /* 1. 高速旋转并适度放大 */
+            animation: blackholeSpin 1s cubic-bezier(0.5, 0, 0.2, 1) forwards;
         }
 
-        .orb.blackhole-active img, 
-        .orb.blackhole-active .orb-info {
-            opacity: 0 !important;
-            transition: opacity 0.2s;
+        /* 黑洞核心：内部变黑 */
+        .orb.blackhole-active::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0%;
+            height: 0%;
+            background: #000;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            animation: blackholeSwallow 0.6s 0.2s forwards; /* 延迟一点出现 */
+            box-shadow: 0 0 50px var(--glow-color);
+            z-index: 1;
         }
 
-        /* 黑洞穿越效果：其他球 */
-        .orb.sucked-in {
-            transition: transform 0.8s ease-in, opacity 0.8s ease-in;
-            transform: scale(0) !important;
+        .orb.blackhole-active img {
+            transition: 0.3s;
             opacity: 0;
+            transform: scale(0); /* Logo被吸进去 */
+        }
+
+        @keyframes blackholeSpin {
+            0% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(0.8) rotate(180deg); } /* 先收缩蓄力 */
+            100% { transform: scale(3.5) rotate(720deg); } /* 再爆发放大 */
+        }
+
+        @keyframes blackholeSwallow {
+            0% { width: 0%; height: 0%; opacity: 0.8; }
+            100% { width: 98%; height: 98%; opacity: 1; } /* 填满圆球内部 */
+        }
+
+        /* 其他球被推开/变暗 */
+        .orb.dimmed {
+            opacity: 0.2;
+            filter: grayscale(0.8);
+            transform: scale(0.8) !important;
+        }
+
+        /* Footer */
+        .footer-mark {
+            position: absolute;
+            bottom: 15px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 10px;
+            letter-spacing: 2px;
+            font-family: monospace;
+            z-index: 0;
+            pointer-events: none;
         }
 
     </style>
@@ -182,23 +266,19 @@
 <body>
 
     <div id="stars-container"></div>
-
     <div id="stage"></div>
+    <div class="footer-mark">SUYU.2025</div>
 
     <script>
         // ================= 配置区域 =================
-        // 图片路径约定：位于同级目录的 pic 文件夹下
         const aiTools = [
-            // 核心必选
             { name: "ChatGPT", id: "gpt", url: "https://chat.openai.com", color: "#74aa9c", desc: "OpenAI 通用大模型" },
             { name: "Gemini", id: "gemini", url: "https://gemini.google.com", color: "#4E86F5", desc: "Google 多模态智能助手" },
             { name: "Claude", id: "claude", url: "https://claude.ai", color: "#d97757", desc: "Anthropic 高智商模型" },
             { name: "Grok", id: "grok", url: "https://grok.x.ai", color: "#ffffff", desc: "X.AI 实时推流模型" },
-            { name: "Sora", id: "sora", url: "https://openai.com/sora", color: "#222222", desc: "文生视频模型" }, // Sora暂无独立App，指向官网
+            { name: "Sora", id: "sora", url: "https://openai.com/sora", color: "#222222", desc: "文生视频模型" },
             { name: "DeepSeek", id: "deepseek", url: "https://www.deepseek.com", color: "#4b6bfb", desc: "深度求索 代码与推理" },
             { name: "Perplexity", id: "perplexity", url: "https://www.perplexity.ai", color: "#3c8b8b", desc: "AI 智能搜索引擎" },
-            
-            // 建议补充 (丰富画面)
             { name: "Midjourney", id: "midjourney", url: "https://www.midjourney.com", color: "#ffffff", desc: "最强 AI 绘画工具" },
             { name: "Runway", id: "runway", url: "https://runwayml.com", color: "#c9fa4c", desc: "AI 视频编辑与生成" },
             { name: "HuggingFace", id: "hf", url: "https://huggingface.co", color: "#ffd21e", desc: "AI 开源社区与模型库" }
@@ -209,29 +289,26 @@
         const starsContainer = document.getElementById('stars-container');
         const orbs = [];
         let animationId;
-        let isTransitioning = false; // 是否正在进行跳转动画
+        let isInteracting = false; // 是否处于点击动画中
 
-        // 1. 初始化背景星空
+        // 1. 初始化背景星空 (优化版：更少但更亮)
         function initStars() {
-            const starCount = 100;
+            const starCount = 60;
             for (let i = 0; i < starCount; i++) {
                 const star = document.createElement('div');
                 star.className = 'star';
-                const xy = Math.random() * 100;
-                const duration = 2 + Math.random() * 3;
                 const size = 1 + Math.random() * 2;
-                
                 star.style.left = `${Math.random() * 100}%`;
                 star.style.top = `${Math.random() * 100}%`;
                 star.style.width = `${size}px`;
                 star.style.height = `${size}px`;
-                star.style.animationDuration = `${duration}s`;
+                star.style.animationDuration = `${3 + Math.random() * 4}s`;
                 star.style.animationDelay = `${Math.random() * 5}s`;
                 starsContainer.appendChild(star);
             }
         }
 
-        // 2. 圆球类定义
+        // 2. 圆球类
         class Orb {
             constructor(data, index) {
                 this.data = data;
@@ -239,28 +316,26 @@
                 this.element = document.createElement('div');
                 this.element.className = 'orb';
                 
-                // 视觉大小 (根据屏幕适配，PC更大，手机略小)
-                const baseSize = window.innerWidth > 768 ? 100 : 70; 
-                // 稍微随机一点大小
-                this.radius = (baseSize * (0.8 + Math.random() * 0.4)) / 2; 
+                // --- 尺寸修改：调大 ---
+                // PC端基础160px，手机端100px
+                const isMobile = window.innerWidth <= 768;
+                const baseSize = isMobile ? 100 : 160; 
+                // 随机波动范围 0.9 ~ 1.2
+                this.radius = (baseSize * (0.9 + Math.random() * 0.3)) / 2; 
                 this.width = this.radius * 2;
                 this.height = this.radius * 2;
 
-                // 初始位置 (随机分布，尽量不重叠)
                 this.x = Math.random() * (window.innerWidth - this.width);
                 this.y = Math.random() * (window.innerHeight - this.height);
                 
-                // 初始速度 (向量)
-                const speed = 0.8; // 基础漂浮速度
+                // 速度
+                const speed = isMobile ? 0.4 : 0.6; // 球大了，速度稍慢一点显得有分量
                 this.vx = (Math.random() - 0.5) * speed;
                 this.vy = (Math.random() - 0.5) * speed;
 
-                // 物理属性
-                this.mass = this.radius; // 质量与大小成正比
                 this.isHovered = false;
-                this.hoverTimer = null; // 冲击波计时器
-
-                // 构建DOM
+                this.hoverTimer = null;
+                
                 this.initDOM();
             }
 
@@ -271,9 +346,8 @@
 
                 // 图片
                 const img = document.createElement('img');
-                img.src = `pic/${this.data.id}.png`; // 约定图片路径
+                img.src = `pic/${this.data.id}.png`; 
                 img.alt = this.data.name;
-                // 图片加载失败兜底
                 img.onerror = () => {
                     img.style.display = 'none';
                     const text = document.createElement('div');
@@ -284,7 +358,7 @@
                 };
                 this.element.appendChild(img);
 
-                // 信息框
+                // 信息
                 const info = document.createElement('div');
                 info.className = 'orb-info';
                 info.innerHTML = `
@@ -293,81 +367,87 @@
                 `;
                 this.element.appendChild(info);
 
-                // 绑定事件
+                // 事件绑定
                 this.element.addEventListener('mouseenter', () => this.onHover());
                 this.element.addEventListener('mouseleave', () => this.onLeave());
-                // 移动端兼容
                 this.element.addEventListener('touchstart', () => this.onHover(), {passive: true});
-                this.element.addEventListener('click', () => this.onClick());
+                this.element.addEventListener('click', (e) => this.onClick(e));
 
                 stage.appendChild(this.element);
                 this.updatePosition();
             }
 
             updatePosition() {
+                // 如果正在点击交互中，停止位置更新（交给CSS动画）
+                if (isInteracting) return;
                 this.element.style.transform = `translate3d(${this.x}px, ${this.y}px, 0)`;
             }
 
             onHover() {
-                if (isTransitioning) return;
+                if (isInteracting) return;
                 this.isHovered = true;
                 this.element.classList.add('hovered');
                 
-                // 冲击波计时器: 3秒后触发
+                // 蓄力冲击波：3秒触发
                 this.hoverTimer = setTimeout(() => {
                     this.triggerShockwave();
                 }, 3000);
                 
-                // 视觉反馈：开始蓄力
                 this.element.classList.add('charging');
             }
 
             onLeave() {
-                if (isTransitioning) return;
+                if (isInteracting) return;
                 this.isHovered = false;
                 this.element.classList.remove('hovered', 'charging');
                 if (this.hoverTimer) clearTimeout(this.hoverTimer);
             }
 
-            onClick() {
-                if (isTransitioning) return;
-                isTransitioning = true;
-
-                // 1. 触发黑洞效果
+            onClick(e) {
+                if (isInteracting) return;
+                isInteracting = true;
+                
+                // 1. 触发自身的黑洞特效
                 this.element.classList.add('blackhole-active');
 
-                // 2. 其他球被吸入
+                // 2. 其他球变暗淡
                 orbs.forEach(orb => {
                     if (orb !== this) {
-                        orb.element.classList.add('sucked-in');
+                        orb.element.classList.add('dimmed');
                     }
                 });
 
-                // 3. 延迟跳转
+                // 3. 延迟一点点打开新页面
                 setTimeout(() => {
-                    window.location.href = this.data.url;
-                }, 1200); // 等待动画完成
+                    window.open(this.data.url, '_blank');
+                }, 800);
+
+                // 4. 自动复位 (3秒后恢复原状，因为用户还在当前页)
+                setTimeout(() => {
+                    this.resetState();
+                }, 3000);
             }
 
-            // 核心功能：冲击波
+            resetState() {
+                isInteracting = false;
+                this.element.classList.remove('blackhole-active', 'hovered', 'charging');
+                orbs.forEach(orb => {
+                    orb.element.classList.remove('dimmed');
+                });
+            }
+
             triggerShockwave() {
-                if (!this.isHovered) return;
-                
-                // 移除蓄力样式，或者加一个爆发样式(这里简化为移除)
+                if (!this.isHovered || isInteracting) return;
                 this.element.classList.remove('charging');
                 
-                // 对所有其他球施加力
-                const forceMagnitude = 15; // 冲击波力度
+                // 更强的冲击力
+                const forceMagnitude = 20; 
                 orbs.forEach(target => {
                     if (target === this) return;
-                    
-                    // 计算方向向量
                     const dx = (target.x + target.radius) - (this.x + this.radius);
                     const dy = (target.y + target.radius) - (this.y + this.radius);
                     const dist = Math.sqrt(dx * dx + dy * dy);
-                    
                     if (dist > 0) {
-                        // 归一化并施力
                         target.vx += (dx / dist) * forceMagnitude;
                         target.vy += (dy / dist) * forceMagnitude;
                     }
@@ -375,114 +455,77 @@
             }
         }
 
-        // 3. 物理引擎主循环
+        // 3. 物理循环
         function physicsLoop() {
-            if (isTransitioning) return; // 跳转时不计算物理
+            if (!isInteracting) { // 只有在非点击交互时计算物理
+                const width = window.innerWidth;
+                const height = window.innerHeight;
 
-            const width = window.innerWidth;
-            const height = window.innerHeight;
+                orbs.forEach(orb => {
+                    if (orb.isHovered) return;
 
-            // A. 更新位置与墙壁碰撞
-            orbs.forEach(orb => {
-                if (orb.isHovered) return; // 悬停时静止
+                    orb.x += orb.vx;
+                    orb.y += orb.vy;
 
-                // 移动
-                orb.x += orb.vx;
-                orb.y += orb.vy;
+                    // 阻力
+                    orb.vx *= 0.98;
+                    orb.vy *= 0.98;
 
-                // 摩擦力 (空气阻力，防止被冲击波推开后无限加速)
-                orb.vx *= 0.98;
-                orb.vy *= 0.98;
+                    // 最小漂浮速度
+                    if (Math.abs(orb.vx) < 0.1 && Math.abs(orb.vy) < 0.1) {
+                        orb.vx += (Math.random() - 0.5) * 0.05;
+                    }
 
-                // 保持最小移动速度 (防止完全静止，保持飘浮感)
-                const minSpeed = 0.2;
-                if (Math.abs(orb.vx) < minSpeed && Math.abs(orb.vy) < minSpeed) {
-                    // 给他一点微小的扰动
-                    orb.vx += (Math.random() - 0.5) * 0.05;
-                }
+                    // 边界反弹
+                    if (orb.x <= 0) { orb.x = 0; orb.vx *= -1; }
+                    else if (orb.x + orb.width >= width) { orb.x = width - orb.width; orb.vx *= -1; }
 
-                // 墙壁反弹
-                if (orb.x <= 0) {
-                    orb.x = 0;
-                    orb.vx *= -1;
-                } else if (orb.x + orb.width >= width) {
-                    orb.x = width - orb.width;
-                    orb.vx *= -1;
-                }
+                    if (orb.y <= 0) { orb.y = 0; orb.vy *= -1; }
+                    else if (orb.y + orb.height >= height) { orb.y = height - orb.height; orb.vy *= -1; }
+                });
 
-                if (orb.y <= 0) {
-                    orb.y = 0;
-                    orb.vy *= -1;
-                } else if (orb.y + orb.height >= height) {
-                    orb.y = height - orb.height;
-                    orb.vy *= -1;
-                }
-            });
-
-            // B. 球体互相碰撞 (简单弹性碰撞)
-            for (let i = 0; i < orbs.length; i++) {
-                for (let j = i + 1; j < orbs.length; j++) {
-                    const b1 = orbs[i];
-                    const b2 = orbs[j];
-                    
-                    // 中心距离
-                    const dx = (b2.x + b2.radius) - (b1.x + b1.radius);
-                    const dy = (b2.y + b2.radius) - (b1.y + b1.radius);
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    const minDist = b1.radius + b2.radius;
-
-                    if (dist < minDist) {
-                        // 发生碰撞！
+                // 碰撞检测
+                for (let i = 0; i < orbs.length; i++) {
+                    for (let j = i + 1; j < orbs.length; j++) {
+                        const b1 = orbs[i];
+                        const b2 = orbs[j];
                         
-                        // 1. 修正位置 (避免重叠粘连)
-                        const angle = Math.atan2(dy, dx);
-                        const overlap = minDist - dist;
-                        const moveX = (overlap / 2) * Math.cos(angle);
-                        const moveY = (overlap / 2) * Math.sin(angle);
+                        const dx = (b2.x + b2.radius) - (b1.x + b1.radius);
+                        const dy = (b2.y + b2.radius) - (b1.y + b1.radius);
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        const minDist = b1.radius + b2.radius; // 增加一点间距
 
-                        if (!b1.isHovered) { b1.x -= moveX; b1.y -= moveY; }
-                        if (!b2.isHovered) { b2.x += moveX; b2.y += moveY; }
+                        if (dist < minDist) {
+                            const angle = Math.atan2(dy, dx);
+                            const overlap = minDist - dist;
+                            const moveX = (overlap / 2) * Math.cos(angle);
+                            const moveY = (overlap / 2) * Math.sin(angle);
 
-                        // 2. 交换动量 (简化版物理)
-                        // 如果其中一个是悬停的(像石头一样不动)，另一个反弹
-                        if (b1.isHovered && !b2.isHovered) {
-                            b2.vx *= -1; b2.vy *= -1;
-                        } else if (!b1.isHovered && b2.isHovered) {
-                            b1.vx *= -1; b1.vy *= -1;
-                        } else if (!b1.isHovered && !b2.isHovered) {
-                            // 简单动量交换
-                            const tempVx = b1.vx;
-                            const tempVy = b1.vy;
-                            b1.vx = b2.vx;
-                            b1.vy = b2.vy;
-                            b2.vx = tempVx;
-                            b2.vy = tempVy;
+                            if (!b1.isHovered) { b1.x -= moveX; b1.y -= moveY; }
+                            if (!b2.isHovered) { b2.x += moveX; b2.y += moveY; }
+
+                            if (!b1.isHovered && !b2.isHovered) {
+                                const tempVx = b1.vx; const tempVy = b1.vy;
+                                b1.vx = b2.vx; b1.vy = b2.vy;
+                                b2.vx = tempVx; b2.vy = tempVy;
+                            }
                         }
                     }
                 }
             }
-
-            // C. 渲染位置
+            
+            // 渲染
             orbs.forEach(orb => orb.updatePosition());
-
-            animationId = requestAnimationFrame(physicsLoop);
+            requestAnimationFrame(physicsLoop);
         }
 
-        // 4. 初始化
-        function init() {
-            initStars();
-            aiTools.forEach((tool, index) => {
-                orbs.push(new Orb(tool, index));
-            });
-            physicsLoop();
-        }
+        // 初始化
+        initStars();
+        aiTools.forEach((tool, index) => orbs.push(new Orb(tool, index)));
+        physicsLoop();
 
-        // 启动
-        init();
-
-        // 窗口调整适配
+        // 窗口调整
         window.addEventListener('resize', () => {
-            // 简单处理：将跑出屏幕的球拉回来
             orbs.forEach(orb => {
                 if (orb.x > window.innerWidth) orb.x = window.innerWidth - orb.width;
                 if (orb.y > window.innerHeight) orb.y = window.innerHeight - orb.height;
