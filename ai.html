@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI Portal - Future Nexus</title>
+    <style>
+        :root {
+            --bg-color: #050510;
+            --text-color: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none; /* 禁止选中文本 */
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle at center, #1a1a3a 0%, #050510 100%);
+            overflow: hidden;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            position: relative;
+        }
+
+        /* 动态星空背景层 */
+        #stars-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.5;
+            animation: twinkle infinite alternate;
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0.3; transform: scale(0.8); }
+            100% { opacity: 0.8; transform: scale(1.2); }
+        }
+
+        /* 舞台容器 */
+        #stage {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* 圆球样式 */
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            /* 毛玻璃效果核心 */
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1), inset 0 0 20px rgba(255, 255, 255, 0.05);
+            
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.27), 
+                        box-shadow 0.3s ease, 
+                        border-color 0.3s ease;
+            will-change: transform, left, top;
+        }
+
+        /* 圆球内的Logo图片 */
+        .orb img {
+            width: 60%;
+            height: 60%;
+            object-fit: contain;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        /* 图片缺失时的文字兜底 */
+        .orb-fallback-text {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: rgba(255,255,255,0.8);
+            text-shadow: 0 0 10px currentColor;
+        }
+
+        /* 悬浮显示的文字信息 */
+        .orb-info {
+            position: absolute;
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            width: 200px;
+        }
+
+        .orb-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(0,0,0,0.8);
+        }
+        
+        .orb-desc {
+            font-size: 10px;
+            color: #ccc;
+            margin-top: 2px;
+        }
+
+        /* 交互状态：悬停 */
+        .orb.hovered {
+            z-index: 1000 !important; /* 浮到最上层 */
+            box-shadow: 0 0 30px var(--glow-color), inset 0 0 20px rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.8);
+        }
+
+        .orb.hovered .orb-info {
+            opacity: 1;
+        }
+
+        /* 交互状态：冲击波蓄力可视化 */
+        .orb.charging::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 2px solid var(--glow-color);
+            opacity: 0;
+            animation: chargeRipple 1s infinite;
+        }
+
+        @keyframes chargeRipple {
+            0% { width: 100%; height: 100%; opacity: 0.8; }
+            100% { width: 200%; height: 200%; opacity: 0; }
+        }
+
+        /* 黑洞穿越效果：被点击的球 */
+        .orb.blackhole-active {
+            transition: transform 1.5s cubic-bezier(0.7, 0, 0.3, 1);
+            transform: scale(50) !important; /* 巨大化填满屏幕 */
+            z-index: 9999 !important;
+            background: #000 !important;
+            border-color: #000 !important;
+        }
+
+        .orb.blackhole-active img, 
+        .orb.blackhole-active .orb-info {
+            opacity: 0 !important;
+            transition: opacity 0.2s;
+        }
+
+        /* 黑洞穿越效果：其他球 */
+        .orb.sucked-in {
+            transition: transform 0.8s ease-in, opacity 0.8s ease-in;
+            transform: scale(0) !important;
+            opacity: 0;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="stars-container"></div>
+
+    <div id="stage"></div>
+
+    <script>
+        // ================= 配置区域 =================
+        // 图片路径约定：位于同级目录的 pic 文件夹下
+        const aiTools = [
+            // 核心必选
+            { name: "ChatGPT", id: "gpt", url: "https://chat.openai.com", color: "#74aa9c", desc: "OpenAI 通用大模型" },
+            { name: "Gemini", id: "gemini", url: "https://gemini.google.com", color: "#4E86F5", desc: "Google 多模态智能助手" },
+            { name: "Claude", id: "claude", url: "https://claude.ai", color: "#d97757", desc: "Anthropic 高智商模型" },
+            { name: "Grok", id: "grok", url: "https://grok.x.ai", color: "#ffffff", desc: "X.AI 实时推流模型" },
+            { name: "Sora", id: "sora", url: "https://openai.com/sora", color: "#222222", desc: "文生视频模型" }, // Sora暂无独立App，指向官网
+            { name: "DeepSeek", id: "deepseek", url: "https://www.deepseek.com", color: "#4b6bfb", desc: "深度求索 代码与推理" },
+            { name: "Perplexity", id: "perplexity", url: "https://www.perplexity.ai", color: "#3c8b8b", desc: "AI 智能搜索引擎" },
+            
+            // 建议补充 (丰富画面)
+            { name: "Midjourney", id: "midjourney", url: "https://www.midjourney.com", color: "#ffffff", desc: "最强 AI 绘画工具" },
+            { name: "Runway", id: "runway", url: "https://runwayml.com", color: "#c9fa4c", desc: "AI 视频编辑与生成" },
+            { name: "HuggingFace", id: "hf", url: "https://huggingface.co", color: "#ffd21e", desc: "AI 开源社区与模型库" }
+        ];
+
+        // ================= 引擎逻辑 =================
+        const stage = document.getElementById('stage');
+        const starsContainer = document.getElementById('stars-container');
+        const orbs = [];
+        let animationId;
+        let isTransitioning = false; // 是否正在进行跳转动画
+
+        // 1. 初始化背景星空
+        function initStars() {
+            const starCount = 100;
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                const xy = Math.random() * 100;
+                const duration = 2 + Math.random() * 3;
+                const size = 1 + Math.random() * 2;
+                
+                star.style.left = `${Math.random() * 100}%`;
+                star.style.top = `${Math.random() * 100}%`;
+                star.style.width = `${size}px`;
+                star.style.height = `${size}px`;
+                star.style.animationDuration = `${duration}s`;
+                star.style.animationDelay = `${Math.random() * 5}s`;
+                starsContainer.appendChild(star);
+            }
+        }
+
+        // 2. 圆球类定义
+        class Orb {
+            constructor(data, index) {
+                this.data = data;
+                this.index = index;
+                this.element = document.createElement('div');
+                this.element.className = 'orb';
+                
+                // 视觉大小 (根据屏幕适配，PC更大，手机略小)
+                const baseSize = window.innerWidth > 768 ? 100 : 70; 
+                // 稍微随机一点大小
+                this.radius = (baseSize * (0.8 + Math.random() * 0.4)) / 2; 
+                this.width = this.radius * 2;
+                this.height = this.radius * 2;
+
+                // 初始位置 (随机分布，尽量不重叠)
+                this.x = Math.random() * (window.innerWidth - this.width);
+                this.y = Math.random() * (window.innerHeight - this.height);
+                
+                // 初始速度 (向量)
+                const speed = 0.8; // 基础漂浮速度
+                this.vx = (Math.random() - 0.5) * speed;
+                this.vy = (Math.random() - 0.5) * speed;
+
+                // 物理属性
+                this.mass = this.radius; // 质量与大小成正比
+                this.isHovered = false;
+                this.hoverTimer = null; // 冲击波计时器
+
+                // 构建DOM
+                this.initDOM();
+            }
+
+            initDOM() {
+                this.element.style.width = `${this.width}px`;
+                this.element.style.height = `${this.height}px`;
+                this.element.style.setProperty('--glow-color', this.data.color);
+
+                // 图片
+                const img = document.createElement('img');
+                img.src = `pic/${this.data.id}.png`; // 约定图片路径
+                img.alt = this.data.name;
+                // 图片加载失败兜底
+                img.onerror = () => {
+                    img.style.display = 'none';
+                    const text = document.createElement('div');
+                    text.className = 'orb-fallback-text';
+                    text.innerText = this.data.name.substring(0, 1).toUpperCase();
+                    text.style.color = this.data.color;
+                    this.element.appendChild(text);
+                };
+                this.element.appendChild(img);
+
+                // 信息框
+                const info = document.createElement('div');
+                info.className = 'orb-info';
+                info.innerHTML = `
+                    <div class="orb-name">${this.data.name}</div>
+                    <div class="orb-desc">${this.data.desc}</div>
+                `;
+                this.element.appendChild(info);
+
+                // 绑定事件
+                this.element.addEventListener('mouseenter', () => this.onHover());
+                this.element.addEventListener('mouseleave', () => this.onLeave());
+                // 移动端兼容
+                this.element.addEventListener('touchstart', () => this.onHover(), {passive: true});
+                this.element.addEventListener('click', () => this.onClick());
+
+                stage.appendChild(this.element);
+                this.updatePosition();
+            }
+
+            updatePosition() {
+                this.element.style.transform = `translate3d(${this.x}px, ${this.y}px, 0)`;
+            }
+
+            onHover() {
+                if (isTransitioning) return;
+                this.isHovered = true;
+                this.element.classList.add('hovered');
+                
+                // 冲击波计时器: 3秒后触发
+                this.hoverTimer = setTimeout(() => {
+                    this.triggerShockwave();
+                }, 3000);
+                
+                // 视觉反馈：开始蓄力
+                this.element.classList.add('charging');
+            }
+
+            onLeave() {
+                if (isTransitioning) return;
+                this.isHovered = false;
+                this.element.classList.remove('hovered', 'charging');
+                if (this.hoverTimer) clearTimeout(this.hoverTimer);
+            }
+
+            onClick() {
+                if (isTransitioning) return;
+                isTransitioning = true;
+
+                // 1. 触发黑洞效果
+                this.element.classList.add('blackhole-active');
+
+                // 2. 其他球被吸入
+                orbs.forEach(orb => {
+                    if (orb !== this) {
+                        orb.element.classList.add('sucked-in');
+                    }
+                });
+
+                // 3. 延迟跳转
+                setTimeout(() => {
+                    window.location.href = this.data.url;
+                }, 1200); // 等待动画完成
+            }
+
+            // 核心功能：冲击波
+            triggerShockwave() {
+                if (!this.isHovered) return;
+                
+                // 移除蓄力样式，或者加一个爆发样式(这里简化为移除)
+                this.element.classList.remove('charging');
+                
+                // 对所有其他球施加力
+                const forceMagnitude = 15; // 冲击波力度
+                orbs.forEach(target => {
+                    if (target === this) return;
+                    
+                    // 计算方向向量
+                    const dx = (target.x + target.radius) - (this.x + this.radius);
+                    const dy = (target.y + target.radius) - (this.y + this.radius);
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist > 0) {
+                        // 归一化并施力
+                        target.vx += (dx / dist) * forceMagnitude;
+                        target.vy += (dy / dist) * forceMagnitude;
+                    }
+                });
+            }
+        }
+
+        // 3. 物理引擎主循环
+        function physicsLoop() {
+            if (isTransitioning) return; // 跳转时不计算物理
+
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            // A. 更新位置与墙壁碰撞
+            orbs.forEach(orb => {
+                if (orb.isHovered) return; // 悬停时静止
+
+                // 移动
+                orb.x += orb.vx;
+                orb.y += orb.vy;
+
+                // 摩擦力 (空气阻力，防止被冲击波推开后无限加速)
+                orb.vx *= 0.98;
+                orb.vy *= 0.98;
+
+                // 保持最小移动速度 (防止完全静止，保持飘浮感)
+                const minSpeed = 0.2;
+                if (Math.abs(orb.vx) < minSpeed && Math.abs(orb.vy) < minSpeed) {
+                    // 给他一点微小的扰动
+                    orb.vx += (Math.random() - 0.5) * 0.05;
+                }
+
+                // 墙壁反弹
+                if (orb.x <= 0) {
+                    orb.x = 0;
+                    orb.vx *= -1;
+                } else if (orb.x + orb.width >= width) {
+                    orb.x = width - orb.width;
+                    orb.vx *= -1;
+                }
+
+                if (orb.y <= 0) {
+                    orb.y = 0;
+                    orb.vy *= -1;
+                } else if (orb.y + orb.height >= height) {
+                    orb.y = height - orb.height;
+                    orb.vy *= -1;
+                }
+            });
+
+            // B. 球体互相碰撞 (简单弹性碰撞)
+            for (let i = 0; i < orbs.length; i++) {
+                for (let j = i + 1; j < orbs.length; j++) {
+                    const b1 = orbs[i];
+                    const b2 = orbs[j];
+                    
+                    // 中心距离
+                    const dx = (b2.x + b2.radius) - (b1.x + b1.radius);
+                    const dy = (b2.y + b2.radius) - (b1.y + b1.radius);
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    const minDist = b1.radius + b2.radius;
+
+                    if (dist < minDist) {
+                        // 发生碰撞！
+                        
+                        // 1. 修正位置 (避免重叠粘连)
+                        const angle = Math.atan2(dy, dx);
+                        const overlap = minDist - dist;
+                        const moveX = (overlap / 2) * Math.cos(angle);
+                        const moveY = (overlap / 2) * Math.sin(angle);
+
+                        if (!b1.isHovered) { b1.x -= moveX; b1.y -= moveY; }
+                        if (!b2.isHovered) { b2.x += moveX; b2.y += moveY; }
+
+                        // 2. 交换动量 (简化版物理)
+                        // 如果其中一个是悬停的(像石头一样不动)，另一个反弹
+                        if (b1.isHovered && !b2.isHovered) {
+                            b2.vx *= -1; b2.vy *= -1;
+                        } else if (!b1.isHovered && b2.isHovered) {
+                            b1.vx *= -1; b1.vy *= -1;
+                        } else if (!b1.isHovered && !b2.isHovered) {
+                            // 简单动量交换
+                            const tempVx = b1.vx;
+                            const tempVy = b1.vy;
+                            b1.vx = b2.vx;
+                            b1.vy = b2.vy;
+                            b2.vx = tempVx;
+                            b2.vy = tempVy;
+                        }
+                    }
+                }
+            }
+
+            // C. 渲染位置
+            orbs.forEach(orb => orb.updatePosition());
+
+            animationId = requestAnimationFrame(physicsLoop);
+        }
+
+        // 4. 初始化
+        function init() {
+            initStars();
+            aiTools.forEach((tool, index) => {
+                orbs.push(new Orb(tool, index));
+            });
+            physicsLoop();
+        }
+
+        // 启动
+        init();
+
+        // 窗口调整适配
+        window.addEventListener('resize', () => {
+            // 简单处理：将跑出屏幕的球拉回来
+            orbs.forEach(orb => {
+                if (orb.x > window.innerWidth) orb.x = window.innerWidth - orb.width;
+                if (orb.y > window.innerHeight) orb.y = window.innerHeight - orb.height;
+            });
+        });
+
+    </script>
+</body>
+</html>
