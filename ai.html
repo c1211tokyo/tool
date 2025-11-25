@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI NEXUS: Deep Space Edition</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;800&family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
+    <title>AI NEXUS: Liquid Future</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* 背景基底更深 */
-            --bg-deep: #010103;
-            /* 星云颜色稍微提亮一点点，但保持深沉，增加可见度 */
-            --nebula-1: rgba(80, 20, 220, 0.15); /* 深紫 */
-            --nebula-2: rgba(0, 200, 230, 0.12); /* 深青 */
+            /* 极致深黑背景 */
+            --bg-deep: #000000; 
+            /* 极微弱的星云色，几乎不可见，只在光照下显现 */
+            --nebula-1: rgba(20, 20, 30, 0.4); 
+            --nebula-2: rgba(10, 10, 15, 0.2); 
+            --accent-color: #00f3ff;
         }
 
         * {
@@ -25,17 +26,18 @@
             overflow: hidden;
             font-family: 'Rajdhani', sans-serif;
             position: relative;
-            /* 调整径向渐变，让中心黑色区域更大，边缘更深邃 */
-            background-image: radial-gradient(circle at center, #0d0d1a 0%, #000000 75%);
+            /* 极简深空渐变：中心微亮，四周纯黑 */
+            background-image: radial-gradient(circle at center, #0a0a12 0%, #000000 80%);
         }
 
-        /* --- 背景层：宏伟动态星云 --- */
+        /* --- 背景层：幽暗星云 (调整得更隐秘) --- */
         .nebula-container {
             position: absolute; width: 100%; height: 100%;
-            filter: blur(50px); /* 稍微减小模糊，让云气纹理更清晰一点 */
+            filter: blur(80px); 
             z-index: 0; 
-            opacity: 0.9; /* 提高整体不透明度，让星云显现 */
+            opacity: 0.6; 
             will-change: transform;
+            pointer-events: none;
         }
 
         .nebula-layer {
@@ -45,157 +47,152 @@
             animation-iteration-count: infinite;
         }
 
-        /* 星云层1: 紫色系 */
         .nl-1 {
-            background: radial-gradient(ellipse at 30% 40%, var(--nebula-1) 0%, transparent 60%),
-                        radial-gradient(ellipse at 70% 60%, var(--nebula-1) 0%, transparent 50%);
-            animation: nebulaSpin 120s infinite;
+            background: radial-gradient(ellipse at 40% 40%, var(--nebula-1) 0%, transparent 50%);
+            animation: nebulaSpin 150s infinite;
         }
-        /* 星云层2: 青色系 */
         .nl-2 {
-            background: radial-gradient(ellipse at 60% 30%, var(--nebula-2) 0%, transparent 60%),
-                        radial-gradient(ellipse at 20% 70%, var(--nebula-2) 0%, transparent 50%);
-            animation: nebulaSpin 180s reverse infinite;
+            background: radial-gradient(ellipse at 60% 60%, var(--nebula-2) 0%, transparent 50%);
+            animation: nebulaSpin 200s reverse infinite;
         }
 
-        @keyframes nebulaSpin {
-            from { transform: rotate(0deg); } to { transform: rotate(360deg); }
-        }
+        @keyframes nebulaSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-        /* --- 背景层：星空与流星 --- */
+        /* 星星 */
         #stars-container {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none;
         }
         .star {
             position: absolute; background: white; border-radius: 50%;
-            box-shadow: 0 0 3px rgba(255,255,255,0.8);
-            animation: twinkle infinite alternate;
+            opacity: 0.8; animation: twinkle infinite alternate;
         }
-        @keyframes twinkle { 0% { opacity: 0.2; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1.1); } }
-
-        /* 流星 */
-        .shooting-star {
-            position: absolute;
-            top: 50%; left: 50%;
-            width: 4px; height: 4px;
-            background: linear-gradient(to right, rgba(255,255,255,1), transparent);
-            border-radius: 50%;
-            box-shadow: 0 0 20px rgba(255,255,255,0.8);
-            animation: shoot 7s linear infinite; /* 流星频率降低一点 */
-            opacity: 0;
-        }
-        @keyframes shoot {
-            0% { transform: translate(0, 0) rotate(-45deg) scale(1); opacity: 1; }
-            15% { transform: translate(500px, 500px) rotate(-45deg) scale(0.1); opacity: 0; }
-            100% { opacity: 0; }
-        }
+        @keyframes twinkle { 0% { opacity: 0.3; } 100% { opacity: 1; } }
 
         /* 舞台 */
         #stage {
             position: relative; width: 100%; height: 100%; z-index: 10;
         }
 
-        /* --- 核心圆球 --- */
+        /* --- 核心：Liquid Glass (液态玻璃) 样式 --- */
         .orb {
             position: absolute;
             border-radius: 50%;
-            background: rgba(15, 20, 35, 0.35);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            border-bottom-color: rgba(255, 255, 255, 0.1);
+            /* 1. 基础通透感 */
+            background: rgba(255, 255, 255, 0.01); 
+            /* 2. 混合模式增加亮度 */
+            backdrop-filter: blur(8px) saturate(120%); 
+            -webkit-backdrop-filter: blur(8px) saturate(120%);
             
+            /* 3. 液态光影层：多重内阴影模拟厚度 */
             box-shadow: 
-                inset 0 0 40px rgba(120, 150, 255, 0.1),
-                0 0 25px var(--glow-color),
-                0 10px 30px rgba(0,0,0,0.6);
+                inset 0 0 15px rgba(255, 255, 255, 0.05), /* 整体微光 */
+                inset 2px 4px 10px rgba(255, 255, 255, 0.2), /* 左上高光边缘 */
+                inset -2px -4px 15px rgba(0, 0, 0, 0.6), /* 右下深邃厚度 */
+                0 0 20px var(--glow-color-dim); /* 外部辉光 (在JS里设置变量) */
+
+            border: 1px solid rgba(255, 255, 255, 0.15); /* 极细的外框 */
+            border-top: 1px solid rgba(255, 255, 255, 0.4); /* 顶部更亮，模拟光源 */
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             cursor: pointer;
-            transition: box-shadow 0.3s ease, border-color 0.3s ease; 
+            
+            /* 物理引擎控制位置，这里只过渡视觉属性 */
+            transition: box-shadow 0.4s ease, border-color 0.4s ease, filter 0.4s ease;
             will-change: transform;
         }
 
-        .orb img {
-            width: 58%; height: 58%;
-            object-fit: contain; pointer-events: none; z-index: 2;
-            filter: drop-shadow(0 0 8px rgba(255,255,255,0.3));
-            transition: opacity 0.2s;
+        /* 液态高光 (Specular Highlight) */
+        .orb::after {
+            content: ''; position: absolute;
+            top: 5%; left: 12%; width: 50%; height: 30%;
+            border-radius: 50%;
+            background: radial-gradient(ellipse at center, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 60%);
+            transform: rotate(-45deg); opacity: 0.6; filter: blur(1px);
+            pointer-events: none;
+        }
+        
+        /* 底部反光 (Rim Light) */
+        .orb::before {
+            content: ''; position: absolute;
+            bottom: 5%; right: 10%; width: 60%; height: 30%;
+            border-radius: 50%;
+            background: radial-gradient(ellipse at center, var(--glow-color), transparent 70%);
+            transform: rotate(-45deg); opacity: 0.3; filter: blur(5px);
+            pointer-events: none;
         }
 
-        .orb-fallback-text {
-            font-family: 'Orbitron', sans-serif; font-size: 2.5rem; font-weight: 800; color: rgba(255,255,255,0.8);
+        .orb img {
+            width: 55%; height: 55%;
+            object-fit: contain; pointer-events: none; z-index: 2;
+            /* Logo 也有轻微的玻璃投影 */
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+            transition: opacity 0.2s, transform 0.3s;
         }
 
         /* 悬浮信息 */
         .orb-info {
-            position: absolute; bottom: -65px; left: 50%; transform: translateX(-50%);
-            width: 220px; text-align: center; opacity: 0; pointer-events: none;
-            transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 20;
-            background: rgba(0, 0, 0, 0.85);
-            border: 1px solid var(--glow-color); padding: 8px 12px; border-radius: 6px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            position: absolute; bottom: -60px; left: 50%; transform: translateX(-50%);
+            width: 200px; text-align: center; opacity: 0; pointer-events: none;
+            transition: opacity 0.3s; z-index: 20;
+            /* 磨砂黑底 */
+            background: rgba(10, 10, 10, 0.8); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2); border-radius: 8px;
+            padding: 6px 10px;
         }
-        .orb-info::after {
-            content:''; position:absolute; top:-6px; left:50%; margin-left:-6px;
-            border-width:0 6px 6px; border-style:solid; border-color:transparent transparent var(--glow-color);
-        }
-
-        .orb-name {
-            font-family: 'Orbitron', sans-serif; font-size: 16px; font-weight: 800;
-            letter-spacing: 1px; color: var(--glow-color); text-transform: uppercase;
-        }
-        .orb-desc {
-            font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 600; color: #aaa; margin-top: 3px;
-        }
+        .orb-name { font-family: 'Orbitron', sans-serif; font-size: 14px; color: #fff; letter-spacing: 1px; }
+        .orb-desc { font-size: 10px; color: #aaa; }
 
         /* --- 交互状态 --- */
-
-        /* 悬停 */
+        
+        /* 悬停：液态感增强 */
         .orb.hovered {
             z-index: 1000 !important;
-            border-color: rgba(255,255,255,0.9);
+            border-color: rgba(255,255,255,0.8);
             box-shadow: 
-                0 0 70px var(--glow-color), 
-                inset 0 0 50px rgba(255, 255, 255, 0.4);
+                inset 0 0 20px rgba(255, 255, 255, 0.2),
+                0 0 50px var(--glow-color); /* 强烈的外发光 */
         }
-        .orb.hovered .orb-info { opacity: 1; bottom: -75px; }
+        .orb.hovered img { transform: scale(1.1); }
+        .orb.hovered .orb-info { opacity: 1; bottom: -70px; }
 
-        /* 黑洞吸入动画 */
-        .orb.blackhole-active {
-            z-index: 9999 !important;
-            animation: gravitationalCollapse 0.7s cubic-bezier(0.6, -0.28, 0.735, 0.045) forwards;
+        /* 黑洞特效 */
+        .orb.blackhole-active { z-index: 9999 !important; animation: blackhole 0.8s cubic-bezier(0.7,0,0.2,1) forwards; }
+        @keyframes blackhole {
+            0% { transform: scale(1.2); filter: brightness(1.5); }
+            40% { transform: scale(0.1); filter: brightness(50); background: #fff; } /* 坍缩成奇点 */
+            100% { transform: scale(0); opacity: 0; }
         }
-        
-        .orb.blackhole-active img, .orb.blackhole-active .orb-info { opacity: 0 !important; display: none; }
+        .orb.sucked { transition: transform 0.6s ease, opacity 0.6s; transform: scale(0.3) !important; opacity: 0; }
 
-        @keyframes gravitationalCollapse {
-            0% {
-                transform: scale(1.2); background: #000; border-color: #fff;
-                box-shadow: 0 0 50px var(--glow-color), inset 0 0 50px #000;
-            }
-            30% {
-                transform: scale(1.5); background: #000; border-color: var(--glow-color);
-                box-shadow: 0 0 150px var(--glow-color), inset 0 0 20px #fff;
-            }
-            100% {
-                transform: scale(0.01) rotate(360deg); background: #000; border-color: #000;
-                box-shadow: 0 0 0px #000; opacity: 0;
-            }
+        /* --- UI控件：归位按钮 --- */
+        .control-btn {
+            position: absolute; bottom: 20px; left: 20px;
+            width: 44px; height: 44px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; z-index: 100;
+            transition: all 0.3s ease;
+            color: rgba(255,255,255,0.6);
         }
-
-        /* 其他球被吸入 */
-        .orb.sucked {
-            transition: transform 0.6s ease-in, opacity 0.6s ease-in;
-            transform: scale(0.2) !important; opacity: 0; filter: grayscale(1);
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.4);
+            color: #fff;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(255,255,255,0.1);
         }
+        .control-btn svg { width: 20px; height: 20px; fill: currentColor; }
 
-        /* 底部标识 */
         .footer-mark {
-            position: absolute; bottom: 15px; width: 100%; text-align: center;
-            color: rgba(255, 255, 255, 0.3); font-family: 'Orbitron', sans-serif;
-            font-size: 10px; letter-spacing: 3px; z-index: 5; pointer-events: none;
+            position: absolute; bottom: 20px; right: 20px;
+            color: rgba(255, 255, 255, 0.2); font-family: 'Orbitron', sans-serif;
+            font-size: 10px; letter-spacing: 2px; z-index: 5; pointer-events: none;
         }
+
     </style>
 </head>
 <body>
@@ -204,116 +201,125 @@
         <div class="nebula-layer nl-1"></div>
         <div class="nebula-layer nl-2"></div>
     </div>
-    <div id="stars-container">
-        <div class="shooting-star" style="top: 20%; left: 30%; animation-delay: 2s;"></div>
-        <div class="shooting-star" style="top: 60%; left: 70%; animation-delay: 5s;"></div>
-    </div>
+    <div id="stars-container"></div>
 
     <div id="stage"></div>
 
-    <div class="footer-mark">NEXUS PORTAL // SUYU.2025</div>
+    <div class="control-btn" id="dock-btn" title="矩阵归位 / 自由漂浮">
+        <svg viewBox="0 0 24 24"><path d="M4 4h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 10h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 16h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4z"/></svg>
+    </div>
+
+    <div class="footer-mark">SUYU.2025</div>
 
     <script>
-        // ================= 数据配置 =================
+        // ================= 数据 =================
         const aiTools = [
-            { name: "ChatGPT", id: "gpt", url: "https://chat.openai.com", color: "#10a37f", desc: "OpenAI 通用对话巨头" },
-            { name: "Gemini", id: "gemini", url: "https://gemini.google.com", color: "#4E86F5", desc: "Google 原生多模态" },
-            { name: "Claude", id: "claude", url: "https://claude.ai", color: "#d97757", desc: "Anthropic 长文本专家" },
-            { name: "DeepSeek", id: "deepseek", url: "https://www.deepseek.com", color: "#4b6bfb", desc: "开源编码与推理新星" },
-            { name: "Perplexity", id: "perplexity", url: "https://www.perplexity.ai", color: "#24bba1", desc: "AI 驱动的精准搜索" },
-            { name: "Grok", id: "grok", url: "https://grok.x.ai", color: "#ffffff", desc: "X 平台实时资讯大模型" },
-            { name: "Meta AI", id: "meta", url: "https://www.meta.ai", color: "#0064e0", desc: "Llama 开源生态基石" },
-            { name: "Copilot", id: "microsoft", url: "https://copilot.microsoft.com", color: "#2E89F3", desc: "微软办公生产力整合" },
-            { name: "Midjourney", id: "midjourney", url: "https://www.midjourney.com", color: "#ffffff", desc: "顶级艺术图像生成" },
-            { name: "Sora", id: "sora", url: "https://openai.com/sora", color: "#ff3366", desc: "物理世界视频模拟器" },
-            { name: "Runway", id: "runway", url: "https://runwayml.com", color: "#c9fa4c", desc: "专业级 AI 视频编辑" },
-            { name: "HuggingFace", id: "huggingface", url: "https://huggingface.co", color: "#ffd21e", desc: "全球 AI 模型开源社区" },
-            { name: "Ollama", id: "ollama", url: "https://ollama.com", color: "#ffffff", desc: "本地大模型运行框架" },
-            { name: "Qwen", id: "qwenr", url: "https://tongyi.aliyun.com", color: "#615ced", desc: "通义千问全家桶" },
-            { name: "Ernie", id: "wenxin", url: "https://yiyan.baidu.com", color: "#0057ff", desc: "百度文心知识增强" }
+            { name: "ChatGPT", id: "gpt", url: "https://chat.openai.com", color: "#10a37f", desc: "OpenAI 智能助手" },
+            { name: "Gemini", id: "gemini", url: "https://gemini.google.com", color: "#4E86F5", desc: "Google 多模态 AI" },
+            { name: "Claude", id: "claude", url: "https://claude.ai", color: "#d97757", desc: "Anthropic 长文本" },
+            { name: "DeepSeek", id: "deepseek", url: "https://www.deepseek.com", color: "#4b6bfb", desc: "深度求索" },
+            { name: "Perplexity", id: "perplexity", url: "https://www.perplexity.ai", color: "#24bba1", desc: "AI 搜索" },
+            { name: "Grok", id: "grok", url: "https://grok.x.ai", color: "#ffffff", desc: "X 平台实时 AI" },
+            { name: "Meta AI", id: "meta", url: "https://www.meta.ai", color: "#0064e0", desc: "Llama 生态" },
+            { name: "Copilot", id: "microsoft", url: "https://copilot.microsoft.com", color: "#2E89F3", desc: "Microsoft 助手" },
+            { name: "Midjourney", id: "midjourney", url: "https://www.midjourney.com", color: "#ffffff", desc: "AI 绘画" },
+            { name: "Sora", id: "sora", url: "https://openai.com/sora", color: "#ff3366", desc: "视频生成" },
+            { name: "Runway", id: "runway", url: "https://runwayml.com", color: "#c9fa4c", desc: "视频编辑" },
+            { name: "HuggingFace", id: "huggingface", url: "https://huggingface.co", color: "#ffd21e", desc: "开源社区" },
+            { name: "Ollama", id: "ollama", url: "https://ollama.com", color: "#ffffff", desc: "本地运行" },
+            { name: "Qwen", id: "qwenr", url: "https://tongyi.aliyun.com", color: "#615ced", desc: "通义千问" },
+            { name: "Ernie", id: "wenxin", url: "https://yiyan.baidu.com", color: "#0057ff", desc: "文心一言" }
         ];
 
-        // ================= 引擎逻辑 =================
+        // ================= 引擎核心 =================
         const stage = document.getElementById('stage');
         const starsContainer = document.getElementById('stars-container');
+        const dockBtn = document.getElementById('dock-btn');
         const orbs = [];
-        let isTransitioning = false;
+        
+        let isTransitioning = false; // 页面跳转动画锁
+        let isDocked = false; // 是否处于归位状态
+        let animationId;
 
+        // 星星初始化
         function initStars() {
-            const count = 150;
+            const count = 100;
             for (let i = 0; i < count; i++) {
-                const star = document.createElement('div');
-                star.className = 'star';
-                const sizeBase = Math.random();
-                let size;
-                if (sizeBase > 0.9) size = 2.5 + Math.random();
-                else if (sizeBase > 0.6) size = 1.5 + Math.random();
-                else size = 0.5 + Math.random();
-
-                star.style.width = `${size}px`; star.style.height = `${size}px`;
-                star.style.left = `${Math.random() * 100}%`; star.style.top = `${Math.random() * 100}%`;
-                star.style.opacity = 0.3 + Math.random() * 0.7;
-                star.style.animationDuration = `${3 + Math.random() * 5}s`;
-                star.style.animationDelay = `${Math.random() * 5}s`;
-                starsContainer.appendChild(star);
+                const s = document.createElement('div');
+                s.className = 'star';
+                const size = Math.random() * 2;
+                s.style.width = size + 'px'; s.style.height = size + 'px';
+                s.style.left = Math.random() * 100 + '%'; s.style.top = Math.random() * 100 + '%';
+                s.style.animationDuration = (2 + Math.random() * 3) + 's';
+                starsContainer.appendChild(s);
             }
         }
 
-        // 2. Orb 类定义
         class Orb {
             constructor(data, index) {
                 this.data = data;
-                const isMobile = window.innerWidth < 768;
-                const baseSize = isMobile ? 85 : 140;
-                this.realRadius = (baseSize * (0.85 + Math.random() * 0.3)) / 2;
-                this.radius = this.realRadius;
+                this.index = index;
                 
+                // 尺寸设定
+                const isMobile = window.innerWidth < 768;
+                const baseSize = isMobile ? 80 : 120;
+                this.realRadius = (baseSize * (0.9 + Math.random() * 0.2)) / 2;
+                this.radius = this.realRadius; 
+                
+                // 随机位置
                 this.x = Math.random() * (window.innerWidth - this.realRadius * 2);
                 this.y = Math.random() * (window.innerHeight - this.realRadius * 2);
                 
-                const v = isMobile ? 0.25 : 0.4;
+                // 随机速度
+                const v = 0.5;
                 this.vx = (Math.random() - 0.5) * v;
                 this.vy = (Math.random() - 0.5) * v;
 
-                this.element = document.createElement('div');
+                // 归位目标坐标
+                this.targetX = 0;
+                this.targetY = 0;
+
+                this.element = null;
                 this.imgElement = null;
-                this.initDOM();
-                
                 this.isHovered = false;
                 this.scale = 1;
-                // 【新增】冲击波计时器
                 this.hoverTimer = null;
+                
+                this.initDOM();
             }
 
             initDOM() {
+                this.element = document.createElement('div');
                 this.element.className = 'orb';
-                this.element.style.width = `${this.realRadius * 2}px`;
-                this.element.style.height = `${this.realRadius * 2}px`;
+                this.element.style.width = this.realRadius * 2 + 'px';
+                this.element.style.height = this.realRadius * 2 + 'px';
+                
+                // 设置光晕变量，用于CSS
                 this.element.style.setProperty('--glow-color', this.data.color);
+                // 设置一个暗一点的颜色用于常态
+                this.element.style.setProperty('--glow-color-dim', this.data.color + '40'); // 40 is hex opacity
 
                 this.imgElement = document.createElement('img');
                 this.imgElement.src = `pic/${this.data.id}.png`;
                 this.imgElement.onerror = () => {
                     this.imgElement.style.display = 'none';
-                    const txt = document.createElement('div');
-                    txt.className = 'orb-fallback-text';
-                    txt.innerText = this.data.name[0];
-                    this.element.appendChild(txt);
+                    const t = document.createElement('div');
+                    t.innerText = this.data.name[0];
+                    t.style.fontSize = '2em'; t.style.color = 'rgba(255,255,255,0.5)'; t.style.fontWeight = 'bold';
+                    this.element.appendChild(t);
                 };
                 this.element.appendChild(this.imgElement);
 
                 const info = document.createElement('div');
                 info.className = 'orb-info';
-                info.innerHTML = `
-                    <div class="orb-name">${this.data.name}</div>
-                    <div class="orb-desc">${this.data.desc}</div>
-                `;
+                info.innerHTML = `<div class="orb-name">${this.data.name}</div><div class="orb-desc">${this.data.desc}</div>`;
                 this.element.appendChild(info);
 
+                // 事件
                 this.element.addEventListener('mouseenter', () => this.onEnter());
                 this.element.addEventListener('mouseleave', () => this.onLeave());
+                this.element.addEventListener('touchstart', () => this.onEnter(), {passive: true});
                 this.element.addEventListener('click', () => this.onClick());
-                this.element.addEventListener('touchstart', (e) => this.onEnter(), {passive: true});
 
                 stage.appendChild(this.element);
             }
@@ -323,12 +329,12 @@
                 this.isHovered = true;
                 this.element.classList.add('hovered');
                 this.scale = 1.15;
-
-                // 【新增】启动3秒计时器
-                if (this.hoverTimer) clearTimeout(this.hoverTimer);
-                this.hoverTimer = setTimeout(() => {
-                    this.triggerShockwave();
-                }, 3000);
+                
+                // 仅在非归位模式下启用冲击波，防止破坏矩阵
+                if (!isDocked) {
+                    if (this.hoverTimer) clearTimeout(this.hoverTimer);
+                    this.hoverTimer = setTimeout(() => this.triggerShockwave(), 3000);
+                }
             }
 
             onLeave() {
@@ -336,36 +342,20 @@
                 this.isHovered = false;
                 this.element.classList.remove('hovered');
                 this.scale = 1;
-                // 【新增】清除计时器
                 if (this.hoverTimer) clearTimeout(this.hoverTimer);
             }
 
-            // 【新增】触发冲击波逻辑
             triggerShockwave() {
-                if (!this.isHovered || isTransitioning) return;
-                
-                const force = 15; // 冲击力度
-
-                orbs.forEach(target => {
-                    if (target === this) return; // 不推自己
-
-                    // 计算当前球心位置
-                    const centerX = this.x + this.realRadius;
-                    const centerY = this.y + this.realRadius;
-                    const targetCenterX = target.x + target.realRadius;
-                    const targetCenterY = target.y + target.realRadius;
-
-                    const dx = targetCenterX - centerX;
-                    const dy = targetCenterY - centerY;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-
+                if (!this.isHovered || isTransitioning || isDocked) return;
+                const force = 12;
+                orbs.forEach(t => {
+                    if (t === this) return;
+                    const dx = (t.x + t.realRadius) - (this.x + this.realRadius);
+                    const dy = (t.y + t.realRadius) - (this.y + this.realRadius);
+                    const dist = Math.sqrt(dx*dx + dy*dy);
                     if (dist > 0) {
-                        // 归一化向量
-                        const dirX = dx / dist;
-                        const dirY = dy / dist;
-                        // 施加瞬间速度，加一点随机性让爆炸更自然
-                        target.vx += dirX * force * (0.8 + Math.random() * 0.4);
-                        target.vy += dirY * force * (0.8 + Math.random() * 0.4);
+                        t.vx += (dx/dist) * force;
+                        t.vy += (dy/dist) * force;
                     }
                 });
             }
@@ -373,117 +363,163 @@
             onClick() {
                 if (isTransitioning) return;
                 isTransitioning = true;
-                if (this.hoverTimer) clearTimeout(this.hoverTimer); // 点击时立即清除计时器
+                if (this.hoverTimer) clearTimeout(this.hoverTimer);
 
-                this.element.style.left = `${this.x}px`;
-                this.element.style.top = `${this.y}px`;
-                this.element.style.transform = 'none'; 
+                // 锁定位置
+                this.element.style.left = this.x + 'px';
+                this.element.style.top = this.y + 'px';
+                this.element.style.transform = 'none';
 
                 this.element.classList.add('blackhole-active');
-                
-                orbs.forEach(o => {
-                    if (o !== this) o.element.classList.add('sucked');
-                });
+                orbs.forEach(o => { if (o !== this) o.element.classList.add('sucked'); });
 
-                setTimeout(() => {
-                    window.open(this.data.url, '_blank');
-                }, 700);
-
-                setTimeout(() => {
-                    this.reset();
-                }, 3000);
+                setTimeout(() => window.open(this.data.url, '_blank'), 800);
+                setTimeout(() => this.reset(), 3000);
             }
 
             reset() {
                 isTransitioning = false;
                 orbs.forEach(o => {
-                    // 复位时也要清除所有球可能存在的计时器，防止意外触发
                     if (o.hoverTimer) clearTimeout(o.hoverTimer);
-                    
                     o.element.classList.remove('blackhole-active', 'sucked', 'hovered');
                     o.isHovered = false;
                     o.scale = 1;
-                    if (o.imgElement) o.imgElement.style.opacity = ''; 
-                    o.element.style.left = '';
-                    o.element.style.top = '';
+                    if(o.imgElement) o.imgElement.style.opacity = '';
+                    o.element.style.left = ''; o.element.style.top = '';
                     o.updateRenderer();
                 });
             }
 
+            // 计算归位模式下的移动 (Lerp)
+            updateDocking() {
+                // 平滑移动系数
+                const easing = 0.05; 
+                this.x += (this.targetX - this.x) * easing;
+                this.y += (this.targetY - this.y) * easing;
+                
+                // 归位模式下，速度归零，防止切回物理模式时乱飞
+                this.vx = 0; this.vy = 0;
+            }
+
+            // 物理模式
             updatePhysics() {
-                if (isTransitioning) return;
-                if (this.isHovered) {
-                    this.vx = 0; this.vy = 0;
-                } else {
-                    this.x += this.vx; this.y += this.vy;
-                    if (this.x <= 0) { this.x = 0; this.vx *= -1; }
-                    if (this.x + this.realRadius * 2 >= window.innerWidth) { 
-                        this.x = window.innerWidth - this.realRadius * 2; this.vx *= -1; 
-                    }
-                    if (this.y <= 0) { this.y = 0; this.vy *= -1; }
-                    if (this.y + this.realRadius * 2 >= window.innerHeight) { 
-                        this.y = window.innerHeight - this.realRadius * 2; this.vy *= -1; 
-                    }
-                }
+                if (this.isHovered) return; // 悬停不动
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // 简单的边界
+                if (this.x <= 0) { this.x = 0; this.vx *= -1; }
+                if (this.x + this.realRadius*2 >= window.innerWidth) { this.x = window.innerWidth - this.realRadius*2; this.vx *= -1; }
+                if (this.y <= 0) { this.y = 0; this.vy *= -1; }
+                if (this.y + this.realRadius*2 >= window.innerHeight) { this.y = window.innerHeight - this.realRadius*2; this.vy *= -1; }
             }
 
             updateRenderer() {
-                 if (isTransitioning) return;
-                 this.element.style.transform = `translate3d(${this.x}px, ${this.y}px, 0) scale(${this.scale})`;
+                if (isTransitioning) return;
+                this.element.style.transform = `translate3d(${this.x}px, ${this.y}px, 0) scale(${this.scale})`;
             }
         }
 
-        // 3. 主循环
+        // ================= 归位计算逻辑 =================
+        function calculateDockPositions() {
+            const isMobile = window.innerWidth < 768;
+            const cols = isMobile ? 4 : 8; // 每行个数
+            const gap = 10; // 间隙
+            const margin = 20; 
+            const bottomAreaHeight = isMobile ? 300 : 250; // 底部预留高度
+            
+            // 基础网格大小
+            const cellW = (window.innerWidth - margin * 2) / cols;
+            // 垂直起始点
+            const startY = window.innerHeight - bottomAreaHeight;
+
+            orbs.forEach((orb, i) => {
+                const col = i % cols;
+                const row = Math.floor(i / cols);
+                
+                // 目标 X: 居中对齐
+                const centerX = margin + col * cellW + cellW/2;
+                orb.targetX = centerX - orb.realRadius;
+                
+                // 目标 Y: 从下往上排，还是从上往下？这里从设定线开始往下排
+                const centerY = startY + row * (orb.realRadius * 2 + gap * 2) + orb.realRadius;
+                orb.targetY = centerY - orb.realRadius;
+            });
+        }
+
+        dockBtn.addEventListener('click', () => {
+            isDocked = !isDocked;
+            dockBtn.style.opacity = isDocked ? '1' : '0.6';
+            
+            if (isDocked) {
+                calculateDockPositions();
+            } else {
+                // 散开：给每个球一个随机微小速度，重新激活物理
+                orbs.forEach(o => {
+                    o.vx = (Math.random() - 0.5) * 2;
+                    o.vy = (Math.random() - 0.5) * 2;
+                });
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            if (isDocked) calculateDockPositions();
+        });
+
+
+        // ================= 主循环 =================
         function loop() {
             if (!isTransitioning) {
-                for (let i = 0; i < orbs.length; i++) {
-                    for (let j = i + 1; j < orbs.length; j++) {
-                        const b1 = orbs[i]; const b2 = orbs[j];
-                        const dx = (b2.x + b2.realRadius) - (b1.x + b1.realRadius);
-                        const dy = (b2.y + b2.realRadius) - (b1.y + b1.realRadius);
-                        const dist = Math.sqrt(dx * dx + dy * dy);
-                        const minDist = b1.realRadius + b2.realRadius;
+                
+                if (isDocked) {
+                    // 模式 A: 归位模式 (无碰撞，平滑移动)
+                    orbs.forEach(o => o.updateDocking());
+                } else {
+                    // 模式 B: 物理漂浮模式 (有碰撞)
+                    
+                    // 1. 碰撞检测
+                    for (let i = 0; i < orbs.length; i++) {
+                        for (let j = i + 1; j < orbs.length; j++) {
+                            const b1 = orbs[i]; const b2 = orbs[j];
+                            const dx = (b2.x + b2.realRadius) - (b1.x + b1.realRadius);
+                            const dy = (b2.y + b2.realRadius) - (b1.y + b1.realRadius);
+                            const dist = Math.sqrt(dx*dx + dy*dy);
+                            const minDist = b1.realRadius + b2.realRadius;
 
-                        if (dist < minDist) {
-                            const angle = Math.atan2(dy, dx);
-                            const overlap = minDist - dist + 0.5;
-                            const moveX = (overlap / 2) * Math.cos(angle);
-                            const moveY = (overlap / 2) * Math.sin(angle);
+                            if (dist < minDist) {
+                                const angle = Math.atan2(dy, dx);
+                                const overlap = minDist - dist + 0.5;
+                                const moveX = (overlap/2) * Math.cos(angle);
+                                const moveY = (overlap/2) * Math.sin(angle);
 
-                            if (b1.isHovered && !b2.isHovered) {
-                                b2.x += moveX * 2; b2.y += moveY * 2;
-                                b2.vx = Math.abs(b2.vx) * Math.cos(angle) * 1.5;
-                                b2.vy = Math.abs(b2.vy) * Math.sin(angle) * 1.5;
-                            } else if (!b1.isHovered && b2.isHovered) {
-                                b1.x -= moveX * 2; b1.y -= moveY * 2;
-                                b1.vx = -Math.abs(b1.vx) * Math.cos(angle) * 1.5;
-                                b1.vy = -Math.abs(b1.vy) * Math.sin(angle) * 1.5;
-                            } else if (!b1.isHovered && !b2.isHovered) {
-                                b1.x -= moveX; b1.y -= moveY;
-                                b2.x += moveX; b2.y += moveY;
-                                const tvx = b1.vx; const tvy = b1.vy;
-                                b1.vx = b2.vx; b1.vy = b2.vy;
-                                b2.vx = tvx; b2.vy = tvy;
+                                if (b1.isHovered && !b2.isHovered) {
+                                    b2.x += moveX*2; b2.y += moveY*2;
+                                    b2.vx = Math.abs(b2.vx)*Math.cos(angle)*1.5; b2.vy = Math.abs(b2.vy)*Math.sin(angle)*1.5;
+                                } else if (!b1.isHovered && b2.isHovered) {
+                                    b1.x -= moveX*2; b1.y -= moveY*2;
+                                    b1.vx = -Math.abs(b1.vx)*Math.cos(angle)*1.5; b1.vy = -Math.abs(b1.vy)*Math.sin(angle)*1.5;
+                                } else if (!b1.isHovered && !b2.isHovered) {
+                                    b1.x -= moveX; b1.y -= moveY; b2.x += moveX; b2.y += moveY;
+                                    const tvx = b1.vx; const tvy = b1.vy; b1.vx = b2.vx; b1.vy = b2.vy; b2.vx = tvx; b2.vy = tvy;
+                                }
                             }
                         }
                     }
+                    
+                    // 2. 物理运动
+                    orbs.forEach(o => o.updatePhysics());
                 }
-                orbs.forEach(o => o.updatePhysics());
             }
+
+            // 渲染
             orbs.forEach(o => o.updateRenderer());
             requestAnimationFrame(loop);
         }
 
+        // 启动
         initStars();
-        aiTools.forEach((data, i) => orbs.push(new Orb(data, i)));
+        aiTools.forEach((d, i) => orbs.push(new Orb(d, i)));
         loop();
-
-        window.addEventListener('resize', () => {
-             orbs.forEach(o => {
-                 o.x = Math.min(o.x, window.innerWidth - o.realRadius*2);
-                 o.y = Math.min(o.y, window.innerHeight - o.realRadius*2);
-             })
-        });
 
     </script>
 </body>
