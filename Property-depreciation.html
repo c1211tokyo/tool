@@ -5,32 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>日本不动产节税测算工具 | 蘇的工具箱</title>
     <style>
-        /* --- V7.0 专业配色系统 --- */
+        /* --- V7.5 配色系统 --- */
         :root {
-            /* 品牌色：沉稳的深岩灰与静谧蓝 */
-            --primary: #334155;       /* 主色调 (Slate 700) */
-            --primary-light: #475569; /* 次主色 */
-            --accent: #0284c7;        /* 提亮色 (Sky 600) - 用于按钮/链接 */
-            
-            /* 背景与容器 */
-            --bg-body: #f1f5f9;       /* 页面背景 (Slate 100) */
-            --bg-card: #ffffff;       /* 卡片背景 */
-            
-            /* 文字颜色 */
-            --text-main: #0f172a;     /* 主要文字 */
-            --text-sub: #64748b;      /* 辅助文字 */
-            
-            /* 功能色 */
+            --primary: #334155;
+            --primary-light: #475569;
+            --accent: #0284c7;        
+            --bg-body: #f1f5f9;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-sub: #64748b;
             --border: #e2e8f0;
-            --success: #059669;       /* 收益/建物 (Emerald 600) */
-            --neutral: #94a3b8;       /* 土地 (Slate 400) */
-            --warning: #d97706;       /* 强调数字 (Amber 600) */
+            --success: #059669;
+            --neutral: #94a3b8;
         }
         
         * { box-sizing: border-box; }
 
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             background: var(--bg-body); 
             color: var(--text-main); 
             padding: 20px; 
@@ -43,255 +35,172 @@
 
         .container { max-width: 1024px; margin: 0 auto; width: 100%; flex: 1; }
 
-        /* --- 头部设计 --- */
+        /* --- Header --- */
         header { text-align: center; margin-bottom: 30px; padding-top: 10px; }
-        
-        /* 主标题 */
-        h1 { margin: 0; font-size: 1.5rem; color: var(--primary); letter-spacing: 0.5px; font-weight: 800; }
-        
-        /* 副标题 (链接) */
+        h1 { margin: 0; font-size: 1.5rem; color: var(--primary); font-weight: 800; }
         .subtitle-link { 
-            display: inline-block;
-            margin-top: 6px;
-            font-size: 0.9rem; 
-            color: var(--text-sub); 
-            text-decoration: none; 
-            border-bottom: 1px dashed transparent;
-            transition: all 0.2s;
+            display: inline-block; margin-top: 6px; font-size: 0.9rem; color: var(--text-sub); 
+            text-decoration: none; border-bottom: 1px dashed transparent; transition: all 0.2s;
         }
-        .subtitle-link:hover { 
-            color: var(--accent); 
-            border-bottom-color: var(--accent);
-        }
+        .subtitle-link:hover { color: var(--accent); border-bottom-color: var(--accent); }
 
-        /* --- 布局网格 --- */
+        /* --- 布局 --- */
         .grid-layout { display: grid; gap: 24px; grid-template-columns: 1fr; }
         @media(min-width: 850px) { .grid-layout { grid-template-columns: 420px 1fr; } }
 
-        /* --- 卡片组件 --- */
+        /* --- 卡片 --- */
         .card { 
             background: var(--bg-card); 
             padding: 24px; 
             border-radius: 12px; 
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.06); 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
             margin-bottom: 24px; 
             border: 1px solid var(--border);
         }
-        
         h2 { 
-            font-size: 0.95rem; 
-            border-bottom: 2px solid var(--bg-body); 
-            padding-bottom: 12px; 
-            margin-top: 0; 
-            margin-bottom: 20px;
-            color: var(--primary); 
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            letter-spacing: 0.5px;
+            font-size: 0.95rem; border-bottom: 2px solid var(--bg-body); padding-bottom: 12px; 
+            margin: 0 0 20px 0; color: var(--primary); font-weight: 700;
         }
 
-        /* --- 模式切换 Tabs --- */
-        .mode-tabs { display: flex; background: var(--bg-body); border-radius: 8px; padding: 4px; margin-bottom: 0; }
+        /* --- Tabs --- */
+        .mode-tabs { display: flex; background: var(--bg-body); border-radius: 8px; padding: 4px; }
         .tab-btn { 
-            flex: 1; 
-            border: none; 
-            padding: 8px; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            font-weight: 600; 
-            font-size: 0.85rem; 
-            color: var(--text-sub); 
-            background: transparent; 
-            transition: all 0.2s; 
+            flex: 1; border: none; padding: 8px; border-radius: 6px; cursor: pointer; 
+            font-weight: 600; font-size: 0.85rem; color: var(--text-sub); background: transparent; transition: all 0.2s; 
         }
         .tab-btn.active { background: white; color: var(--accent); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
 
-        /* --- 表单元素 --- */
+        /* --- 表单 --- */
         .form-row { margin-bottom: 18px; }
         label { display: flex; align-items: center; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--primary-light); }
-        
         .input-group { position: relative; display: flex; align-items: center; }
         input, select { 
-            width: 100%; 
-            padding: 10px 12px; 
-            border: 1px solid var(--border); 
-            border-radius: 6px; 
-            font-size: 0.95rem; 
-            background: #fff; 
-            color: var(--text-main);
-            transition: border-color 0.2s;
+            width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; 
+            font-size: 0.95rem; background: #fff; transition: border-color 0.2s;
         }
         input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1); }
         .suffix { position: absolute; right: 12px; color: #94a3b8; font-size: 0.85rem; pointer-events: none; }
+        .auto-box { background: #f8fafc; border: 1px dashed var(--border); padding: 16px; border-radius: 8px; margin-top: 12px; }
+        .auto-title { color: var(--accent); font-size: 0.75rem; font-weight: 700; margin-bottom: 12px; display: block; }
 
-        /* 自动估算高亮区 */
-        .auto-box { 
-            background: #f8fafc; 
-            border: 1px dashed var(--border); 
-            padding: 16px; 
-            border-radius: 8px; 
-            margin-top: 12px; 
-        }
-        .auto-title { color: var(--accent); font-size: 0.75rem; font-weight: 700; margin-bottom: 12px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
-
-        /* --- Tooltip (增强版) --- */
-        .tooltip-wrap { position: relative; display: inline-flex; margin-left: 6px; cursor: help; }
-        .tooltip-icon { color: var(--accent); font-size: 0.9rem; opacity: 0.7; transition: opacity 0.2s; }
+        /* --- V7.5 Tooltip (点击触发型) --- */
+        .tooltip-wrap { position: relative; display: inline-flex; margin-left: 6px; cursor: pointer; }
+        .tooltip-icon { color: var(--accent); font-size: 0.9rem; opacity: 0.7; }
         .tooltip-wrap:hover .tooltip-icon { opacity: 1; }
         
-        .tooltip-text {
-            visibility: hidden;
+        .tooltip-content {
+            display: none; /* 默认隐藏，JS控制显示 */
+            position: absolute;
             width: 280px;
-            background-color: rgba(15, 23, 42, 0.95);
+            background-color: rgba(15, 23, 42, 0.98);
             color: #fff;
             text-align: left;
-            border-radius: 6px;
-            padding: 12px 14px;
-            position: absolute;
-            z-index: 100;
+            border-radius: 8px;
+            padding: 14px;
+            z-index: 200;
             bottom: 150%;
             left: 50%;
             transform: translateX(-50%);
-            opacity: 0;
-            transition: all 0.2s;
             font-size: 0.8rem;
             line-height: 1.5;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
             font-weight: normal;
-            pointer-events: none;
         }
-        .tooltip-text::after {
-            content: "";
-            position: absolute;
-            top: 100%; left: 50%; margin-left: -6px;
-            border-width: 6px; border-style: solid;
-            border-color: rgba(15, 23, 42, 0.95) transparent transparent transparent;
+        .tooltip-content.active { display: block; animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(-50%) translateY(5px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+        
+        .tooltip-content::after {
+            content: ""; position: absolute; top: 100%; left: 50%; margin-left: -6px;
+            border-width: 6px; border-style: solid; border-color: rgba(15, 23, 42, 0.98) transparent transparent transparent;
         }
-        .tooltip-text b { color: var(--accent); font-weight: 600; }
-        .tooltip-wrap:hover .tooltip-text { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(5px); }
+        .tooltip-content a { color: #38bdf8; font-weight: bold; text-decoration: none; border-bottom: 1px solid #38bdf8; }
+        .tooltip-content b { color: var(--accent); color: #fbbf24; }
 
-        /* --- 结果仪表盘 --- */
+        /* --- 结果区 --- */
         .result-dashboard { 
-            background: var(--primary); 
-            color: white; 
-            padding: 24px; 
-            border-radius: 12px; 
-            text-align: center; 
-            margin-bottom: 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            background: var(--primary); color: white; padding: 24px; border-radius: 12px; 
+            text-align: center; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;
         }
-        .res-badge {
-            background: rgba(255,255,255,0.1);
-            padding: 8px 16px;
-            border-radius: 8px;
-            text-align: center;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
+        .res-badge { background: rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); }
         .res-badge .val { font-size: 1.8rem; font-weight: 700; color: #38bdf8; line-height: 1.2; }
         .res-badge .lbl { font-size: 0.75rem; opacity: 0.8; }
-
         .res-main { text-align: right; }
-        .res-main .amount { font-size: 2rem; font-weight: 700; color: #fbbf24; letter-spacing: -0.5px; }
+        .res-main .amount { font-size: 2rem; font-weight: 700; color: #fbbf24; }
         .res-main .desc { font-size: 0.85rem; opacity: 0.8; }
 
-        /* --- 比例可视化条 (新设计) --- */
-        .ratio-bar-container { margin: 20px 0; }
-        .ratio-bar { display: flex; height: 36px; border-radius: 6px; overflow: hidden; background: var(--bg-body); }
+        /* --- V7.5 交互式比例条 --- */
+        .ratio-bar-container { margin: 20px 0; position: relative; user-select: none; }
+        .ratio-bar { 
+            display: flex; height: 36px; border-radius: 6px; overflow: hidden; background: var(--bg-body); 
+            position: relative;
+        }
+        
+        /* 拖拽模式下的光标 */
+        .ratio-bar-container.draggable { cursor: col-resize; }
+        .ratio-bar-container.draggable .ratio-bar { box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
+
         .rb-seg { 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            color: white; 
-            font-size: 0.8rem; 
-            font-weight: 600; 
-            transition: width 0.4s ease; 
-            white-space: nowrap; 
-            overflow: hidden; 
+            display: flex; align-items: center; justify-content: center; color: white; 
+            font-size: 0.8rem; font-weight: 600; white-space: nowrap; overflow: hidden; 
             text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            /* 去除 transition 以保证拖拽流畅性 */
         }
         .rb-build { background: var(--success); }
         .rb-land { background: var(--neutral); }
-        
+
+        /* 拖拽手柄 */
+        .drag-handle {
+            position: absolute;
+            top: 0; bottom: 0; width: 14px; margin-left: -7px;
+            background: white;
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            z-index: 10;
+            cursor: col-resize;
+            border-radius: 2px;
+            display: none; /* 默认隐藏 */
+            align-items: center;
+            justify-content: center;
+        }
+        .drag-handle::after {
+            content: ""; display: block; width: 2px; height: 16px; 
+            border-left: 2px double #cbd5e1;
+        }
+        /* 仅在 Manual 模式且总价>0 时显示手柄 */
+        .ratio-bar-container.draggable .drag-handle { display: flex; }
+
         .ratio-legend { display: flex; justify-content: space-between; font-size: 0.8rem; margin-top: 6px; font-weight: 500;}
-        .ratio-legend span { width: 50%; }
-        .ratio-legend span:last-child { text-align: right; }
 
         /* --- 表格 --- */
         table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
         th { text-align: left; color: var(--text-sub); font-weight: 600; padding: 12px 8px; border-bottom: 1px solid var(--border); font-size: 0.8rem; text-transform: uppercase; }
-        td { padding: 12px 8px; border-bottom: 1px solid var(--bg-body); text-align: right; font-feature-settings: "tnum"; color: var(--text-main); }
+        td { padding: 12px 8px; border-bottom: 1px solid var(--bg-body); text-align: right; }
         td:first-child { text-align: left; color: var(--text-sub); font-weight: 500; }
-        tr:last-child td { border-bottom: none; }
         .row-highlight { background-color: #f0fdf4; }
 
-        /* --- 模态框 (Full Modal) --- */
+        /* --- Modal --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.8);
-            z-index: 1000;
-            display: none; /* hidden by default */
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
+            background: rgba(15, 23, 42, 0.8); z-index: 1000; display: none;
+            justify-content: center; align-items: center; padding: 20px;
         }
         .modal-content {
-            background: white;
-            width: 100%;
-            max-width: 800px;
-            max-height: 90vh;
-            border-radius: 12px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            background: white; width: 100%; max-width: 800px; max-height: 90vh;
+            border-radius: 12px; display: flex; flex-direction: column; overflow: hidden;
         }
-        .modal-header {
-            padding: 20px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--bg-body);
-        }
+        .modal-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--bg-body); }
         .modal-header h3 { margin: 0; color: var(--primary); }
-        .close-btn {
-            background: transparent; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-sub);
-        }
-        .modal-body {
-            padding: 20px;
-            overflow-y: auto;
-            flex: 1;
-        }
+        .close-btn { background: transparent; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-sub); }
+        .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+        
         .btn-full-sim {
-            width: 100%;
-            padding: 12px;
-            background: white;
-            border: 1px solid var(--accent);
-            color: var(--accent);
-            font-weight: 600;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-top: 15px;
-            transition: all 0.2s;
+            width: 100%; padding: 12px; background: white; border: 1px solid var(--accent);
+            color: var(--accent); font-weight: 600; border-radius: 8px; cursor: pointer; margin-top: 15px; transition: all 0.2s;
         }
         .btn-full-sim:hover { background: #f0f9ff; }
 
-        /* --- Footer --- */
-        footer {
-            text-align: center;
-            font-size: 0.8rem;
-            color: var(--text-sub);
-            padding: 40px 0 20px;
-            border-top: 1px solid var(--border);
-            margin-top: auto;
-            opacity: 0.8;
-        }
-
+        footer { text-align: center; font-size: 0.8rem; color: var(--text-sub); padding: 40px 0 20px; border-top: 1px solid var(--border); margin-top: auto; opacity: 0.8; }
         .hidden { display: none !important; }
-        .flex { display: flex; }
     </style>
 </head>
 <body>
@@ -303,7 +212,6 @@
     </header>
 
     <div class="grid-layout">
-        
         <div>
             <div class="card" style="padding: 6px;">
                 <div class="mode-tabs">
@@ -318,9 +226,11 @@
                 
                 <div class="form-row">
                     <label>建筑构造
-                        <div class="tooltip-wrap">
+                        <div class="tooltip-wrap" onclick="tooltip.toggle(this)">
                             <span class="tooltip-icon">ℹ️</span>
-                            <span class="tooltip-text">决定<b>法定耐用年数</b>。<br>RC(钢筋混凝土)为47年，轻钢为27年，木造为22年。这是计算折旧的基础。</span>
+                            <div class="tooltip-content">
+                                决定<b>法定耐用年数</b>。<br>RC(钢筋混凝土)为47年，轻钢为27年，木造为22年。
+                            </div>
                         </div>
                     </label>
                     <select id="s_structure">
@@ -332,9 +242,11 @@
 
                 <div class="form-row">
                     <label>筑年数
-                        <div class="tooltip-wrap">
+                        <div class="tooltip-wrap" onclick="tooltip.toggle(this)">
                             <span class="tooltip-icon">ℹ️</span>
-                            <span class="tooltip-text">房屋建成至今的年数。<br>中古房的折旧年数计算公式：<br><b>(法定寿命 - 筑年数) + 筑年数 × 0.2</b><br>越旧的房子折旧年数越短，单年抵扣额越高。</span>
+                            <div class="tooltip-content">
+                                房屋建成至今的年数。<br>中古房折旧公式：<br><b>(法定寿命 - 筑年数) + 筑年数 × 0.2</b>
+                            </div>
                         </div>
                     </label>
                     <div class="input-group">
@@ -345,30 +257,20 @@
 
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
                     <div class="form-row">
-                        <label>决算月
-                            <div class="tooltip-wrap">
-                                <span class="tooltip-icon">ℹ️</span>
-                                <span class="tooltip-text">公司的财务年度结束月份。<br>用于计算购买第一年能计入多少个月的折旧（按月割计算）。</span>
-                            </div>
-                        </label>
+                        <label>决算月</label>
                         <select id="s_fiscalMonth"></select>
                     </div>
                     <div class="form-row">
-                        <label>买入月
-                            <div class="tooltip-wrap">
-                                <span class="tooltip-icon">ℹ️</span>
-                                <span class="tooltip-text">房产交割的月份。<br>从本月开始计算折旧。</span>
-                            </div>
-                        </label>
+                        <label>买入月</label>
                         <select id="s_buyMonth"></select>
                     </div>
                 </div>
 
                 <div class="form-row">
                     <label>法人有效税率
-                        <div class="tooltip-wrap">
+                        <div class="tooltip-wrap" onclick="tooltip.toggle(this)">
                             <span class="tooltip-icon">ℹ️</span>
-                            <span class="tooltip-text">包含法人税、住民税、事业税的综合税率。<br>东京中小企业一般约 <b>30% ~ 34%</b>。</span>
+                            <div class="tooltip-content">东京中小企业综合税率约 <b>30% ~ 34%</b>。</div>
                         </div>
                     </label>
                     <div class="input-group">
@@ -378,12 +280,7 @@
                 </div>
 
                 <div class="form-row">
-                    <label>折旧方法
-                        <div class="tooltip-wrap">
-                            <span class="tooltip-icon">ℹ️</span>
-                            <span class="tooltip-text"><b>简便法</b>：中古房最常用，快速折旧。<br><b>定率法</b>：新房或设备常用，前期多后期少。<br><b>直线法</b>：每年金额固定。</span>
-                        </div>
-                    </label>
+                    <label>折旧方法</label>
                     <div style="display:flex; gap:10px;">
                         <select id="s_method" style="flex:1;">
                             <option value="simplified">简便法 (推荐)</option>
@@ -402,65 +299,42 @@
 
                 <div id="panel-manual">
                     <div class="form-row">
-                        <label>土地价格 (合同)
-                            <div class="tooltip-wrap">
-                                <span class="tooltip-icon">ℹ️</span>
-                                <span class="tooltip-text">买卖合同中注明的土地金额。<br>土地<b>不可折旧</b>，不产生节税效应。</span>
-                            </div>
-                        </label>
+                        <label>土地价格 (合同)</label>
                         <div class="input-group"><input type="number" id="m_landPrice" value="4500"><span class="suffix">万円</span></div>
                     </div>
                     <div class="form-row">
-                        <label>建物价格 (合同)
-                            <div class="tooltip-wrap">
-                                <span class="tooltip-icon">ℹ️</span>
-                                <span class="tooltip-text">买卖合同中注明的建物金额。<br>这是<b>可折旧</b>的基数，直接决定节税金额。</span>
-                            </div>
-                        </label>
+                        <label>建物价格 (合同)</label>
                         <div class="input-group"><input type="number" id="m_buildPrice" value="3500"><span class="suffix">万円</span></div>
                     </div>
                 </div>
 
                 <div id="panel-auto" class="hidden">
                     <div class="form-row">
-                        <label>交易总价
-                            <div class="tooltip-wrap">
-                                <span class="tooltip-icon">ℹ️</span>
-                                <span class="tooltip-text">房产的实际购买总金额（不含税费）。</span>
-                            </div>
-                        </label>
+                        <label>交易总价</label>
                         <div class="input-group"><input type="number" id="a_totalPrice" value="8000"><span class="suffix">万円</span></div>
                     </div>
                     
                     <div class="auto-box">
                         <span class="auto-title">📍 土地参数</span>
                         <div class="form-row">
-                            <label>土地面积
-                                <div class="tooltip-wrap">
-                                    <span class="tooltip-icon">ℹ️</span>
-                                    <span class="tooltip-text">登记簿上的土地面积 (㎡)。</span>
-                                </div>
-                            </label>
+                            <label>土地面积</label>
                             <div class="input-group"><input type="number" id="a_landArea" value="60"><span class="suffix">㎡</span></div>
                         </div>
                         <div class="form-row">
                             <label>路线价 (基准地价)
-                                <div class="tooltip-wrap"><span class="tooltip-icon">ℹ️</span><span class="tooltip-text">
-                                    从国税厅查询的道路评估价。<br>
-                                    <a href="https://www.rosenka.nta.go.jp/" target="_blank" style="color:#38bdf8">🔗 查询路线価</a><br>
-                                    注意：请输入<b>万円</b>为单位。<br>
-                                    如地图显示 "500C" (千円)，即 500,000円 = <b>50</b> 万円。
-                                </span></div>
+                                <div class="tooltip-wrap" onclick="tooltip.toggle(this)">
+                                    <span class="tooltip-icon">ℹ️</span>
+                                    <div class="tooltip-content">
+                                        <a href="https://www.rosenka.nta.go.jp/" target="_blank">🔗 点击跳转国税厅查询</a><br><br>
+                                        注意：请输入<b>万円</b>为单位。<br>
+                                        如地图显示 "500C"，即 500千円 = <b>50</b> 万円。
+                                    </div>
+                                </div>
                             </label>
                             <div class="input-group"><input type="number" id="a_rosenka" value="50" step="1"><span class="suffix">万円/㎡</span></div>
                         </div>
                         <div class="form-row">
-                            <label>市场修正系数
-                                <div class="tooltip-wrap">
-                                    <span class="tooltip-icon">ℹ️</span>
-                                    <span class="tooltip-text">路线价通常低于实际市场价。<br><b>1.25</b>：保守估计<br><b>1.40</b>：标准 (推荐)<br><b>1.60</b>：热门地段</span>
-                                </div>
-                            </label>
+                            <label>市场修正系数</label>
                             <select id="a_factor">
                                 <option value="1.25">1.25 (保守)</option>
                                 <option value="1.40" selected>1.40 (标准)</option>
@@ -472,21 +346,11 @@
                     <div class="auto-box">
                         <span class="auto-title">🏠 建物参数</span>
                         <div class="form-row">
-                            <label>建物面积
-                                <div class="tooltip-wrap">
-                                    <span class="tooltip-icon">ℹ️</span>
-                                    <span class="tooltip-text">登记簿上的建物延床面积 (㎡)。</span>
-                                </div>
-                            </label>
+                            <label>建物面积</label>
                             <div class="input-group"><input type="number" id="a_buildArea" value="120"><span class="suffix">㎡</span></div>
                         </div>
                         <div class="form-row">
-                            <label>建造单价 (2025参考)
-                                <div class="tooltip-wrap">
-                                    <span class="tooltip-icon">ℹ️</span>
-                                    <span class="tooltip-text">重新建造该房屋的每平米成本。<br>RC标准约为43万/㎡。</span>
-                                </div>
-                            </label>
+                            <label>建造单价 (2025参考)</label>
                             <select id="a_unitCost">
                                 <option value="25">木造 (25万)</option>
                                 <option value="32">轻钢 (32万)</option>
@@ -498,24 +362,13 @@
 
                 <div id="panel-fixed" class="hidden">
                     <div class="form-row">
-                        <label>固都税评估额 (土地)
-                            <div class="tooltip-wrap">
-                                <span class="tooltip-icon">ℹ️</span>
-                                <span class="tooltip-text">每年纳税通知书上的“固定资产税评价额”。</span>
-                            </div>
-                        </label>
+                        <label>固都税评估额 (土地)</label>
                         <div class="input-group"><input type="number" id="f_land" value="3000"><span class="suffix">万円</span></div>
                     </div>
                     <div class="form-row">
-                        <label>固都税评估额 (建物)
-                            <div class="tooltip-wrap">
-                                <span class="tooltip-icon">ℹ️</span>
-                                <span class="tooltip-text">每年纳税通知书上的“固定资产税评价额”。</span>
-                            </div>
-                        </label>
+                        <label>固都税评估额 (建物)</label>
                         <div class="input-group"><input type="number" id="f_build" value="2000"><span class="suffix">万円</span></div>
                     </div>
-                    <div style="font-size:0.8rem; color:var(--text-sub); margin-top:8px;">* 系统将按固都税比例拆分交易总价</div>
                     <div class="form-row" style="margin-top:8px;">
                         <label>实际交易总价</label>
                         <div class="input-group"><input type="number" id="f_totalPrice" value="8000"><span class="suffix">万円</span></div>
@@ -538,13 +391,15 @@
             </div>
 
             <div class="card">
-                <h2>📊 拆分详情</h2>
+                <h2>📊 拆分详情 (Mode A 可拖拽调整)</h2>
                 
-                <div class="ratio-bar-container">
+                <div class="ratio-bar-container" id="ratioContainer">
                     <div class="ratio-bar">
                         <div id="bar_build" class="rb-seg rb-build" style="width: 50%"></div>
                         <div id="bar_land" class="rb-seg rb-land" style="width: 50%"></div>
                     </div>
+                    <div class="drag-handle" id="dragHandle"></div>
+                    
                     <div class="ratio-legend">
                         <span id="txt_build_ratio" style="color:var(--success)">建物: --%</span>
                         <span id="txt_land_ratio" style="color:var(--neutral)">土地: --%</span>
@@ -573,21 +428,15 @@
                             <th>节税 (现金)</th>
                         </tr>
                     </thead>
-                    <tbody id="out_table_body">
-                        </tbody>
+                    <tbody id="out_table_body"></tbody>
                 </table>
-                <div style="font-size:0.75rem; color:var(--text-sub); text-align:center; margin-top:15px;">
-                    * 首年按月割计算（包含购买月）。
-                </div>
-                
+                <div style="font-size:0.75rem; color:var(--text-sub); text-align:center; margin-top:15px;">* 首年按月割计算</div>
                 <button class="btn-full-sim" onclick="app.showFullModal()">🔎 查看完整折旧表 (全周期)</button>
             </div>
         </div>
     </div>
 
-    <footer>
-        蘇的工具箱 · SUYU.2025
-    </footer>
+    <footer>蘇的工具箱 · SUYU.2025</footer>
 </div>
 
 <div class="modal-overlay" id="fullModal">
@@ -613,20 +462,123 @@
 </div>
 
 <script>
-/**
- * V7.0 核心逻辑 - 旗舰版
- */
-const app = {
-    config: {
-        life: { wood: 22, steel: 27, rc: 47 },
+// --- V7.5 Tooltip Controller ---
+const tooltip = {
+    activeEl: null,
+    
+    toggle(wrapper) {
+        const content = wrapper.querySelector('.tooltip-content');
+        if (!content) return;
+
+        // 如果点击的是已经打开的，则关闭
+        if (this.activeEl === content) {
+            this.close();
+            return;
+        }
+
+        // 关闭之前的
+        if (this.activeEl) this.activeEl.classList.remove('active');
+
+        // 打开新的
+        content.classList.add('active');
+        this.activeEl = content;
+        
+        // 阻止冒泡，防止触发 document 点击
+        event.stopPropagation();
     },
-    state: {
-        mode: 'manual',
-        fullData: [] // 存储完整计算结果
+
+    close() {
+        if (this.activeEl) {
+            this.activeEl.classList.remove('active');
+            this.activeEl = null;
+        }
     },
 
     init() {
+        // 点击空白处关闭 Tooltip
+        document.addEventListener('click', (e) => {
+            // 如果点击的不是 tooltip 内部，则关闭
+            if (this.activeEl && !e.target.closest('.tooltip-content')) {
+                this.close();
+            }
+        });
+        
+        // 允许 tooltip 内部链接点击
+        const links = document.querySelectorAll('.tooltip-content a');
+        links.forEach(l => l.addEventListener('click', (e) => e.stopPropagation()));
+    }
+};
+
+// --- V7.5 Drag Controller ---
+const dragger = {
+    isDragging: false,
+    container: null,
+    
+    init() {
+        this.container = document.getElementById('ratioContainer');
+        const handle = document.getElementById('dragHandle');
+        
+        handle.addEventListener('mousedown', (e) => this.start(e));
+        document.addEventListener('mousemove', (e) => this.move(e));
+        document.addEventListener('mouseup', () => this.end());
+        
+        // Mobile touch support
+        handle.addEventListener('touchstart', (e) => this.start(e.touches[0]));
+        document.addEventListener('touchmove', (e) => this.move(e.touches[0]));
+        document.addEventListener('touchend', () => this.end());
+    },
+
+    start(e) {
+        if (app.state.mode !== 'manual') return;
+        this.isDragging = true;
+        document.body.style.cursor = 'col-resize';
+        e.preventDefault && e.preventDefault(); // Prevent text selection
+    },
+
+    move(e) {
+        if (!this.isDragging) return;
+        
+        const rect = this.container.getBoundingClientRect();
+        const offsetX = e.clientX - rect.left;
+        let pct = offsetX / rect.width;
+        
+        // Constrain
+        if (pct < 0.05) pct = 0.05;
+        if (pct > 0.95) pct = 0.95;
+
+        // Calculate based on current Total Price in Manual Mode
+        const currentLand = parseFloat(document.getElementById('m_landPrice').value) || 0;
+        const currentBuild = parseFloat(document.getElementById('m_buildPrice').value) || 0;
+        const total = currentLand + currentBuild;
+
+        if (total > 0) {
+            const newBuild = total * pct;
+            const newLand = total - newBuild;
+            
+            // Update Inputs
+            document.getElementById('m_buildPrice').value = Math.round(newBuild);
+            document.getElementById('m_landPrice').value = Math.round(newLand);
+            
+            // Trigger Calc
+            app.calc();
+        }
+    },
+
+    end() {
+        this.isDragging = false;
+        document.body.style.cursor = 'default';
+    }
+};
+
+// --- Main App ---
+const app = {
+    config: { life: { wood: 22, steel: 27, rc: 47 } },
+    state: { mode: 'manual', fullData: [] },
+
+    init() {
         this.fillMonths();
+        tooltip.init();
+        dragger.init();
         
         const inputs = document.querySelectorAll('input, select');
         inputs.forEach(el => {
@@ -640,7 +592,6 @@ const app = {
             this.calc();
         });
 
-        // 点击遮罩关闭
         document.getElementById('fullModal').addEventListener('click', (e) => {
             if (e.target === document.getElementById('fullModal')) this.closeFullModal();
         });
@@ -664,6 +615,12 @@ const app = {
         document.getElementById('panel-auto').classList.add('hidden');
         document.getElementById('panel-fixed').classList.add('hidden');
         document.getElementById(`panel-${mode}`).classList.remove('hidden');
+        
+        // Toggle Draggable State
+        const ratioContainer = document.getElementById('ratioContainer');
+        if (mode === 'manual') ratioContainer.classList.add('draggable');
+        else ratioContainer.classList.remove('draggable');
+
         this.calc();
     },
 
@@ -684,35 +641,28 @@ const app = {
 
             let landPrice = 0, buildPrice = 0;
 
-            // 1. 拆分计算
             if (this.state.mode === 'manual') {
                 landPrice = this.val('m_landPrice');
                 buildPrice = this.val('m_buildPrice');
-            } 
-            else if (this.state.mode === 'auto') {
+            } else if (this.state.mode === 'auto') {
                 const total = this.val('a_totalPrice');
                 const lArea = this.val('a_landArea');
-                const rosenka = this.val('a_rosenka'); // 单位: 万円
+                const rosenka = this.val('a_rosenka');
                 const factor = this.val('a_factor');
                 const bArea = this.val('a_buildArea');
-                const unitCost = this.val('a_unitCost'); // 单位: 万円
-
-                // 修正公式：路线价单位已改为万，直接相乘
+                const unitCost = this.val('a_unitCost');
                 const lVal = lArea * rosenka * factor;
-                
                 const statLife = this.config.life[structure];
                 const physLife = statLife * 1.5;
                 let rate = 1 - (age / physLife);
                 if (rate < 0.1) rate = 0.1;
                 const bVal = bArea * unitCost * rate;
-
                 const sum = lVal + bVal;
                 if (sum > 0) {
                     buildPrice = total * (bVal / sum);
                     landPrice = total * (lVal / sum);
                 }
-            } 
-            else if (this.state.mode === 'fixed') {
+            } else if (this.state.mode === 'fixed') {
                 const fLand = this.val('f_land');
                 const fBuild = this.val('f_build');
                 const realTotal = this.val('f_totalPrice');
@@ -727,9 +677,7 @@ const app = {
             this.generateData(buildPrice, structure, age, method, fiscalMonth, buyMonth, taxRate);
             this.renderSmallTable();
 
-        } catch (e) {
-            console.error(e);
-        }
+        } catch (e) { console.error(e); }
     },
 
     updateSplitUI(land, build) {
@@ -741,68 +689,62 @@ const app = {
         document.getElementById('out_landPrice').innerText = fmt(land);
         document.getElementById('out_buildPrice').innerText = fmt(build);
 
-        // 可视化条升级：金额在内，比例在外
         const barB = document.getElementById('bar_build');
         const barL = document.getElementById('bar_land');
         
+        // Update widths
         barB.style.width = bPct + "%";
-        barB.innerText = bPct > 15 ? fmt(build) : ""; // 空间太小不显示
-        
         barL.style.width = lPct + "%";
+        
+        // Labels inside bar
+        barB.innerText = bPct > 15 ? fmt(build) : "";
         barL.innerText = lPct > 15 ? fmt(land) : "";
 
+        // Legend
         document.getElementById('txt_build_ratio').innerText = `建物: ${bPct.toFixed(1)}%`;
         document.getElementById('txt_land_ratio').innerText = `土地: ${lPct.toFixed(1)}%`;
+
+        // Update Drag Handle Position
+        const handle = document.getElementById('dragHandle');
+        if (this.state.mode === 'manual' && total > 0) {
+            handle.style.left = bPct + "%";
+        }
     },
 
-    // 核心：生成完整数据
     generateData(price, structure, age, method, fMonth, bMonth, taxRate) {
-        this.state.fullData = []; // 清空
+        this.state.fullData = [];
         if (price <= 0) return;
 
         const statLife = this.config.life[structure];
         let years = statLife;
 
         if (method === 'simplified') {
-            if (age >= statLife) {
-                years = Math.floor(statLife * 0.2);
-            } else {
-                years = Math.floor((statLife - age) + (age * 0.2));
-            }
+            if (age >= statLife) years = Math.floor(statLife * 0.2);
+            else years = Math.floor((statLife - age) + (age * 0.2));
             if (years < 2) years = 2;
         }
         document.getElementById('out_years').innerText = years + " 年";
 
-        // 首年折旧月数
         let months1 = 0;
         if (bMonth <= fMonth) months1 = fMonth - bMonth + 1;
         else months1 = (12 - bMonth + 1) + fMonth;
 
-        const maxDep = price - 1; // 留1円
+        const maxDep = price - 1; 
         const dbRate = this.val('s_depRate'); 
         let currentBook = price;
         let accDep = 0;
         let i = 1;
 
-        // 循环直到折旧完成 (为了防止死循环，设定上限 100年)
         while (currentBook > 1 && i <= 100) {
             let dep = 0;
-            if (method === 'rate') {
-                dep = currentBook * dbRate;
-            } else {
-                dep = price / years;
-            }
+            if (method === 'rate') dep = currentBook * dbRate;
+            else dep = price / years;
 
-            // 首年按月
             if (i === 1) dep = dep * (months1 / 12);
-            
-            // 年限检查 (简便/直线)
-            if (method !== 'rate' && i > years && i > 1) {
-                // 如果是定额法，理论上 years 年就折完了，但因为首年按月，可能会溢出到 year+1
-                // 这里不做强制截断，依靠 maxDep 检查自动停止
+            if (method !== 'rate' && i > years && i > 1 && accDep < maxDep) {
+                // optional cleanup for leftover due to monthly calc
             }
 
-            // 边界检查
             if (accDep + dep > maxDep) dep = maxDep - accDep;
             if (dep < 0) dep = 0;
 
@@ -810,23 +752,18 @@ const app = {
             currentBook -= dep;
             
             this.state.fullData.push({
-                year: i,
-                dep: dep,
-                save: dep * taxRate,
-                book: currentBook
+                year: i, dep: dep, save: dep * taxRate, book: currentBook
             });
 
-            if (currentBook <= 1) break; // 结束
+            if (currentBook <= 1) break; 
             i++;
         }
     },
 
-    // 渲染主页小表 (前5年)
     renderSmallTable() {
         const data = this.state.fullData.slice(0, 5);
         let html = "";
         let totalSave = 0;
-        
         data.forEach(d => {
             totalSave += d.save;
             html += `
@@ -837,15 +774,12 @@ const app = {
                 </tr>
             `;
         });
-
-        // 填充首年和总额
         const y1 = this.state.fullData[0];
         document.getElementById('out_year1').innerText = y1 ? Math.round(y1.dep).toLocaleString() : 0;
         document.getElementById('out_totalSave').innerText = Math.round(totalSave).toLocaleString() + " 万";
         document.getElementById('out_table_body').innerHTML = html;
     },
 
-    // 渲染全屏弹窗大表
     renderFullTable() {
         let html = "";
         this.state.fullData.forEach(d => {
@@ -872,7 +806,6 @@ const app = {
 };
 
 document.addEventListener('DOMContentLoaded', () => app.init());
-
 </script>
 </body>
 </html>
