@@ -70,9 +70,8 @@
             border-radius: 50%;
             box-shadow: 0 0 10px rgba(255,255,255,0.8);
             opacity: 0;
-            z-index: 2; /* 确保在星云之上 */
+            z-index: 2;
             pointer-events: none;
-            /* 动画由JS动态插入 */
         }
 
         /* 舞台 */
@@ -80,26 +79,26 @@
             position: relative; width: 100%; height: 100%; z-index: 10;
         }
 
-        /* --- 核心：Liquid Glass (液态玻璃) 样式优化 --- */
+        /* --- 核心：Liquid Glass (液态玻璃) 样式 --- */
         .orb {
             position: absolute;
             border-radius: 50%;
-            /* 1. 调亮底色：增加不透明度，偏冷白，不再死黑 */
+            /* 1. 调亮底色：增加不透明度，偏冷白 */
             background: rgba(220, 235, 255, 0.08); 
             
             /* 2. 混合模式：提高饱和度和亮度 */
             backdrop-filter: blur(10px) saturate(150%) brightness(1.1); 
             -webkit-backdrop-filter: blur(10px) saturate(150%) brightness(1.1);
             
-            /* 3. 光影层：增强轮廓光 */
+            /* 3. 光影层 */
             box-shadow: 
                 inset 0 0 20px rgba(255, 255, 255, 0.1), /* 内部辉光 */
                 inset 2px 4px 8px rgba(255, 255, 255, 0.25), /* 顶部高光 */
                 inset -2px -4px 10px rgba(0, 0, 0, 0.5), /* 底部阴影 */
                 0 0 15px var(--glow-color-dim); /* 外部辉光 */
 
-            border: 1px solid rgba(255, 255, 255, 0.25); /* 边框更明显 */
-            border-top: 1px solid rgba(255, 255, 255, 0.5); /* 顶边框加强 */
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-top: 1px solid rgba(255, 255, 255, 0.5);
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 
             display: flex; flex-direction: column; justify-content: center; align-items: center;
@@ -141,7 +140,7 @@
         .orb.hovered {
             z-index: 1000 !important;
             border-color: rgba(255,255,255,0.9);
-            background: rgba(220, 235, 255, 0.15); /* 悬浮时更亮 */
+            background: rgba(220, 235, 255, 0.15);
             box-shadow: 
                 inset 0 0 30px rgba(255, 255, 255, 0.3),
                 0 0 60px var(--glow-color); 
@@ -210,13 +209,15 @@
             { name: "Gemini", id: "gemini", url: "https://gemini.google.com", color: "#4E86F5", desc: "Google 多模态 AI" },
             { name: "Claude", id: "claude", url: "https://claude.ai", color: "#d97757", desc: "Anthropic 长文本" },
             { name: "DeepSeek", id: "deepseek", url: "https://www.deepseek.com", color: "#4b6bfb", desc: "深度求索" },
-            { name: "Perplexity", id: "perplexity", url: "https://www.perplexity.ai", color: "#24bba1", desc: "AI 搜索" },
             { name: "Grok", id: "grok", url: "https://grok.x.ai", color: "#ffffff", desc: "X 平台实时 AI" },
+            
+            { name: "Perplexity", id: "perplexity", url: "https://www.perplexity.ai", color: "#24bba1", desc: "AI 搜索" },
             { name: "Meta AI", id: "meta", url: "https://www.meta.ai", color: "#0064e0", desc: "Llama 生态" },
             { name: "Copilot", id: "microsoft", url: "https://copilot.microsoft.com", color: "#2E89F3", desc: "Microsoft 助手" },
-            { name: "Midjourney", id: "midjourney", url: "https://www.midjourney.com", color: "#ffffff", desc: "AI 绘画" },
             { name: "Sora", id: "sora", url: "https://openai.com/sora", color: "#ff3366", desc: "视频生成" },
             { name: "Runway", id: "runway", url: "https://runwayml.com", color: "#c9fa4c", desc: "视频编辑" },
+            
+            { name: "Midjourney", id: "midjourney", url: "https://www.midjourney.com", color: "#ffffff", desc: "AI 绘画" },
             { name: "HuggingFace", id: "huggingface", url: "https://huggingface.co", color: "#ffd21e", desc: "开源社区" },
             { name: "Ollama", id: "ollama", url: "https://ollama.com", color: "#ffffff", desc: "本地运行" },
             { name: "Qwen", id: "qwenr", url: "https://tongyi.aliyun.com", color: "#615ced", desc: "通义千问" },
@@ -232,7 +233,6 @@
         let isTransitioning = false;
         let isDocked = false;
 
-        // 1. 静态背景星初始化
         function initStars() {
             const count = 120;
             for (let i = 0; i < count; i++) {
@@ -246,25 +246,21 @@
             }
         }
 
-        // 2. 动态流星系统 (修复可见性)
         function spawnShootingStar() {
             const star = document.createElement('div');
             star.className = 'shooting-star-trail';
             
-            // 随机起始位置 (主要在右上方或左上方)
             const startX = Math.random() * window.innerWidth;
             const startY = Math.random() * (window.innerHeight * 0.5);
             
-            // 随机长度和角度
             const length = 100 + Math.random() * 200;
-            const angle = 45; // 向右下角划过
+            const angle = 45; 
             
             star.style.width = length + 'px';
             star.style.left = startX + 'px';
             star.style.top = startY + 'px';
             star.style.transform = `rotate(${angle}deg)`;
             
-            // 动态注入动画
             star.animate([
                 { transform: `translate(0, 0) rotate(${angle}deg)`, opacity: 0 },
                 { transform: `translate(100px, 100px) rotate(${angle}deg)`, opacity: 1, offset: 0.1 },
@@ -275,8 +271,6 @@
             }).onfinish = () => star.remove();
 
             starsContainer.appendChild(star);
-
-            // 随机时间再次生成
             setTimeout(spawnShootingStar, 2000 + Math.random() * 4000);
         }
 
@@ -284,18 +278,28 @@
             constructor(data, index) {
                 this.data = data;
                 
-                // 【修改点】三种固定大小 logic
+                // 【核心修改】指定大小逻辑
                 const isMobile = window.innerWidth < 768;
-                // 定义三种基准尺寸 (半径)
-                // Desktop: 大=70(宽140), 中=55(宽110), 小=45(宽90)
-                // Mobile: 大=45(宽90), 中=38(宽76), 小=30(宽60)
+                // 定义半径: [小, 中, 大]
+                // Desktop: 大=70, 中=55, 小=45
+                // Mobile:  大=45, 中=38, 小=30
                 const sizes = isMobile ? [30, 38, 45] : [45, 55, 70];
-                // 随机分配一个尺寸等级 (0:小, 1:中, 2:大)
-                this.sizeTier = Math.floor(Math.random() * 3);
+
+                const largeIds = ['gemini', 'gpt', 'grok', 'deepseek', 'claude'];
+                const smallIds = ['qwenr', 'wenxin', 'ollama', 'huggingface', 'midjourney'];
+
+                if (largeIds.includes(this.data.id)) {
+                    this.sizeTier = 2; // Large
+                } else if (smallIds.includes(this.data.id)) {
+                    this.sizeTier = 0; // Small
+                } else {
+                    this.sizeTier = 1; // Medium
+                }
+
                 this.realRadius = sizes[this.sizeTier];
                 this.radius = this.realRadius;
                 
-                // 初始位置
+                // 初始随机位置
                 this.x = Math.random() * (window.innerWidth - this.realRadius * 2);
                 this.y = Math.random() * (window.innerHeight - this.realRadius * 2);
                 
@@ -436,75 +440,23 @@
 
         // ================= 归位计算逻辑 (核心修改) =================
         function calculateDockPositions() {
-            // 1. 排序：按尺寸从小到大 (小球在前，大球在后)
-            // 这样我们在填充行时，先填充第一行(小)，最后填充最后一行(大)
-            // 从而实现：小球在上面，大球在下面
-            const sortedOrbs = [...orbs].sort((a, b) => a.realRadius - b.realRadius);
+            // 排序：Small(Tier0) -> Medium(Tier1) -> Large(Tier2)
+            const sortedOrbs = [...orbs].sort((a, b) => a.sizeTier - b.sizeTier);
 
             const isMobile = window.innerWidth < 768;
-            const gap = isMobile ? 8 : 15; // 间距
-            const bottomMargin = 100; // 距离底部
+            const gap = isMobile ? 8 : 15; 
             
             // 我们固定分 3 排
             const rowCount = 3;
-            const itemsPerRow = Math.ceil(sortedOrbs.length / rowCount); // 计算每排大概多少个(约5个)
+            const itemsPerRow = Math.ceil(sortedOrbs.length / rowCount); 
 
-            // 计算所有行的总高度，以便垂直居中或贴底
-            // 但需求是 "靠底"，所以我们从下往上计算 Y
-            
-            let currentIdx = 0;
-            
-            // 遍历每一排 (Row 0 是最上面/小球，Row 2 是最下面/大球)
-            for (let r = 0; r < rowCount; r++) {
-                // 取出这一排的球
-                // 注意：如果总数除不尽，最后一排(大球)可能会少几个，或者第一排少几个
-                // 为了让大球沉底且填满，我们建议平均分配
-                
-                // 截取当前行的球
-                const start = r * itemsPerRow;
-                const end = Math.min(start + itemsPerRow, sortedOrbs.length);
-                const rowOrbs = sortedOrbs.slice(start, end);
-                
-                if (rowOrbs.length === 0) continue;
-
-                // 计算这一排的总宽度，用于水平居中
-                let rowWidth = 0;
-                rowOrbs.forEach(o => rowWidth += (o.realRadius * 2 + gap));
-                rowWidth -= gap; // 减去最后一个多余间距
-
-                let startX = (window.innerWidth - rowWidth) / 2;
-                
-                // 计算这一排的 Y 坐标
-                // 既然 Row 0 是小球(上)，Row 2 是大球(下)
-                // 我们需要确定每一排的高度基准
-                // 简单起见，设定固定行高或基于该行最大球体
-                // 这里我们倒着算 Y：从屏幕底部往上推
-                
-                // 重新思考：Row 2 (大) 在最下面。
-                // 屏幕底部位置
-                // Y offset from bottom: 
-                // Row 2 Y = H - bottomMargin - rowHeight
-                // Row 1 Y = Row 2 Y - gap - rowHeight
-                // ...
-                
-                // 为了简单，我们手动指定每一排距离底部的距离
-                // Row 0 (Top/Small): Bottom + 250
-                // Row 1 (Mid/Mid): Bottom + 140
-                // Row 2 (Btm/Large): Bottom + 20
-                // 具体数值根据球体大小动态算
-                
-                // 这里我们统一用一种从上往下排列的思路，然后整体往下压
-                // 或者直接按顺序排，因为我们已经把 array sort 好了 (小->大)
-                
-            }
-
-            // 重新实作：按 "排" 分配
-            // Row 0 (Top): Smallest
-            // Row 1 (Mid): Medium
-            // Row 2 (Btm): Largest
-            
-            // 预设行高中心线距离底部的距离
-            const rowBottomOffsets = isMobile ? [220, 140, 60] : [300, 180, 60]; 
+            // 【关键修改】：调整底部距离，确保大球不切边
+            // 数组对应 [TopRowOffset, MidRowOffset, BottomRowOffset]
+            // 大球半径70px，底部需要留出 > 70 + margin 的空间
+            // 之前是60，现在提升到 110 (PC) / 85 (Mobile)
+            // 偏移量逻辑：Offset = 距离底部的距离 (Y = window.height - Offset)
+            // Row 0 (小球) 在最上，Offset 最大
+            const rowBottomOffsets = isMobile ? [250, 165, 85] : [360, 235, 110]; 
             
             for (let r = 0; r < rowCount; r++) {
                 const start = r * itemsPerRow;
@@ -518,23 +470,15 @@
                 rowWidth -= gap;
 
                 let currentX = (window.innerWidth - rowWidth) / 2;
-                // Y 坐标：屏幕高度 - 预设的偏移量 - 球半径(因为y是左上角)
-                // rowBottomOffsets[0] 是最上面的行(距离底部最远)
-                // 但我们的数组 rowBottomOffsets[0] 写的是 220，是最大的，刚好对应
-                // 实际上 r=0 是小球，rowBottomOffsets[0] 应该是最高的距离
                 
-                // 修正：sortedOrbs 是 小->大
-                // r=0 处理小球，放在最上面 (距离底部远)
-                // r=2 处理大球，放在最下面 (距离底部近)
-                // rowBottomOffsets 需要是 [远, 中, 近] -> [300, 180, 60]
-                
-                const bottomOffset = rowBottomOffsets[r] || 60; 
+                // r=0: 小球 -> 对应 rowBottomOffsets[0] (最大值，最靠上)
+                // r=2: 大球 -> 对应 rowBottomOffsets[2] (最小值，最靠下)
+                const bottomOffset = rowBottomOffsets[r]; 
                 const centerY = window.innerHeight - bottomOffset;
 
                 rowOrbs.forEach(orb => {
                     orb.targetX = currentX;
-                    orb.targetY = centerY - orb.realRadius; // 居中修正
-                    
+                    orb.targetY = centerY - orb.realRadius; 
                     currentX += (orb.realRadius * 2 + gap);
                 });
             }
@@ -566,7 +510,6 @@
                 if (isDocked) {
                     orbs.forEach(o => o.updateDocking());
                 } else {
-                    // 碰撞检测
                     for (let i = 0; i < orbs.length; i++) {
                         for (let j = i + 1; j < orbs.length; j++) {
                             const b1 = orbs[i]; const b2 = orbs[j];
@@ -602,7 +545,7 @@
         }
 
         initStars();
-        spawnShootingStar(); // 启动流星
+        spawnShootingStar();
         aiTools.forEach((d, i) => orbs.push(new Orb(d, i)));
         loop();
 
