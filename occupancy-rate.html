@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>智能入住率分析系统 Ultimate V2|蘇的工具箱</title>
+<title>智能入住率分析系统 Ultimate V2.1|蘇的工具箱</title>
 <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
@@ -79,7 +79,7 @@
 
 <div class="container">
     <div class="header">
-        <h1 style="margin:0;">智能入住率分析系统<span style="font-size:14px; background:#000; color:#fff; padding:2px 8px; border-radius:6px; vertical-align:middle; margin-left: 5px;">Ultimate V2</span></h1>
+        <h1 style="margin:0;">智能入住率分析系统<span style="font-size:14px; background:#000; color:#fff; padding:2px 8px; border-radius:6px; vertical-align:middle; margin-left: 5px;">Ultimate V2.1</span></h1>
         <a href="https://c1211tokyo.github.io/tool/" class="subtitle-link">蘇的工具箱</a>
     </div>
 
@@ -417,7 +417,6 @@ function runAnalysis() {
     const imgData = ctx.getImageData(0,0, canvas.width, canvas.height).data;
 
     for(let c=0; c<cols; c++) {
-        // 默认初始化
         const defaultName = String.fromCharCode(65+c);
         roomNames.push(defaultName); 
         roomParts.push({ prefix: '', suffix: '' });
@@ -459,7 +458,7 @@ function runAnalysis() {
     document.getElementById('resultCard').scrollIntoView({behavior:'smooth'});
 }
 
-// --- 核心辅助函数: 计算被占用的格子 (双向锁定逻辑) ---
+// --- 核心辅助函数: 计算被占用的格子 ---
 function getBlockedSet(r) {
     let blockedSet = new Set();
     
@@ -479,12 +478,10 @@ function getBlockedSet(r) {
     return blockedSet;
 }
 
-// 辅助函数：更新房间名称
 function updateRoomName(c) {
     const p = roomParts[c].prefix.trim();
     const s = roomParts[c].suffix.trim();
     if(p === '' && s === '') {
-        // 回退默认
         roomNames[c] = String.fromCharCode(65+c);
     } else {
         roomNames[c] = p + s;
@@ -492,7 +489,7 @@ function updateRoomName(c) {
     refreshAllViews();
 }
 
-// --- 3. 视图渲染与数据计算 ---
+// --- 3. 视图渲染与数据计算 (V2.1 修正优先级) ---
 
 function refreshAllViews() {
     renderDailyTable();
@@ -507,7 +504,6 @@ function renderDailyTable() {
     let thead = document.createElement('thead');
     let tr = document.createElement('tr');
     
-    // 日期列头
     let thDate = document.createElement('th');
     thDate.innerText = '日期';
     thDate.style.zIndex = '11';
@@ -516,17 +512,14 @@ function renderDailyTable() {
 
     validCols.forEach(c => {
         let th = document.createElement('th');
-        
         let container = document.createElement('div');
         container.className = 'th-container';
         
-        // 预览当前全名
         let label = document.createElement('div');
         label.className = 'th-label-preview';
         label.innerText = roomNames[c];
         container.appendChild(label);
         
-        // 前缀输入
         let inpPrefix = document.createElement('input');
         inpPrefix.className = 'th-input-mini';
         inpPrefix.setAttribute('list', 'prefix-list');
@@ -535,7 +528,6 @@ function renderDailyTable() {
         inpPrefix.onchange = (e) => { roomParts[c].prefix = e.target.value; updateRoomName(c); };
         container.appendChild(inpPrefix);
         
-        // 后缀输入
         let inpSuffix = document.createElement('input');
         inpSuffix.className = 'th-input-mini';
         inpSuffix.setAttribute('list', 'suffix-list');
@@ -544,7 +536,6 @@ function renderDailyTable() {
         inpSuffix.onchange = (e) => { roomParts[c].suffix = e.target.value; updateRoomName(c); };
         container.appendChild(inpSuffix);
         
-        // 删除按钮
         let btnDel = document.createElement('div');
         btnDel.innerText = '× 删除列';
         btnDel.style.cssText = 'color:red; cursor:pointer; font-size:10px; margin-top:2px;';
@@ -556,7 +547,6 @@ function renderDailyTable() {
             }
         };
         container.appendChild(btnDel);
-
         th.appendChild(container);
         tr.appendChild(th);
     });
@@ -580,18 +570,25 @@ function renderDailyTable() {
             let isOcc = rawData[r][c] === 1;
             let isBlocked = blockedCols.has(c);
 
-            if(isBlocked) {
+            // [FIX] 优先级调整：先判断是否入住 (isOcc)，入住状态高于锁定状态。
+            if(isOcc) {
+                td.className = 'cell-occupied';
+                td.innerText = '住';
+                totalOcc++;
+                
+                td.onclick = () => {
+                    rawData[r][c] = 0;
+                    refreshAllViews();
+                };
+                td.style.cursor = 'pointer';
+            } else if(isBlocked) {
                 td.className = 'cell-blocked';
                 td.innerText = '🔒'; 
+                // 锁定状态不可点击修改
             } else {
-                if(isOcc) {
-                    td.className = 'cell-occupied';
-                    td.innerText = '住';
-                    totalOcc++;
-                }
                 totalSlots++; 
                 td.onclick = () => {
-                    rawData[r][c] = isOcc ? 0 : 1;
+                    rawData[r][c] = 1;
                     refreshAllViews();
                 };
                 td.style.cursor = 'pointer';
@@ -617,12 +614,16 @@ function renderStatsTable() {
 
         for(let r=0; r<totalDays; r++) {
             let blockedCols = getBlockedSet(r);
+            let isOcc = rawData[r][c] === 1;
             
-            if(blockedCols.has(c)) {
+            // [FIX] 统计优先级：如果入住，算Occupied；未入住且被锁，算Blocked；否则算Valid
+            if(isOcc) {
+                stats.valid++;
+                stats.occupied++;
+            } else if(blockedCols.has(c)) {
                 stats.blocked++;
             } else {
                 stats.valid++;
-                if(rawData[r][c] === 1) stats.occupied++;
             }
         }
 
@@ -642,12 +643,11 @@ function renderStatsTable() {
 }
 
 function renderCharts() {
-    // 准备参考线数据
     const markLines = {
         data: [
-            { yAxis: 95, label: { position: 'end', formatter: '优秀 95%' }, lineStyle: { color: '#34c759', type: 'dashed' } },
-            { yAxis: 70, label: { position: 'end', formatter: '达标 70%' }, lineStyle: { color: '#ff9500', type: 'dashed' } },
-            { yAxis: 50, label: { position: 'end', formatter: '警戒 50%' }, lineStyle: { color: '#ff3b30', type: 'dashed' } }
+            { yAxis: 95, label: { position: 'end', formatter: '95%' }, lineStyle: { color: '#34c759', type: 'dashed' } },
+            { yAxis: 70, label: { position: 'end', formatter: '70%' }, lineStyle: { color: '#ff9500', type: 'dashed' } },
+            { yAxis: 50, label: { position: 'end', formatter: '50%' }, lineStyle: { color: '#ff3b30', type: 'dashed' } }
         ]
     };
 
@@ -657,7 +657,10 @@ function renderCharts() {
         let valid=0, occ=0;
         for(let r=0; r<rawData.length; r++) {
             let blockedCols = getBlockedSet(r);
-            if(!blockedCols.has(c)) { valid++; if(rawData[r][c]) occ++; }
+            let isOcc = rawData[r][c] === 1;
+            
+            if(isOcc) { valid++; occ++; }
+            else if(!blockedCols.has(c)) { valid++; }
         }
         barY.push(valid>0 ? (occ/valid*100).toFixed(1) : 0);
     });
@@ -675,7 +678,7 @@ function renderCharts() {
             data:barY, 
             itemStyle:{color:'#007aff'}, 
             label:{show:true, position:'top', formatter:'{c}%'},
-            markLine: markLines // 添加参考线
+            markLine: markLines 
         }]
     });
     chartBarIns.resize();
@@ -687,10 +690,9 @@ function renderCharts() {
         let blockedCols = getBlockedSet(r);
         
         validCols.forEach(c => {
-            if(!blockedCols.has(c)) {
-                daySlots++;
-                if(rawData[r][c]) dayOcc++;
-            }
+            let isOcc = rawData[r][c] === 1;
+            if(isOcc) { daySlots++; dayOcc++; }
+            else if(!blockedCols.has(c)) { daySlots++; }
         });
         lineY.push(daySlots>0 ? (dayOcc/daySlots*100).toFixed(1) : 0);
     }
@@ -709,7 +711,7 @@ function renderCharts() {
             data:lineY, 
             itemStyle:{color:'#34c759'}, 
             areaStyle:{opacity:0.2},
-            markLine: markLines // 添加参考线
+            markLine: markLines
         }]
     });
     chartLineIns.resize();
@@ -750,11 +752,13 @@ function exportExcel() {
         let blockedCols = getBlockedSet(r);
 
         validCols.forEach(c => {
-            if(blockedCols.has(c)) {
+            let isOcc = rawData[r][c] === 1;
+            if(isOcc) {
+                row.push('1'); dayOcc++; daySlots++;
+            } else if(blockedCols.has(c)) {
                 row.push('🔒'); 
             } else {
-                daySlots++;
-                if(rawData[r][c]) { row.push('1'); dayOcc++; } else { row.push('0'); }
+                row.push('0'); daySlots++;
             }
         });
         row.push(daySlots>0 ? (dayOcc/daySlots*100).toFixed(1)+'%' : '0%');
@@ -768,8 +772,11 @@ function exportExcel() {
         let valid=0, occ=0, block=0;
         for(let r=0; r<rawData.length; r++) {
             let blockedCols = getBlockedSet(r);
-            if(blockedCols.has(c)) block++;
-            else { valid++; if(rawData[r][c]) occ++; }
+            let isOcc = rawData[r][c] === 1;
+            
+            if(isOcc) { valid++; occ++; }
+            else if(blockedCols.has(c)) block++;
+            else valid++;
         }
         ws2Data.push([roomNames[c], rawData.length, block, valid, occ, (valid? (occ/valid*100).toFixed(1)+'%': '0%')]);
     });
