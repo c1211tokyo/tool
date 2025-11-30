@@ -2,192 +2,124 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>Tokyo Real Estate Analytics Pro</title>
-<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
-<link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet">
-<script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Tokyo Investment Map (Lite)</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-    :root { --accent: #00f2ff; --bg: #050505; --panel-bg: rgba(12, 12, 15, 0.9); }
-    body { margin: 0; padding: 0; background: var(--bg); color: #e0e0e0; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
-    
-    /* 地图容器 */
-    #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-
-    /* 悬停 Tooltip */
-    #tooltip {
-        position: absolute; display: none; pointer-events: none;
-        background: rgba(0, 0, 0, 0.8); border: 1px solid var(--accent);
-        padding: 8px 12px; border-radius: 4px; font-weight: bold;
-        z-index: 100; transform: translate(-50%, -150%); white-space: nowrap;
-        box-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
+    /* === 全局风格定义 (Cyberpunk Flat) === */
+    :root {
+        --bg-color: #0a0a0a;
+        --panel-bg: rgba(18, 18, 24, 0.95);
+        --accent-cyan: #00f3ff;
+        --accent-purple: #bc13fe;
+        --accent-orange: #ff9100;
+        --text-main: #e0e0e0;
+        --text-dim: #888;
     }
 
-    /* 左侧控制面板 */
+    body { margin: 0; padding: 0; background: var(--bg-color); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; overflow: hidden; color: var(--text-main); }
+    
+    #map { position: absolute; top: 0; bottom: 0; width: 100%; z-index: 1; background: #0a0a0a; }
+
+    /* 自定义 Leaflet Popup 样式 */
+    .leaflet-popup-content-wrapper { background: rgba(0,0,0,0.9); border: 1px solid var(--accent-cyan); color: #fff; border-radius: 4px; }
+    .leaflet-popup-tip { background: rgba(0,0,0,0.9); }
+    
+    /* === 控制面板 (左上) === */
     #control-panel {
-        position: absolute; top: 20px; left: 20px; width: 260px;
-        background: var(--panel-bg); backdrop-filter: blur(10px);
-        padding: 20px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
-        z-index: 10;
+        position: absolute; top: 20px; left: 20px; width: 220px;
+        background: var(--panel-bg); border-left: 2px solid var(--accent-cyan);
+        padding: 15px; border-radius: 0 8px 8px 0;
+        z-index: 1000; box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+        transition: transform 0.3s ease;
     }
-    .panel-header { color: var(--accent); font-size: 12px; letter-spacing: 2px; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px; font-weight: 800; }
     
+    h2 { margin: 0 0 15px 0; font-size: 14px; letter-spacing: 1px; color: var(--accent-cyan); text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 8px; }
+
     .metric-btn {
-        display: flex; justify-content: space-between; align-items: center;
-        padding: 12px; margin-bottom: 8px; background: rgba(255,255,255,0.03);
-        border: 1px solid rgba(255,255,255,0.05); border-radius: 4px; cursor: pointer;
-        transition: 0.3s; font-size: 13px; color: #aaa;
+        display: block; width: 100%; padding: 10px; margin-bottom: 8px;
+        background: rgba(255,255,255,0.05); border: 1px solid #333; color: #aaa;
+        font-size: 12px; cursor: pointer; text-align: left; border-radius: 4px;
+        transition: all 0.2s;
     }
-    .metric-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
-    .metric-btn.active { border-color: var(--color); background: rgba(255,255,255,0.05); color: #fff; box-shadow: inset 3px 0 0 var(--color); }
-    .color-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color); box-shadow: 0 0 8px var(--color); }
+    .metric-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .metric-btn.active { border-color: var(--accent-cyan); color: var(--accent-cyan); background: rgba(0, 243, 255, 0.1); font-weight: bold; }
 
-    /* 图例条 */
-    #legend-bar {
-        height: 6px; width: 100%; margin-top: 15px; border-radius: 3px;
-        background: linear-gradient(90deg, #333, #666); position: relative;
-    }
-    .legend-labels { display: flex; justify-content: space-between; font-size: 10px; color: #666; margin-top: 5px; }
-
-    /* 右侧详情面板 */
+    /* === 详情侧边栏 (右侧) === */
     #sidebar {
-        position: absolute; top: 0; right: -420px; bottom: 0; width: 380px;
+        position: absolute; top: 0; right: -100%; bottom: 0; width: 350px;
         background: var(--panel-bg); border-left: 1px solid #333;
-        padding: 30px; transition: right 0.4s cubic-bezier(0.2, 1, 0.3, 1);
-        z-index: 20; box-shadow: -10px 0 40px rgba(0,0,0,0.8); overflow-y: auto;
+        z-index: 1001; transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        padding: 25px; overflow-y: auto; display: flex; flex-direction: column;
     }
     #sidebar.open { right: 0; }
-    
-    /* 关闭按钮 */
-    .close-btn { 
-        position: absolute; top: 20px; right: 20px; cursor: pointer; color: #666; font-size: 24px; line-height: 1; transition: 0.2s; 
-    }
+
+    .close-btn { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: #666; }
     .close-btn:hover { color: #fff; }
 
-    .ward-header { font-size: 28px; font-weight: 800; margin: 10px 0 5px; background: linear-gradient(90deg, #fff, #aaa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .rank-badge { display: inline-block; background: #333; color: var(--accent); padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-bottom: 10px; border: 1px solid rgba(0, 242, 255, 0.3); }
+    #ward-name { font-size: 28px; font-weight: 800; margin: 20px 0 5px 0; color: #fff; letter-spacing: 2px; }
+    #ward-rank { display: inline-block; font-size: 11px; background: #333; padding: 2px 6px; border-radius: 3px; color: var(--accent-cyan); margin-bottom: 15px; }
 
-    .stat-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); align-items: center; }
-    .stat-label { color: #888; font-size: 13px; }
-    .stat-val { font-weight: bold; font-size: 16px; }
-    .stat-rank { font-size: 10px; color: #555; margin-left: 5px; }
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    .stat-item { background: rgba(255,255,255,0.03); padding: 10px; border-radius: 4px; }
+    .stat-label { font-size: 11px; color: #777; display: block; }
+    .stat-val { font-size: 16px; font-weight: bold; color: #eee; }
+    .val-high { color: var(--accent-cyan); text-shadow: 0 0 5px rgba(0,243,255,0.3); }
 
-    #chart-wrap { height: 200px; margin: 25px 0; position: relative; }
+    .chart-container { position: relative; height: 200px; width: 100%; margin-top: auto; }
     
-    .tag-cloud { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 15px; }
-    .tag { font-size: 11px; padding: 4px 10px; border-radius: 12px; background: #222; border: 1px solid #444; color: #bbb; }
+    .tags { margin: 15px 0; display: flex; flex-wrap: wrap; gap: 5px; }
+    .tag { font-size: 10px; padding: 3px 8px; background: #222; border: 1px solid #444; border-radius: 10px; color: #aaa; }
+
+    /* === 移动端适配 === */
+    @media (max-width: 768px) {
+        #control-panel { top: 10px; left: 10px; width: auto; min-width: 150px; padding: 10px; }
+        .metric-btn { padding: 6px; font-size: 11px; }
+        
+        #sidebar { width: 100%; top: auto; bottom: -100%; height: 60%; right: 0; border-left: none; border-top: 1px solid var(--accent-cyan); border-radius: 16px 16px 0 0; transition: bottom 0.4s ease; }
+        #sidebar.open { bottom: 0; right: 0; }
+    }
 
     /* Loading */
-    #loading { position: fixed; inset: 0; background: #000; z-index: 999; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s; color: var(--accent); font-family: monospace; }
+    #loader { position: fixed; inset: 0; background: #000; z-index: 2000; display: flex; justify-content: center; align-items: center; color: var(--accent-cyan); font-family: monospace; transition: opacity 0.5s; }
 </style>
 </head>
 <body>
 
-<div id="loading">INITIALIZING SYSTEM...</div>
-<div id="tooltip"></div>
+<div id="loader">SYSTEM INITIALIZING...</div>
 
 <div id="control-panel">
-    <div class="panel-header">TOKYO RE:ANALYTICS</div>
-    <div id="metric-buttons"></div>
-    
-    <div style="margin-top: 25px;">
-        <div id="legend-bar"></div>
-        <div class="legend-labels">
-            <span>LOW</span>
-            <span>AVG</span>
-            <span>HIGH</span>
-        </div>
-    </div>
+    <h2>数据视图</h2>
+    <div id="buttons-container"></div>
 </div>
 
 <div id="map"></div>
 
 <div id="sidebar">
-    <div class="close-btn" onclick="resetView()">×</div>
-    <div class="rank-badge" id="detail-rank">RANKING #--</div>
-    <div class="ward-header" id="detail-title">SELECT WARD</div>
-    <div class="tag-cloud" id="detail-tags"></div>
-
-    <div style="margin-top: 30px;" id="detail-stats"></div>
+    <div class="close-btn" onclick="closeSidebar()">×</div>
+    <div id="ward-rank">RANK --</div>
+    <h1 id="ward-name">Select Area</h1>
+    <div class="tags" id="ward-tags"></div>
     
-    <div id="chart-wrap">
+    <div class="stat-grid" id="ward-stats"></div>
+    
+    <p id="ward-desc" style="font-size: 13px; line-height: 1.6; color: #999; margin-bottom: 20px;"></p>
+
+    <div class="chart-container">
         <canvas id="radarChart"></canvas>
     </div>
-
-    <p id="detail-desc" style="color: #999; line-height: 1.6; font-size: 13px; margin-top: 20px;"></p>
 </div>
 
 <script>
-    // ==========================================
-    // 0. 配置与常量 (Configuration)
-    // ==========================================
-    const MAPBOX_TOKEN = 'pk.eyJ1Ijoic3VwZXJtaWtlIiwiYSI6ImNqZ2d0aWNjZzAwNGEzM21tNGN1Z2t6cW0ifQ.Sg33o3qZ4W7wA5b5xWc03A'; // ⚠️ 请替换为你的 Token
-    mapboxgl.accessToken = MAPBOX_TOKEN;
-
-    // 核心映射表：确保 GeoJSON 无论返回什么名字都能找到数据
-    // Key: GeoJSON 可能出现的英文名/变体, Value: 数据库里的标准日文名
-    const NAME_MAPPING = {
-        'Chiyoda': '千代田区', 'Chiyoda-ku': '千代田区',
-        'Chuo': '中央区', 'Chuo-ku': '中央区',
-        'Minato': '港区', 'Minato-ku': '港区',
-        'Shinjuku': '新宿区', 'Shinjuku-ku': '新宿区',
-        'Bunkyo': '文京区', 'Bunkyo-ku': '文京区',
-        'Taito': '台东区', 'Taito-ku': '台东区',
-        'Sumida': '墨田区', 'Sumida-ku': '墨田区',
-        'Koto': '江东区', 'Koto-ku': '江东区',
-        'Shinagawa': '品川区', 'Shinagawa-ku': '品川区',
-        'Meguro': '目黑区', 'Meguro-ku': '目黑区',
-        'Ota': '大田区', 'Ota-ku': '大田区',
-        'Setagaya': '世田谷区', 'Setagaya-ku': '世田谷区',
-        'Shibuya': '涩谷区', 'Shibuya-ku': '涩谷区',
-        'Nakano': '中野区', 'Nakano-ku': '中野区',
-        'Suginami': '杉并区', 'Suginami-ku': '杉并区',
-        'Toshima': '丰岛区', 'Toshima-ku': '丰岛区',
-        'Kita': '北区', 'Kita-ku': '北区',
-        'Arakawa': '荒川区', 'Arakawa-ku': '荒川区',
-        'Itabashi': '板桥区', 'Itabashi-ku': '板桥区',
-        'Nerima': '练马区', 'Nerima-ku': '练马区',
-        'Adachi': '足立区', 'Adachi-ku': '足立区',
-        'Katsushika': '葛饰区', 'Katsushika-ku': '葛饰区',
-        'Edogawa': '江户川区', 'Edogawa-ku': '江户川区'
-    };
-
-    // 指标配置中心 (Refactored Metrics)
-    const METRICS = {
-        growth: { 
-            label: '土地增长率', 
-            unit: '%', 
-            min: 3, max: 9, 
-            lowColor: '#2c003e', highColor: '#d600ff' // 紫色系
-        },
-        airbnb: { 
-            label: '民宿回报率', 
-            unit: 'pt', 
-            min: 3, max: 10, 
-            lowColor: '#002c3e', highColor: '#00f2ff' // 青色系 (Cyberpunk)
-        },
-        rental: { 
-            label: '长租回报率', 
-            unit: '%', 
-            min: 3, max: 7, 
-            lowColor: '#3e1c00', highColor: '#ff7700' // 橙色系
-        },
-        future: { 
-            label: '升值潜力', 
-            unit: 'pt', 
-            min: 4, max: 10, 
-            lowColor: '#3e000c', highColor: '#ff0044' // 红色系
-        }
-    };
-
-    let currentMetricKey = 'growth';
-    let myChart = null;
-
-    // ==========================================
-    // 1. 数据层 (Data Layer & Processing)
-    // ==========================================
-    const rawDB = {
+    // ================= 配置区域 =================
+    
+    // 投资数据源 (纯静态模拟)
+    const db = {
         "千代田区": { growth: 4.5, airbnb: 6.0, rental: 3.5, future: 9.0, desc: "政治中心，资产极度安全但门槛高。", tags: ["核心", "办公"] },
         "中央区": { growth: 6.8, airbnb: 8.5, rental: 4.2, future: 8.0, desc: "银座商圈，奥运后持续再开发。", tags: ["商业", "观光"] },
         "港区": { growth: 5.5, airbnb: 7.5, rental: 3.5, future: 9.5, desc: "富人区，品牌溢价最高。", tags: ["豪宅", "外企"] },
@@ -213,294 +145,227 @@
         "江户川区": { growth: 3.8, airbnb: 4.8, rental: 5.9, future: 4.5, desc: "公园多，育儿福利好。", tags: ["育儿", "公园"] }
     };
 
-    // 预处理：计算排名 (Ranking Calculation)
-    const db = JSON.parse(JSON.stringify(rawDB)); // Deep Copy
-    Object.keys(METRICS).forEach(metric => {
-        // 提取该指标的所有值并排序
-        const sorted = Object.entries(db).sort((a, b) => b[1][metric] - a[1][metric]);
-        sorted.forEach((item, index) => {
-            db[item[0]][metric + '_rank'] = index + 1; // 存储排名 (1-23)
-        });
-    });
+    // 指标定义
+    const METRICS = {
+        growth: { label: '土地增长率', color: '#bc13fe' }, // 紫
+        airbnb: { label: '民宿回报率', color: '#00f3ff' }, // 青
+        rental: { label: '长租回报率', color: '#ff9100' }, // 橙
+        future: { label: '升值潜力', color: '#ff003c' }   // 红
+    };
 
-    // ==========================================
-    // 2. 视觉逻辑 (Visual Logic)
-    // ==========================================
+    // 完整的英日映射表 (解决 GeoJSON 名字不匹配问题)
+    const NAME_MAP = {
+        'Chiyoda': '千代田区', 'Chuo': '中央区', 'Minato': '港区', 'Shinjuku': '新宿区', 'Bunkyo': '文京区',
+        'Taito': '台东区', 'Sumida': '墨田区', 'Koto': '江东区', 'Shinagawa': '品川区', 'Meguro': '目黑区',
+        'Ota': '大田区', 'Setagaya': '世田谷区', 'Shibuya': '涩谷区', 'Nakano': '中野区', 'Suginami': '杉并区',
+        'Toshima': '丰岛区', 'Kita': '北区', 'Arakawa': '荒川区', 'Itabashi': '板桥区', 'Nerima': '练马区',
+        'Adachi': '足立区', 'Katsushika': '葛饰区', 'Edogawa': '江户川区'
+    };
+
+    let currentMetric = 'growth';
+    let geoJsonLayer = null;
+    let myChart = null;
+
+    // ================= 1. 初始化地图 =================
     
-    // 初始化控制面板
-    const btnContainer = document.getElementById('metric-buttons');
+    // 使用 CartoDB Dark Matter 免费底图
+    const map = L.map('map', { 
+        zoomControl: false,
+        attributionControl: false
+    }).setView([35.6895, 139.6917], 11);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19,
+        subdomains: 'abcd'
+    }).addTo(map);
+
+    // ================= 2. 逻辑处理 =================
+
+    // 生成控制按钮
+    const btnContainer = document.getElementById('buttons-container');
     Object.keys(METRICS).forEach(key => {
-        const m = METRICS[key];
         const btn = document.createElement('div');
-        btn.className = 'metric-btn ' + (key === currentMetricKey ? 'active' : '');
-        btn.style.setProperty('--color', m.highColor);
-        btn.dataset.metric = key;
-        btn.innerHTML = `<span>${m.label}</span><div class="color-dot"></div>`;
+        btn.className = `metric-btn ${key === currentMetric ? 'active' : ''}`;
+        btn.innerText = METRICS[key].label;
         btn.onclick = () => switchMetric(key);
         btnContainer.appendChild(btn);
     });
 
-    // 真正的 RGB 颜色插值 (RGB Lerp)
-    function hexToRgb(hex) {
-        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-        return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : null;
-    }
-    function rgbToHex(r, g, b) {
-        return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
-    }
-    function lerpColor(c1, c2, factor) {
-        const color1 = hexToRgb(c1);
-        const color2 = hexToRgb(c2);
-        const r = Math.round(color1.r + (color2.r - color1.r) * factor);
-        const g = Math.round(color1.g + (color2.g - color1.g) * factor);
-        const b = Math.round(color1.b + (color2.b - color1.b) * factor);
-        return rgbToHex(r, g, b);
+    function switchMetric(key) {
+        currentMetric = key;
+        // 更新按钮状态
+        document.querySelectorAll('.metric-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll(`.metric-btn`).forEach(b => {
+            if(b.innerText === METRICS[key].label) b.classList.add('active');
+        });
+        
+        // 重新渲染地图颜色
+        if(geoJsonLayer) geoJsonLayer.setStyle(styleFeature);
     }
 
-    // 生成 Mapbox Style Expression
-    function getStyleExpressions(metricKey) {
-        const config = METRICS[metricKey];
-        const colorExpr = ['match', ['get', 'N03_004']]; // 默认尝试匹配日文名
+    // 颜色计算 (根据数值返回颜色透明度/亮度)
+    function getColor(d, metric) {
+        // 简单的阈值逻辑，实际可改为插值
+        const val = d[metric];
+        const baseColor = METRICS[metric].color;
         
-        // 同时也尝试匹配英文名 (name 属性) - 需要复杂的表达式或确保数据源一致
-        // 这里我们采用简单策略：遍历所有区，生成颜色
+        // 这里的透明度决定了颜色的深浅
+        if(val >= 8.0) return baseColor;
+        if(val >= 5.0) return adjustBrightness(baseColor, -20);
+        return '#333';
+    }
+
+    function adjustBrightness(col, amt) {
+        // 简化的颜色变暗处理，为了保持代码极其精简，这里直接返回原色或灰色
+        // 实际生产环境可以使用 tinycolor2 库
+        return col; 
+    }
+
+    // Leaflet 样式函数
+    function styleFeature(feature) {
+        const name = resolveName(feature.properties);
+        const data = db[name];
+        const color = data ? getColor(data, currentMetric) : '#333';
+        const opacity = data ? (data[currentMetric] / 10) * 0.7 + 0.3 : 0.1;
+
+        return {
+            fillColor: color,
+            weight: 1,
+            opacity: 1,
+            color: '#000', // 边界线黑色
+            dashArray: '',
+            fillOpacity: opacity
+        };
+    }
+
+    // 名字解析 helper
+    function resolveName(props) {
+        const raw = props.N03_004 || props.name || props.nam; // 兼容多种 GeoJSON 格式
+        // 1. 直接匹配
+        if(db[raw]) return raw;
+        // 2. 映射表匹配
+        if(NAME_MAP[raw]) return NAME_MAP[raw];
+        // 3. 包含匹配 (如 "Chiyoda-ku" -> "Chiyoda")
+        for(let key in NAME_MAP) {
+            if(raw.includes(key)) return NAME_MAP[key];
+        }
+        return raw;
+    }
+
+    // 交互逻辑
+    function onEachFeature(feature, layer) {
+        const name = resolveName(feature.properties);
         
-        Object.keys(db).forEach(wardName => {
-            const val = db[wardName][metricKey];
-            // 计算插值因子 (0.0 - 1.0)
-            let factor = (val - config.min) / (config.max - config.min);
-            factor = Math.max(0, Math.min(1, factor)); // Clamp
-            
-            const finalColor = lerpColor(config.lowColor, config.highColor, factor);
-            
-            colorExpr.push(wardName); // 日文名匹配
-            colorExpr.push(finalColor);
-            
-            // 倒推英文名匹配 (为了容错)
-            Object.keys(NAME_MAPPING).forEach(engKey => {
-                if(NAME_MAPPING[engKey] === wardName) {
-                    colorExpr.push(engKey);
-                    colorExpr.push(finalColor);
+        layer.on({
+            mouseover: (e) => {
+                const layer = e.target;
+                layer.setStyle({
+                    weight: 3,
+                    color: '#fff',
+                    fillOpacity: 0.9
+                });
+                layer.bringToFront();
+            },
+            mouseout: (e) => {
+                geoJsonLayer.resetStyle(e.target);
+            },
+            click: (e) => {
+                const data = db[name];
+                if(data) {
+                    openSidebar(name, data);
+                    // 移动端/桌面端 适配的 FlyTo
+                    map.flyToBounds(e.target.getBounds(), { padding: [50, 50], maxZoom: 13 });
                 }
-            });
-        });
-        
-        colorExpr.push('#333'); // Default fallback
-
-        // 高度表达式
-        const heightExpr = ['match', ['get', 'N03_004']];
-        Object.keys(db).forEach(wardName => {
-            const h = (db[wardName][metricKey] - config.min) * 500 + 100;
-            heightExpr.push(wardName, h);
-            // English mapping
-            Object.keys(NAME_MAPPING).forEach(engKey => {
-                if(NAME_MAPPING[engKey] === wardName) {
-                    heightExpr.push(engKey, h);
-                }
-            });
-        });
-        heightExpr.push(50);
-
-        return { color: colorExpr, height: heightExpr };
-    }
-
-    // ==========================================
-    // 3. 地图初始化 (Map Initialization)
-    // ==========================================
-    const map = new mapboxgl.Map({
-        container: 'map',
-        style: 'mapbox://styles/mapbox/dark-v11',
-        center: [139.75, 35.68],
-        zoom: 10.5,
-        pitch: 50,
-        bearing: -10,
-        antialias: true
-    });
-
-    map.on('load', () => {
-        document.getElementById('loading').style.opacity = 0;
-        setTimeout(() => document.getElementById('loading').remove(), 500);
-
-        // 使用 reliable 的 GeoJSON 源
-        map.addSource('tokyo', {
-            type: 'geojson',
-            data: 'https://raw.githubusercontent.com/dataofjapan/land/master/tokyo.geojson',
-            generateId: true
-        });
-
-        // 交互层
-        map.addLayer({
-            'id': 'ward-fill',
-            'type': 'fill',
-            'source': 'tokyo',
-            'paint': { 'fill-opacity': 0, 'fill-color': '#fff' }
-        });
-
-        // 3D 表现层
-        map.addLayer({
-            'id': 'ward-ext',
-            'type': 'fill-extrusion',
-            'source': 'tokyo',
-            'paint': {
-                'fill-extrusion-opacity': 0.9,
-                'fill-extrusion-base': 0
             }
         });
-        
-        // 线框层
-        map.addLayer({
-            'id': 'ward-line',
-            'type': 'line',
-            'source': 'tokyo',
-            'paint': { 'line-color': '#fff', 'line-opacity': 0.2, 'line-width': 1 }
+    }
+
+    // ================= 3. 数据加载 (GeoJSON) =================
+    
+    // 使用 fetch 加载远程数据，避免代码过大
+    fetch('https://raw.githubusercontent.com/dataofjapan/land/master/tokyo.geojson')
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('loader').style.opacity = 0;
+            setTimeout(() => document.getElementById('loader').remove(), 500);
+
+            geoJsonLayer = L.geoJson(data, {
+                style: styleFeature,
+                onEachFeature: onEachFeature
+            }).addTo(map);
+        })
+        .catch(err => {
+            document.getElementById('loader').innerText = "DATA LOAD FAILED";
+            console.error(err);
         });
 
-        updateMapVisuals(); // 初始渲染
-    });
 
-    // ==========================================
-    // 4. 交互逻辑 (Interaction)
-    // ==========================================
-    const tooltip = document.getElementById('tooltip');
+    // ================= 4. UI & Chart =================
 
-    // Hover
-    map.on('mousemove', 'ward-fill', (e) => {
-        map.getCanvas().style.cursor = 'pointer';
-        const props = e.features[0].properties;
-        // 尝试获取名字 (兼容不同 GeoJSON 字段)
-        const rawName = props.N03_004 || props.name || props.nam;
-        const jpName = NAME_MAPPING[rawName] || rawName; // Normalize
-        
-        if (db[jpName]) {
-            tooltip.style.display = 'block';
-            tooltip.style.left = e.point.x + 'px';
-            tooltip.style.top = e.point.y + 'px';
-            tooltip.innerText = jpName;
-            
-            // Hover Highlight
-            map.setPaintProperty('ward-ext', 'fill-extrusion-opacity', [
-                'case', ['==', ['id'], e.features[0].id], 1.0, 0.6
-            ]);
-        }
-    });
-
-    map.on('mouseleave', 'ward-fill', () => {
-        map.getCanvas().style.cursor = '';
-        tooltip.style.display = 'none';
-        map.setPaintProperty('ward-ext', 'fill-extrusion-opacity', 0.9);
-    });
-
-    // Click
-    map.on('click', 'ward-fill', (e) => {
-        const props = e.features[0].properties;
-        const rawName = props.N03_004 || props.name || props.nam;
-        const jpName = NAME_MAPPING[rawName] || rawName;
-
-        if (db[jpName]) {
-            openSidebar(jpName, db[jpName]);
-            
-            // ✈️ FlyTo Animation
-            const center = mapboxgl.LngLatBounds.convert(e.features[0].geometry.coordinates[0]).getCenter();
-            map.flyTo({ center: center, zoom: 12.5, pitch: 60, speed: 0.8 });
-        }
-    });
-
-    // ==========================================
-    // 5. 状态管理 (State Management)
-    // ==========================================
-    
-    function switchMetric(key) {
-        currentMetricKey = key;
-        
-        // Update Buttons
-        document.querySelectorAll('.metric-btn').forEach(b => b.classList.remove('active'));
-        document.querySelector(`.metric-btn[data-metric="${key}"]`).classList.add('active');
-
-        // Update Legend
-        const m = METRICS[key];
-        document.getElementById('legend-bar').style.background = `linear-gradient(90deg, ${m.lowColor}, ${m.highColor})`;
-
-        updateMapVisuals();
-    }
-
-    function updateMapVisuals() {
-        const styles = getStyleExpressions(currentMetricKey);
-        // 使用 setPaintProperty 实现无缝过渡
-        map.setPaintProperty('ward-ext', 'fill-extrusion-color', styles.color);
-        // 高度变化需要一定时间过渡，Mapbox 原生支持 transition
-        map.setPaintProperty('ward-ext', 'fill-extrusion-height', styles.height);
-    }
-
-    // Sidebar Logic
     function openSidebar(name, data) {
         const sb = document.getElementById('sidebar');
         sb.classList.add('open');
         
-        document.getElementById('detail-title').innerText = name;
-        document.getElementById('detail-desc').innerText = data.desc;
-        document.getElementById('detail-rank').innerText = `RANKING #${data[currentMetricKey + '_rank']} / 23`;
+        document.getElementById('ward-name').innerText = name;
+        document.getElementById('ward-desc').innerText = data.desc;
+        
+        // 填充 tags
+        document.getElementById('ward-tags').innerHTML = data.tags.map(t => `<span class="tag">${t}</span>`).join('');
 
-        // Tags
-        const tagsHtml = data.tags.map(t => `<span class="tag">${t}</span>`).join('');
-        document.getElementById('detail-tags').innerHTML = tagsHtml;
-
-        // Stats Rows
+        // 填充数据
         let statsHtml = '';
         Object.keys(METRICS).forEach(k => {
-            const m = METRICS[k];
-            const isCurrent = k === currentMetricKey;
-            const style = isCurrent ? `color: ${m.highColor}` : '';
+            const val = data[k];
+            const cls = val >= 7 ? 'val-high' : '';
             statsHtml += `
-                <div class="stat-row">
-                    <span class="stat-label">${m.label}</span>
-                    <div>
-                        <span class="stat-val" style="${style}">${data[k]}${m.unit}</span>
-                        <span class="stat-rank">#${data[k+'_rank']}</span>
-                    </div>
+                <div class="stat-item">
+                    <span class="stat-label">${METRICS[k].label}</span>
+                    <span class="stat-val ${cls}">${val}</span>
                 </div>
             `;
         });
-        document.getElementById('detail-stats').innerHTML = statsHtml;
+        document.getElementById('ward-stats').innerHTML = statsHtml;
 
-        updateRadar(name, data);
+        updateChart(name, data);
     }
 
-    function resetView() {
+    function closeSidebar() {
         document.getElementById('sidebar').classList.remove('open');
-        map.flyTo({ center: [139.75, 35.68], zoom: 10.5, pitch: 50 });
+        map.setView([35.6895, 139.6917], 11);
     }
 
-    // Chart.js Radar
-    function updateRadar(name, data) {
+    function updateChart(name, data) {
         const ctx = document.getElementById('radarChart').getContext('2d');
         if(myChart) myChart.destroy();
 
-        const m = METRICS[currentMetricKey];
-        
+        // 动态获取当前主题色
+        const themeColor = METRICS[currentMetric].color;
+
         myChart = new Chart(ctx, {
             type: 'radar',
             data: {
-                labels: Object.values(METRICS).map(x => x.label),
+                labels: Object.values(METRICS).map(m => m.label),
                 datasets: [{
                     label: name,
                     data: Object.keys(METRICS).map(k => data[k]),
-                    backgroundColor: hexToRgb(m.highColor) ? `rgba(${hexToRgb(m.highColor).r}, ${hexToRgb(m.highColor).g}, ${hexToRgb(m.highColor).b}, 0.3)` : 'rgba(255,255,255,0.2)',
-                    borderColor: m.highColor,
-                    borderWidth: 2,
-                    pointBackgroundColor: '#fff'
+                    backgroundColor: themeColor + '33', // 添加透明度
+                    borderColor: themeColor,
+                    pointBackgroundColor: '#fff',
+                    borderWidth: 2
                 }]
             },
             options: {
+                responsive: true,
+                maintainAspectRatio: false,
                 scales: {
                     r: {
                         angleLines: { color: 'rgba(255,255,255,0.1)' },
                         grid: { color: 'rgba(255,255,255,0.1)' },
-                        pointLabels: { color: '#888', font: {size: 11} },
-                        ticks: { display: false, backdropColor: 'transparent' }
+                        pointLabels: { color: '#888', font: {size: 10} },
+                        ticks: { display: false, max: 10, min: 0 }
                     }
                 },
-                plugins: { legend: { display: false } },
-                maintainAspectRatio: false
+                plugins: { legend: { display: false } }
             }
         });
     }
