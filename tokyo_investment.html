@@ -2,376 +2,490 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>东京23区不动产投资可视化系统 (Tokyo Real Estate Core)</title>
+<title>Tokyo Real Estate Analytics Pro</title>
 <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
 <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-    /* --- 核心布局与赛博朋克风格定义 --- */
-    body { margin: 0; padding: 0; background-color: #050505; color: #e0e0e0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; overflow: hidden; }
-    #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    :root { --accent: #00f2ff; --bg: #050505; --panel-bg: rgba(12, 12, 15, 0.9); }
+    body { margin: 0; padding: 0; background: var(--bg); color: #e0e0e0; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
     
-    /* 玻璃拟态控制面板 */
-    #control-panel {
-        position: absolute; top: 20px; left: 20px;
-        background: rgba(15, 15, 20, 0.85); 
-        backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-        padding: 24px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); 
-        box-shadow: 0 8px 32px rgba(0,0,0,0.6);
-        z-index: 10; width: 280px;
-        transition: transform 0.3s ease;
-    }
-    #control-panel:hover { border-color: rgba(0, 242, 255, 0.3); }
+    /* 地图容器 */
+    #map { position: absolute; top: 0; bottom: 0; width: 100%; }
 
-    h2 { margin-top: 0; font-size: 14px; color: #00f2ff; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 15px; border-bottom: 1px solid rgba(0, 242, 255, 0.2); padding-bottom: 10px;}
+    /* 悬停 Tooltip */
+    #tooltip {
+        position: absolute; display: none; pointer-events: none;
+        background: rgba(0, 0, 0, 0.8); border: 1px solid var(--accent);
+        padding: 8px 12px; border-radius: 4px; font-weight: bold;
+        z-index: 100; transform: translate(-50%, -150%); white-space: nowrap;
+        box-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
+    }
+
+    /* 左侧控制面板 */
+    #control-panel {
+        position: absolute; top: 20px; left: 20px; width: 260px;
+        background: var(--panel-bg); backdrop-filter: blur(10px);
+        padding: 20px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+        z-index: 10;
+    }
+    .panel-header { color: var(--accent); font-size: 12px; letter-spacing: 2px; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px; font-weight: 800; }
     
     .metric-btn {
         display: flex; justify-content: space-between; align-items: center;
-        width: 100%; padding: 14px 16px; margin-bottom: 8px;
-        background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); 
-        color: #aaa; border-radius: 6px; cursor: pointer;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        font-size: 13px; font-weight: 500;
+        padding: 12px; margin-bottom: 8px; background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.05); border-radius: 4px; cursor: pointer;
+        transition: 0.3s; font-size: 13px; color: #aaa;
     }
-    .metric-btn:hover { background: rgba(255, 255, 255, 0.08); color: #fff; transform: translateX(2px); }
-    .metric-btn.active { 
-        background: rgba(0, 242, 255, 0.15); 
-        color: #00f2ff; 
-        border-color: #00f2ff; 
-        box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
-    }
+    .metric-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .metric-btn.active { border-color: var(--color); background: rgba(255,255,255,0.05); color: #fff; box-shadow: inset 3px 0 0 var(--color); }
+    .color-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color); box-shadow: 0 0 8px var(--color); }
 
-    /* 右侧侧边栏动画 */
+    /* 图例条 */
+    #legend-bar {
+        height: 6px; width: 100%; margin-top: 15px; border-radius: 3px;
+        background: linear-gradient(90deg, #333, #666); position: relative;
+    }
+    .legend-labels { display: flex; justify-content: space-between; font-size: 10px; color: #666; margin-top: 5px; }
+
+    /* 右侧详情面板 */
     #sidebar {
-        position: absolute; top: 0; right: -450px; bottom: 0; width: 400px;
-        background: rgba(10, 10, 12, 0.95); 
-        border-left: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 30px; overflow-y: auto; 
-        transition: right 0.5s cubic-bezier(0.19, 1, 0.22, 1); 
-        z-index: 20; box-shadow: -10px 0 30px rgba(0,0,0,0.8);
+        position: absolute; top: 0; right: -420px; bottom: 0; width: 380px;
+        background: var(--panel-bg); border-left: 1px solid #333;
+        padding: 30px; transition: right 0.4s cubic-bezier(0.2, 1, 0.3, 1);
+        z-index: 20; box-shadow: -10px 0 40px rgba(0,0,0,0.8); overflow-y: auto;
     }
     #sidebar.open { right: 0; }
     
-    #ward-title { font-size: 2.4em; margin: 0 0 5px 0; background: linear-gradient(90deg, #fff, #888); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800;}
-    #ward-subtitle { color: #666; font-size: 0.9em; margin-bottom: 25px; display: block; letter-spacing: 1px; }
-
-    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
-    .stat-box { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); }
-    .stat-label { font-size: 0.8em; color: #888; display: block; margin-bottom: 5px; }
-    .stat-value { font-size: 1.4em; font-weight: bold; color: #fff; }
-    
-    /* 评分颜色 */
-    .val-high { color: #00ff9d; text-shadow: 0 0 10px rgba(0,255,157,0.3); }
-    .val-mid { color: #ffbf00; }
-    .val-low { color: #ff4d4d; }
-
-    /* 标签 */
-    .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 30px; }
-    .tag { font-size: 0.75em; padding: 4px 10px; border-radius: 100px; border: 1px solid #444; color: #ccc; background: #222; }
-    .tag-premium { border-color: #ffd700; color: #ffd700; background: rgba(255, 215, 0, 0.1); }
-    .tag-tourist { border-color: #00f2ff; color: #00f2ff; background: rgba(0, 242, 255, 0.1); }
-
-    /* 图表容器 */
-    #chart-container { position: relative; height: 220px; width: 100%; margin: 20px 0; }
-
-    #analysis-text { line-height: 1.7; color: #bbb; font-size: 0.95em; border-top: 1px solid #333; padding-top: 20px; }
-
-    /* Loading Overlay */
-    #loader {
-        position: fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:999;
-        display: flex; justify-content: center; align-items: center; flex-direction: column;
-        transition: opacity 0.5s ease;
+    /* 关闭按钮 */
+    .close-btn { 
+        position: absolute; top: 20px; right: 20px; cursor: pointer; color: #666; font-size: 24px; line-height: 1; transition: 0.2s; 
     }
-    .spinner { width: 40px; height: 40px; border: 3px solid #333; border-top: 3px solid #00f2ff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .close-btn:hover { color: #fff; }
 
+    .ward-header { font-size: 28px; font-weight: 800; margin: 10px 0 5px; background: linear-gradient(90deg, #fff, #aaa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .rank-badge { display: inline-block; background: #333; color: var(--accent); padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-bottom: 10px; border: 1px solid rgba(0, 242, 255, 0.3); }
+
+    .stat-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); align-items: center; }
+    .stat-label { color: #888; font-size: 13px; }
+    .stat-val { font-weight: bold; font-size: 16px; }
+    .stat-rank { font-size: 10px; color: #555; margin-left: 5px; }
+
+    #chart-wrap { height: 200px; margin: 25px 0; position: relative; }
+    
+    .tag-cloud { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 15px; }
+    .tag { font-size: 11px; padding: 4px 10px; border-radius: 12px; background: #222; border: 1px solid #444; color: #bbb; }
+
+    /* Loading */
+    #loading { position: fixed; inset: 0; background: #000; z-index: 999; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s; color: var(--accent); font-family: monospace; }
 </style>
 </head>
 <body>
 
-<div id="loader">
-    <div class="spinner"></div>
-    <div style="color: #666; font-size: 0.8em; letter-spacing: 2px;">INITIALIZING TOKYO DATA...</div>
+<div id="loading">INITIALIZING SYSTEM...</div>
+<div id="tooltip"></div>
+
+<div id="control-panel">
+    <div class="panel-header">TOKYO RE:ANALYTICS</div>
+    <div id="metric-buttons"></div>
+    
+    <div style="margin-top: 25px;">
+        <div id="legend-bar"></div>
+        <div class="legend-labels">
+            <span>LOW</span>
+            <span>AVG</span>
+            <span>HIGH</span>
+        </div>
+    </div>
 </div>
 
 <div id="map"></div>
 
-<div id="control-panel">
-    <h2>DATA VISUALIZATION</h2>
-    <div class="metric-btn active" data-metric="growthRate">
-        <span>土地增长率 (Growth)</span>
-        <span style="color: #d600ff;">●</span>
-    </div>
-    <div class="metric-btn" data-metric="airbnbROI">
-        <span>民宿回报率 (Airbnb)</span>
-        <span style="color: #00f2ff;">●</span>
-    </div>
-    <div class="metric-btn" data-metric="rentalYield">
-        <span>长租回报率 (Rental)</span>
-        <span style="color: #ff7700;">●</span>
-    </div>
-    <div class="metric-btn" data-metric="appreciationPotential">
-        <span>升值潜力 (Future)</span>
-        <span style="color: #ff0044;">●</span>
-    </div>
-    <div style="margin-top: 15px; font-size: 0.7em; color: #555; text-align: center;">
-        *右键拖动旋转视角 / 点击区域查看详情
-    </div>
-</div>
-
 <div id="sidebar">
-    <span id="ward-subtitle">TOKYO WARD ANALYSIS</span>
-    <h1 id="ward-title"></h1>
-    <div class="tags" id="ward-tags"></div>
+    <div class="close-btn" onclick="resetView()">×</div>
+    <div class="rank-badge" id="detail-rank">RANKING #--</div>
+    <div class="ward-header" id="detail-title">SELECT WARD</div>
+    <div class="tag-cloud" id="detail-tags"></div>
+
+    <div style="margin-top: 30px;" id="detail-stats"></div>
     
-    <div class="stat-grid" id="ward-stats"></div>
-    
-    <div id="chart-container">
+    <div id="chart-wrap">
         <canvas id="radarChart"></canvas>
     </div>
 
-    <h3>INVESTMENT SUMMARY</h3>
-    <p id="analysis-text"></p>
+    <p id="detail-desc" style="color: #999; line-height: 1.6; font-size: 13px; margin-top: 20px;"></p>
 </div>
 
 <script>
-    // ================= CONFIGURATION =================
-    // 这是一个公共测试 Token，如果失效，请去 mapbox.com 免费申请一个替换下方的字符串
-    mapboxgl.accessToken = 'pk.eyJ1Ijoic3VwZXJtaWtlIiwiYSI6ImNqZ2d0aWNjZzAwNGEzM21tNGN1Z2t6cW0ifQ.Sg33o3qZ4W7wA5b5xWc03A';
-    // =================================================
+    // ==========================================
+    // 0. 配置与常量 (Configuration)
+    // ==========================================
+    const MAPBOX_TOKEN = 'pk.eyJ1Ijoic3VwZXJtaWtlIiwiYSI6ImNqZ2d0aWNjZzAwNGEzM21tNGN1Z2t6cW0ifQ.Sg33o3qZ4W7wA5b5xWc03A'; // ⚠️ 请替换为你的 Token
+    mapboxgl.accessToken = MAPBOX_TOKEN;
 
-    // --- 1. 模拟投资数据库 ---
-    const db = {
-        "千代田区": { growth: 4.5, airbnb: 6.0, rental: 3.5, future: 9.0, tags: ["premium", "office"], text: "日本政治经济核心。资产安全性最高，但门槛极高。主要针对超高净值人群的资产保值。" },
-        "中央区": { growth: 6.8, airbnb: 8.5, rental: 4.2, future: 8.0, tags: ["premium", "tourist"], text: "银座与筑地。商业价值极高，奥运后持续再开发。适合高端商业地产及针对游客的高级民泊。" },
-        "港区": { growth: 5.5, airbnb: 7.5, rental: 3.5, future: 9.5, tags: ["premium", "expat"], text: "国际化富人区（六本木/麻布）。外资高管租赁需求旺盛，品牌溢价极高，是身份的象征。" },
-        "新宿区": { growth: 7.2, airbnb: 9.8, rental: 5.5, future: 7.5, tags: ["tourist", "hub"], text: "拥有世界最大客流量车站。民宿回报率极高，但也伴随激烈的竞争。适合追求高现金流的投资者。" },
-        "文京区": { growth: 3.8, airbnb: 5.0, rental: 4.8, future: 6.5, tags: ["edu", "quiet"], text: "文教地区，治安极好。适合面向家庭的稳定长租公寓，虽然爆发力不足，但空置率风险极低。" },
-        "台东区": { growth: 8.5, airbnb: 9.5, rental: 5.8, future: 7.0, tags: ["tourist", "culture"], text: "浅草/上野。旅游业是绝对支柱，小户型公寓和民宿投资性价比极高，土地价格仍在补涨。" },
-        "墨田区": { growth: 7.9, airbnb: 8.5, rental: 5.6, future: 7.2, tags: ["tourist"], text: "晴空塔效应。相比一河之隔的台东区，房价更亲民，具有不错的升值潜力和民宿运营空间。" },
-        "江东区": { growth: 6.2, airbnb: 6.0, rental: 5.0, future: 6.8, tags: ["family"], text: "丰洲/有明湾岸区。塔楼林立，年轻家庭流入多。需关注奥运场馆后续利用及交通拥堵问题。" },
-        "品川区": { growth: 5.8, airbnb: 7.0, rental: 4.9, future: 8.5, tags: ["business"], text: "新干线门户，磁悬浮始发站预期。商务需求强劲，资产升值潜力大，适合单身公寓投资。" },
-        "目黑区": { growth: 5.2, airbnb: 6.5, rental: 4.2, future: 8.2, tags: ["premium", "trendy"], text: "中目黑/自由之丘。深受高收入年轻人喜爱，租金抗跌性强，品牌价值仅次于港区。" },
-        "大田区": { growth: 4.1, airbnb: 7.8, rental: 5.5, future: 5.5, tags: ["airport"], text: "羽田机场门户。特区民泊政策优势明显。蒲田周边商业配套成熟，实利主义投资者的选择。" },
-        "世田谷区": { growth: 3.5, airbnb: 4.5, rental: 4.5, future: 6.0, tags: ["residential"], text: "东京最大的居住区。环境优美，适合长期持有作为家族资产，但租金回报率相对平庸。" },
-        "涩谷区": { growth: 8.8, airbnb: 9.2, rental: 4.0, future: 9.8, tags: ["premium", "it", "youth"], text: "IT产业与潮流中心。百年一遇的大规模再开发。全类型资产皆宜，升值潜力全东京顶级。" },
-        "中野区": { growth: 5.0, airbnb: 6.5, rental: 5.3, future: 5.8, tags: ["subculture"], text: "新宿的后花园。单身人口密集，租赁需求极大且稳定，非常适合入门级单身公寓投资。" },
-        "杉并区": { growth: 3.9, airbnb: 4.8, rental: 4.7, future: 5.5, tags: ["residential"], text: "中央线沿线人气居住区。虽然缺乏爆点，但资产极其稳定，适合避险型资金。" },
-        "丰岛区": { growth: 7.5, airbnb: 8.9, rental: 5.7, future: 7.0, tags: ["tourist", "anime"], text: "池袋副都心。动漫文化吸引全球年轻人。实际上是目前性价比极高的商业与民宿投资洼地。" },
-        "北区": { growth: 4.5, airbnb: 5.5, rental: 5.8, future: 5.0, tags: ["value"], text: "赤羽等地交通极其便利，但房价相对较低。适合追求高租售比（Yield）的投资者。" },
-        "荒川区": { growth: 5.5, airbnb: 6.0, rental: 6.0, future: 5.2, tags: ["value"], text: "下町风情。日暮里交通枢纽加持。在山手线沿线中属于价格洼地，租金回报率表现不错。" },
-        "板桥区": { growth: 3.8, airbnb: 4.2, rental: 5.5, future: 4.5, tags: ["bedtown"], text: "典型睡城。人口密度高，家庭租赁需求大。房价波动极小，适合极度保守的收租策略。" },
-        "练马区": { growth: 3.2, airbnb: 3.5, rental: 5.2, future: 4.8, tags: ["green"], text: "绿化好，适合育儿。但距离市中心较远，投资属性较弱，更多是自住属性。" },
-        "足立区": { growth: 4.2, airbnb: 4.5, rental: 6.5, future: 4.5, tags: ["high-yield"], text: "东京房价地板。表面回报率（表面利回）全东京最高，但需精选地段以规避空置和治安风险。" },
-        "葛饰区": { growth: 3.5, airbnb: 5.5, rental: 6.2, future: 4.2, tags: ["old-tokyo"], text: "柴又老街。电影里的老东京。虽然有旅游元素，但整体仍以低价长租市场为主。" },
-        "江户川区": { growth: 3.8, airbnb: 4.8, rental: 5.9, future: 4.5, tags: ["family"], text: "公园多，育儿福利好。房价亲民。注意部分低洼地区的洪水风险对资产价值的影响。" }
+    // 核心映射表：确保 GeoJSON 无论返回什么名字都能找到数据
+    // Key: GeoJSON 可能出现的英文名/变体, Value: 数据库里的标准日文名
+    const NAME_MAPPING = {
+        'Chiyoda': '千代田区', 'Chiyoda-ku': '千代田区',
+        'Chuo': '中央区', 'Chuo-ku': '中央区',
+        'Minato': '港区', 'Minato-ku': '港区',
+        'Shinjuku': '新宿区', 'Shinjuku-ku': '新宿区',
+        'Bunkyo': '文京区', 'Bunkyo-ku': '文京区',
+        'Taito': '台东区', 'Taito-ku': '台东区',
+        'Sumida': '墨田区', 'Sumida-ku': '墨田区',
+        'Koto': '江东区', 'Koto-ku': '江东区',
+        'Shinagawa': '品川区', 'Shinagawa-ku': '品川区',
+        'Meguro': '目黑区', 'Meguro-ku': '目黑区',
+        'Ota': '大田区', 'Ota-ku': '大田区',
+        'Setagaya': '世田谷区', 'Setagaya-ku': '世田谷区',
+        'Shibuya': '涩谷区', 'Shibuya-ku': '涩谷区',
+        'Nakano': '中野区', 'Nakano-ku': '中野区',
+        'Suginami': '杉并区', 'Suginami-ku': '杉并区',
+        'Toshima': '丰岛区', 'Toshima-ku': '丰岛区',
+        'Kita': '北区', 'Kita-ku': '北区',
+        'Arakawa': '荒川区', 'Arakawa-ku': '荒川区',
+        'Itabashi': '板桥区', 'Itabashi-ku': '板桥区',
+        'Nerima': '练马区', 'Nerima-ku': '练马区',
+        'Adachi': '足立区', 'Adachi-ku': '足立区',
+        'Katsushika': '葛饰区', 'Katsushika-ku': '葛饰区',
+        'Edogawa': '江户川区', 'Edogawa-ku': '江户川区'
     };
 
-    // --- 2. 初始化地图 ---
-    const map = new mapboxgl.Map({
-        container: 'map',
-        style: 'mapbox://styles/mapbox/dark-v11', // 深色模式
-        center: [139.75, 35.68],
-        zoom: 10.8,
-        pitch: 50,
-        bearing: -15,
-        antialias: true,
-        projection: 'mercator'
-    });
+    // 指标配置中心 (Refactored Metrics)
+    const METRICS = {
+        growth: { 
+            label: '土地增长率', 
+            unit: '%', 
+            min: 3, max: 9, 
+            lowColor: '#2c003e', highColor: '#d600ff' // 紫色系
+        },
+        airbnb: { 
+            label: '民宿回报率', 
+            unit: 'pt', 
+            min: 3, max: 10, 
+            lowColor: '#002c3e', highColor: '#00f2ff' // 青色系 (Cyberpunk)
+        },
+        rental: { 
+            label: '长租回报率', 
+            unit: '%', 
+            min: 3, max: 7, 
+            lowColor: '#3e1c00', highColor: '#ff7700' // 橙色系
+        },
+        future: { 
+            label: '升值潜力', 
+            unit: 'pt', 
+            min: 4, max: 10, 
+            lowColor: '#3e000c', highColor: '#ff0044' // 红色系
+        }
+    };
 
-    let currentMetric = 'growthRate';
+    let currentMetricKey = 'growth';
     let myChart = null;
 
-    // 颜色配置
-    const colors = {
-        growthRate: ['#240038', '#d600ff'], // 紫
-        airbnbROI: ['#002b38', '#00f2ff'], // 青
-        rentalYield: ['#381a00', '#ff7700'],// 橙
-        appreciationPotential: ['#38000f', '#ff0044'] // 红
+    // ==========================================
+    // 1. 数据层 (Data Layer & Processing)
+    // ==========================================
+    const rawDB = {
+        "千代田区": { growth: 4.5, airbnb: 6.0, rental: 3.5, future: 9.0, desc: "政治中心，资产极度安全但门槛高。", tags: ["核心", "办公"] },
+        "中央区": { growth: 6.8, airbnb: 8.5, rental: 4.2, future: 8.0, desc: "银座商圈，奥运后持续再开发。", tags: ["商业", "观光"] },
+        "港区": { growth: 5.5, airbnb: 7.5, rental: 3.5, future: 9.5, desc: "富人区，品牌溢价最高。", tags: ["豪宅", "外企"] },
+        "新宿区": { growth: 7.2, airbnb: 9.8, rental: 5.5, future: 7.5, desc: "枢纽站，民宿回报极高。", tags: ["高回报", "人流"] },
+        "文京区": { growth: 3.8, airbnb: 5.0, rental: 4.8, future: 6.5, desc: "文教区，治安好，长租稳定。", tags: ["学区", "稳定"] },
+        "台东区": { growth: 8.5, airbnb: 9.5, rental: 5.8, future: 7.0, desc: "浅草上野，旅游业支柱。", tags: ["旅游", "补涨"] },
+        "墨田区": { growth: 7.9, airbnb: 8.5, rental: 5.6, future: 7.2, desc: "晴空塔周边，性价比高。", tags: ["旅游", "下町"] },
+        "江东区": { growth: 6.2, airbnb: 6.0, rental: 5.0, future: 6.8, desc: "湾岸塔楼，家庭流入多。", tags: ["家庭", "奥运"] },
+        "品川区": { growth: 5.8, airbnb: 7.0, rental: 4.9, future: 8.5, desc: "新干线门户，商务需求强。", tags: ["商务", "交通"] },
+        "目黑区": { growth: 5.2, airbnb: 6.5, rental: 4.2, future: 8.2, desc: "时尚街区，品牌价值高。", tags: ["时尚", "高租金"] },
+        "大田区": { growth: 4.1, airbnb: 7.8, rental: 5.5, future: 5.5, desc: "羽田门户，特区民泊优势。", tags: ["机场", "民泊"] },
+        "世田谷区": { growth: 3.5, airbnb: 4.5, rental: 4.5, future: 6.0, desc: "最大居住区，环境优美。", tags: ["居住", "家族"] },
+        "涩谷区": { growth: 8.8, airbnb: 9.2, rental: 4.0, future: 9.8, desc: "IT与潮流中心，全能型。", tags: ["IT", "再开发"] },
+        "中野区": { growth: 5.0, airbnb: 6.5, rental: 5.3, future: 5.8, desc: "单身公寓圣地，租赁旺盛。", tags: ["单身", "次文化"] },
+        "杉并区": { growth: 3.9, airbnb: 4.8, rental: 4.7, future: 5.5, desc: "中央线沿线，资产稳定。", tags: ["住宅", "避险"] },
+        "丰岛区": { growth: 7.5, airbnb: 8.9, rental: 5.7, future: 7.0, desc: "池袋副都心，动漫文化。", tags: ["动漫", "高利回"] },
+        "北区": { growth: 4.5, airbnb: 5.5, rental: 5.8, future: 5.0, desc: "赤羽交通好，房价亲民。", tags: ["性价比", "交通"] },
+        "荒川区": { growth: 5.5, airbnb: 6.0, rental: 6.0, future: 5.2, desc: "日暮里枢纽，价格洼地。", tags: ["洼地", "下町"] },
+        "板桥区": { growth: 3.8, airbnb: 4.2, rental: 5.5, future: 4.5, desc: "睡城，家庭租赁稳定。", tags: ["睡城", "稳健"] },
+        "练马区": { growth: 3.2, airbnb: 3.5, rental: 5.2, future: 4.8, desc: "绿化好，适合自住。", tags: ["绿化", "自住"] },
+        "足立区": { growth: 4.2, airbnb: 4.5, rental: 6.5, future: 4.5, desc: "回报率全东京最高。", tags: ["高收益", "门槛低"] },
+        "葛饰区": { growth: 3.5, airbnb: 5.5, rental: 6.2, future: 4.2, desc: "老街风情，低价市场。", tags: ["老街", "低价"] },
+        "江户川区": { growth: 3.8, airbnb: 4.8, rental: 5.9, future: 4.5, desc: "公园多，育儿福利好。", tags: ["育儿", "公园"] }
     };
 
-    map.on('load', () => {
-        // 隐藏 loading
-        document.getElementById('loader').style.opacity = 0;
-        setTimeout(() => document.getElementById('loader').remove(), 500);
+    // 预处理：计算排名 (Ranking Calculation)
+    const db = JSON.parse(JSON.stringify(rawDB)); // Deep Copy
+    Object.keys(METRICS).forEach(metric => {
+        // 提取该指标的所有值并排序
+        const sorted = Object.entries(db).sort((a, b) => b[1][metric] - a[1][metric]);
+        sorted.forEach((item, index) => {
+            db[item[0]][metric + '_rank'] = index + 1; // 存储排名 (1-23)
+        });
+    });
 
-        // 加载东京数据
-        map.addSource('wards', {
+    // ==========================================
+    // 2. 视觉逻辑 (Visual Logic)
+    // ==========================================
+    
+    // 初始化控制面板
+    const btnContainer = document.getElementById('metric-buttons');
+    Object.keys(METRICS).forEach(key => {
+        const m = METRICS[key];
+        const btn = document.createElement('div');
+        btn.className = 'metric-btn ' + (key === currentMetricKey ? 'active' : '');
+        btn.style.setProperty('--color', m.highColor);
+        btn.dataset.metric = key;
+        btn.innerHTML = `<span>${m.label}</span><div class="color-dot"></div>`;
+        btn.onclick = () => switchMetric(key);
+        btnContainer.appendChild(btn);
+    });
+
+    // 真正的 RGB 颜色插值 (RGB Lerp)
+    function hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : null;
+    }
+    function rgbToHex(r, g, b) {
+        return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+    }
+    function lerpColor(c1, c2, factor) {
+        const color1 = hexToRgb(c1);
+        const color2 = hexToRgb(c2);
+        const r = Math.round(color1.r + (color2.r - color1.r) * factor);
+        const g = Math.round(color1.g + (color2.g - color1.g) * factor);
+        const b = Math.round(color1.b + (color2.b - color1.b) * factor);
+        return rgbToHex(r, g, b);
+    }
+
+    // 生成 Mapbox Style Expression
+    function getStyleExpressions(metricKey) {
+        const config = METRICS[metricKey];
+        const colorExpr = ['match', ['get', 'N03_004']]; // 默认尝试匹配日文名
+        
+        // 同时也尝试匹配英文名 (name 属性) - 需要复杂的表达式或确保数据源一致
+        // 这里我们采用简单策略：遍历所有区，生成颜色
+        
+        Object.keys(db).forEach(wardName => {
+            const val = db[wardName][metricKey];
+            // 计算插值因子 (0.0 - 1.0)
+            let factor = (val - config.min) / (config.max - config.min);
+            factor = Math.max(0, Math.min(1, factor)); // Clamp
+            
+            const finalColor = lerpColor(config.lowColor, config.highColor, factor);
+            
+            colorExpr.push(wardName); // 日文名匹配
+            colorExpr.push(finalColor);
+            
+            // 倒推英文名匹配 (为了容错)
+            Object.keys(NAME_MAPPING).forEach(engKey => {
+                if(NAME_MAPPING[engKey] === wardName) {
+                    colorExpr.push(engKey);
+                    colorExpr.push(finalColor);
+                }
+            });
+        });
+        
+        colorExpr.push('#333'); // Default fallback
+
+        // 高度表达式
+        const heightExpr = ['match', ['get', 'N03_004']];
+        Object.keys(db).forEach(wardName => {
+            const h = (db[wardName][metricKey] - config.min) * 500 + 100;
+            heightExpr.push(wardName, h);
+            // English mapping
+            Object.keys(NAME_MAPPING).forEach(engKey => {
+                if(NAME_MAPPING[engKey] === wardName) {
+                    heightExpr.push(engKey, h);
+                }
+            });
+        });
+        heightExpr.push(50);
+
+        return { color: colorExpr, height: heightExpr };
+    }
+
+    // ==========================================
+    // 3. 地图初始化 (Map Initialization)
+    // ==========================================
+    const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/dark-v11',
+        center: [139.75, 35.68],
+        zoom: 10.5,
+        pitch: 50,
+        bearing: -10,
+        antialias: true
+    });
+
+    map.on('load', () => {
+        document.getElementById('loading').style.opacity = 0;
+        setTimeout(() => document.getElementById('loading').remove(), 500);
+
+        // 使用 reliable 的 GeoJSON 源
+        map.addSource('tokyo', {
             type: 'geojson',
             data: 'https://raw.githubusercontent.com/dataofjapan/land/master/tokyo.geojson',
             generateId: true
         });
 
-        // 交互层 (透明)
+        // 交互层
         map.addLayer({
-            'id': 'wards-fill',
+            'id': 'ward-fill',
             'type': 'fill',
-            'source': 'wards',
-            'paint': { 'fill-color': 'transparent' }
+            'source': 'tokyo',
+            'paint': { 'fill-opacity': 0, 'fill-color': '#fff' }
         });
 
-        // 3D 拉伸层 (核心视觉)
+        // 3D 表现层
         map.addLayer({
-            'id': 'wards-extrusion',
+            'id': 'ward-ext',
             'type': 'fill-extrusion',
-            'source': 'wards',
+            'source': 'tokyo',
             'paint': {
-                'fill-extrusion-color': getFillColor('growth'),
-                'fill-extrusion-height': getHeight('growth'),
-                'fill-extrusion-base': 0,
-                'fill-extrusion-opacity': 0.9
+                'fill-extrusion-opacity': 0.9,
+                'fill-extrusion-base': 0
             }
         });
-
-        // 轮廓线
+        
+        // 线框层
         map.addLayer({
-            'id': 'wards-line',
+            'id': 'ward-line',
             'type': 'line',
-            'source': 'wards',
-            'paint': {
-                'line-color': '#fff',
-                'line-width': 1.5,
-                'line-opacity': 0.2
-            }
+            'source': 'tokyo',
+            'paint': { 'line-color': '#fff', 'line-opacity': 0.2, 'line-width': 1 }
         });
 
-        // Hover 效果
-        map.on('mousemove', 'wards-fill', () => map.getCanvas().style.cursor = 'pointer');
-        map.on('mouseleave', 'wards-fill', () => map.getCanvas().style.cursor = '');
-
-        // Click 效果
-        map.on('click', 'wards-fill', (e) => {
-            const feature = e.features[0];
-            const name = feature.properties.N03_004 || feature.properties.name; 
-            // 简单的名称清洗
-            const cleanName = name.replace('Chiyoda', '千代田区').replace('Minato', '港区'); 
-            // 注意：实际 GeoJSON 的英文/日文匹配可能需要更完善的映射表
-            // 本 Demo 尽量匹配日文名，如果 GeoJSON 是英文需要额外映射逻辑
-            // 假设 GeoJSON 包含日文字段，这里直接尝试匹配 DB
-            
-            // 尝试直接匹配或模糊匹配
-            let data = db[name];
-            if(!data) {
-                // 简单的 Fallback 搜索
-                const key = Object.keys(db).find(k => name.includes(k) || k.includes(name));
-                if(key) data = db[key];
-            }
-
-            if (data) {
-                updateSidebar(name, data);
-                // 高亮选中区
-                map.setPaintProperty('wards-extrusion', 'fill-extrusion-opacity', [
-                    'case', ['==', ['id'], feature.id], 1, 0.4
-                ]);
-            } else {
-                console.log("No data for:", name);
-            }
-        });
-        
-        // 点击空白重置
-        map.on('click', (e) => {
-            const f = map.queryRenderedFeatures(e.point, { layers: ['wards-fill']});
-            if(!f.length) {
-                document.getElementById('sidebar').classList.remove('open');
-                map.setPaintProperty('wards-extrusion', 'fill-extrusion-opacity', 0.9);
-            }
-        });
+        updateMapVisuals(); // 初始渲染
     });
 
-    // --- 3. 动态样式生成器 ---
-    function getFillColor(metricKey) {
-        const expression = ['match', ['get', 'N03_004']]; // 匹配 GeoJSON 里的区名
-        const theme = metricKey === 'growth' ? colors.growthRate : 
-                      metricKey === 'airbnb' ? colors.airbnbROI :
-                      metricKey === 'rental' ? colors.rentalYield : colors.appreciationPotential;
+    // ==========================================
+    // 4. 交互逻辑 (Interaction)
+    // ==========================================
+    const tooltip = document.getElementById('tooltip');
 
-        for (const [ward, data] of Object.entries(db)) {
-            expression.push(ward);
-            // 简单的三阶颜色映射
-            const val = data[metricKey];
-            if (val >= 8.0) expression.push(theme[1]);
-            else if (val >= 5.0) expression.push(lerpColor(theme[0], theme[1], 0.5));
-            else expression.push(theme[0]);
-        }
-        expression.push('#333'); // Default
-        return expression;
-    }
-
-    function getHeight(metricKey) {
-        const expression = ['match', ['get', 'N03_004']];
-        for (const [ward, data] of Object.entries(db)) {
-            expression.push(ward);
-            expression.push(data[metricKey] * 400); // 夸张高度
-        }
-        expression.push(100);
-        return expression;
-    }
-
-    // 辅助: 颜色混合 (简化版)
-    function lerpColor(a, b, amount) { return amount > 0.5 ? b : a; }
-
-    // --- 4. 界面逻辑 ---
-    document.querySelectorAll('.metric-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const target = e.currentTarget;
-            document.querySelectorAll('.metric-btn').forEach(b => b.classList.remove('active'));
-            target.classList.add('active');
+    // Hover
+    map.on('mousemove', 'ward-fill', (e) => {
+        map.getCanvas().style.cursor = 'pointer';
+        const props = e.features[0].properties;
+        // 尝试获取名字 (兼容不同 GeoJSON 字段)
+        const rawName = props.N03_004 || props.name || props.nam;
+        const jpName = NAME_MAPPING[rawName] || rawName; // Normalize
+        
+        if (db[jpName]) {
+            tooltip.style.display = 'block';
+            tooltip.style.left = e.point.x + 'px';
+            tooltip.style.top = e.point.y + 'px';
+            tooltip.innerText = jpName;
             
-            const metric = target.dataset.metric;
-            let key = 'growth';
-            if(metric === 'airbnbROI') key = 'airbnb';
-            if(metric === 'rentalYield') key = 'rental';
-            if(metric === 'appreciationPotential') key = 'future';
-
-            map.setPaintProperty('wards-extrusion', 'fill-extrusion-color', getFillColor(key));
-            map.setPaintProperty('wards-extrusion', 'fill-extrusion-height', getHeight(key));
-        });
+            // Hover Highlight
+            map.setPaintProperty('ward-ext', 'fill-extrusion-opacity', [
+                'case', ['==', ['id'], e.features[0].id], 1.0, 0.6
+            ]);
+        }
     });
 
-    function updateSidebar(name, data) {
-        document.getElementById('ward-title').innerText = name;
-        
-        // 标签
-        const tagsHtml = data.tags.map(t => {
-            let cls = '';
-            if(t==='premium') cls='tag-premium';
-            if(t==='tourist') cls='tag-tourist';
-            return `<span class="tag ${cls}">#${t.toUpperCase()}</span>`;
-        }).join('');
-        document.getElementById('ward-tags').innerHTML = tagsHtml;
+    map.on('mouseleave', 'ward-fill', () => {
+        map.getCanvas().style.cursor = '';
+        tooltip.style.display = 'none';
+        map.setPaintProperty('ward-ext', 'fill-extrusion-opacity', 0.9);
+    });
 
-        // 统计数据
-        document.getElementById('ward-stats').innerHTML = `
-            <div class="stat-box"><span class="stat-label">土地增长</span><span class="stat-value ${getValClass(data.growth)}">${data.growth}%</span></div>
-            <div class="stat-box"><span class="stat-label">民宿回报</span><span class="stat-value ${getValClass(data.airbnb)}">${data.airbnb}</span></div>
-            <div class="stat-box"><span class="stat-label">长租回报</span><span class="stat-value ${getValClass(data.rental)}">${data.rental}%</span></div>
-            <div class="stat-box"><span class="stat-label">升值潜力</span><span class="stat-value ${getValClass(data.future)}">${data.future}</span></div>
-        `;
+    // Click
+    map.on('click', 'ward-fill', (e) => {
+        const props = e.features[0].properties;
+        const rawName = props.N03_004 || props.name || props.nam;
+        const jpName = NAME_MAPPING[rawName] || rawName;
 
-        document.getElementById('analysis-text').innerText = data.text;
+        if (db[jpName]) {
+            openSidebar(jpName, db[jpName]);
+            
+            // ✈️ FlyTo Animation
+            const center = mapboxgl.LngLatBounds.convert(e.features[0].geometry.coordinates[0]).getCenter();
+            map.flyTo({ center: center, zoom: 12.5, pitch: 60, speed: 0.8 });
+        }
+    });
+
+    // ==========================================
+    // 5. 状态管理 (State Management)
+    // ==========================================
+    
+    function switchMetric(key) {
+        currentMetricKey = key;
         
-        // 图表
-        updateChart(data);
-        document.getElementById('sidebar').classList.add('open');
+        // Update Buttons
+        document.querySelectorAll('.metric-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector(`.metric-btn[data-metric="${key}"]`).classList.add('active');
+
+        // Update Legend
+        const m = METRICS[key];
+        document.getElementById('legend-bar').style.background = `linear-gradient(90deg, ${m.lowColor}, ${m.highColor})`;
+
+        updateMapVisuals();
     }
 
-    function getValClass(v) { return v>=7 ? 'val-high' : v>=5 ? 'val-mid' : 'val-low'; }
+    function updateMapVisuals() {
+        const styles = getStyleExpressions(currentMetricKey);
+        // 使用 setPaintProperty 实现无缝过渡
+        map.setPaintProperty('ward-ext', 'fill-extrusion-color', styles.color);
+        // 高度变化需要一定时间过渡，Mapbox 原生支持 transition
+        map.setPaintProperty('ward-ext', 'fill-extrusion-height', styles.height);
+    }
 
-    function updateChart(data) {
+    // Sidebar Logic
+    function openSidebar(name, data) {
+        const sb = document.getElementById('sidebar');
+        sb.classList.add('open');
+        
+        document.getElementById('detail-title').innerText = name;
+        document.getElementById('detail-desc').innerText = data.desc;
+        document.getElementById('detail-rank').innerText = `RANKING #${data[currentMetricKey + '_rank']} / 23`;
+
+        // Tags
+        const tagsHtml = data.tags.map(t => `<span class="tag">${t}</span>`).join('');
+        document.getElementById('detail-tags').innerHTML = tagsHtml;
+
+        // Stats Rows
+        let statsHtml = '';
+        Object.keys(METRICS).forEach(k => {
+            const m = METRICS[k];
+            const isCurrent = k === currentMetricKey;
+            const style = isCurrent ? `color: ${m.highColor}` : '';
+            statsHtml += `
+                <div class="stat-row">
+                    <span class="stat-label">${m.label}</span>
+                    <div>
+                        <span class="stat-val" style="${style}">${data[k]}${m.unit}</span>
+                        <span class="stat-rank">#${data[k+'_rank']}</span>
+                    </div>
+                </div>
+            `;
+        });
+        document.getElementById('detail-stats').innerHTML = statsHtml;
+
+        updateRadar(name, data);
+    }
+
+    function resetView() {
+        document.getElementById('sidebar').classList.remove('open');
+        map.flyTo({ center: [139.75, 35.68], zoom: 10.5, pitch: 50 });
+    }
+
+    // Chart.js Radar
+    function updateRadar(name, data) {
         const ctx = document.getElementById('radarChart').getContext('2d');
         if(myChart) myChart.destroy();
+
+        const m = METRICS[currentMetricKey];
         
         myChart = new Chart(ctx, {
             type: 'radar',
             data: {
-                labels: ['Growth', 'Airbnb', 'Rental', 'Future'],
+                labels: Object.values(METRICS).map(x => x.label),
                 datasets: [{
-                    label: 'Score',
-                    data: [data.growth, data.airbnb, data.rental, data.future],
-                    backgroundColor: 'rgba(0, 242, 255, 0.2)',
-                    borderColor: '#00f2ff',
+                    label: name,
+                    data: Object.keys(METRICS).map(k => data[k]),
+                    backgroundColor: hexToRgb(m.highColor) ? `rgba(${hexToRgb(m.highColor).r}, ${hexToRgb(m.highColor).g}, ${hexToRgb(m.highColor).b}, 0.3)` : 'rgba(255,255,255,0.2)',
+                    borderColor: m.highColor,
                     borderWidth: 2,
                     pointBackgroundColor: '#fff'
                 }]
@@ -381,9 +495,8 @@
                     r: {
                         angleLines: { color: 'rgba(255,255,255,0.1)' },
                         grid: { color: 'rgba(255,255,255,0.1)' },
-                        pointLabels: { color: '#888' },
-                        suggestedMin: 0, suggestedMax: 10,
-                        ticks: { display: false }
+                        pointLabels: { color: '#888', font: {size: 11} },
+                        ticks: { display: false, backdropColor: 'transparent' }
                     }
                 },
                 plugins: { legend: { display: false } },
@@ -391,6 +504,7 @@
             }
         });
     }
+
 </script>
 </body>
 </html>
