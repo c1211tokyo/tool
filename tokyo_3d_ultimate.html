@@ -2,109 +2,111 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>TOKYO 3D INVESTMENT ANALYZER</title>
+<title>TOKYO 3D INVESTMENT ANALYZER (v5.0)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600&display=swap" rel="stylesheet">
 
 <style>
-    :root { --neon-blue: #00f3ff; --neon-purple: #bc13fe; --neon-orange: #ff9100; --neon-red: #ff003c; --bg: #050505; --glass: rgba(10, 10, 15, 0.85); }
-    body { margin: 0; overflow: hidden; background-color: var(--bg); font-family: 'Rajdhani', sans-serif; color: #fff; }
-    #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; background: radial-gradient(circle at center, #1a1a2e 0%, #000000 100%); }
-    #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
-
-    /* 控制面板 */
-    #control-panel {
-        position: absolute; top: 20px; left: 20px; width: 240px; pointer-events: auto;
-        background: var(--glass); border-left: 2px solid var(--neon-blue);
-        padding: 20px; backdrop-filter: blur(10px); clip-path: polygon(0 0, 100% 0, 100% 98%, 92% 100%, 0 100%);
+    body { margin: 0; overflow: hidden; background: #000; font-family: 'Rajdhani', sans-serif; color: #fff; }
+    
+    /* 加载层 & 错误处理 (关键修改) */
+    #loader { 
+        position: fixed; inset: 0; background: #000; z-index: 9999; 
+        display: flex; flex-direction: column; justify-content: center; align-items: center; 
     }
-    h1 { margin: 0 0 5px 0; font-size: 24px; letter-spacing: 2px; color: var(--neon-blue); text-shadow: 0 0 10px rgba(0, 243, 255, 0.5); }
-    .subtitle { font-size: 10px; color: #888; margin-bottom: 20px; letter-spacing: 1px; }
-    .mode-btn {
-        display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 12px; margin-bottom: 8px;
-        background: rgba(255,255,255,0.03); border: 1px solid #333; color: #aaa; font-size: 14px; cursor: pointer; transition: 0.3s;
+    .status-text { color: #00f3ff; font-size: 14px; margin-top: 15px; letter-spacing: 2px; }
+    .error-box { 
+        display: none; border: 1px solid #ff003c; background: rgba(50,0,0,0.9); 
+        padding: 20px; text-align: center; margin-top: 20px; max-width: 80%;
     }
-    .mode-btn:hover { background: rgba(255,255,255,0.1); color: #fff; border-color: #666; }
-    .mode-btn.active { background: rgba(0, 243, 255, 0.1); border-color: var(--color); color: var(--color); box-shadow: inset 2px 0 0 var(--color); }
+    
+    /* 核心修复：手动上传按钮 */
+    #manual-input { display: none; margin-top: 20px; }
+    .upload-btn {
+        background: #00f3ff; color: #000; border: none; padding: 12px 24px; 
+        font-weight: bold; cursor: pointer; letter-spacing: 1px; font-family: inherit;
+        clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+    }
+    .upload-btn:hover { background: #fff; }
 
-    /* 侧边栏 */
+    /* UI 布局 */
+    #ui-layer { position: absolute; inset: 0; pointer-events: none; z-index: 10; }
+    #control-panel { 
+        position: absolute; top: 20px; left: 20px; width: 220px; pointer-events: auto;
+        background: rgba(10, 15, 20, 0.9); border-left: 2px solid #00f3ff; padding: 15px;
+    }
+    .mode-btn { 
+        padding: 10px; margin-bottom: 5px; background: rgba(255,255,255,0.05); 
+        border: 1px solid #333; cursor: pointer; color: #888; display: flex; justify-content: space-between;
+    }
+    .mode-btn.active { border-color: var(--c); color: var(--c); background: rgba(0,243,255,0.1); }
+    
     #sidebar {
-        position: absolute; top: 0; right: -450px; bottom: 0; width: 400px;
-        background: var(--glass); border-left: 1px solid #333; pointer-events: auto;
-        padding: 30px; box-sizing: border-box; transition: right 0.4s cubic-bezier(0.25, 1, 0.5, 1);
-        display: flex; flex-direction: column; overflow-y: auto;
+        position: absolute; top: 0; right: -400px; bottom: 0; width: 350px;
+        background: rgba(10, 15, 20, 0.95); border-left: 1px solid #333; pointer-events: auto;
+        padding: 25px; transition: right 0.3s; display: flex; flex-direction: column; overflow-y: auto;
     }
     #sidebar.open { right: 0; }
-    .ward-title { font-size: 36px; font-weight: 700; margin: 0; background: linear-gradient(90deg, #fff, #aaa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .tag { font-size: 11px; padding: 4px 8px; border: 1px solid #444; color: #bbb; background: rgba(0,0,0,0.5); margin-right: 5px;}
-    .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-    .data-item { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; }
-    .data-label { font-size: 11px; color: #777; display: block; margin-bottom: 2px; }
-    .data-value { font-size: 18px; font-weight: 700; color: #eee; }
-    .analysis-text { font-size: 13px; line-height: 1.6; color: #ccc; margin-bottom: 15px; }
-    .section-title { color: var(--neon-blue); font-size: 12px; margin-bottom: 5px; font-weight: bold; margin-top: 20px;}
-
-    #tooltip {
-        position: absolute; display: none; background: rgba(0,0,0,0.9); border: 1px solid #fff;
-        padding: 8px 15px; pointer-events: none; z-index: 20; font-size: 14px; font-weight: bold;
-        transform: translate(-50%, -150%); white-space: nowrap; box-shadow: 0 0 15px rgba(0,0,0,0.8);
-    }
-
-    /* Loading Screen */
-    #loader { position: absolute; inset: 0; background: #000; z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.8s; }
-    .loading-bar { width: 200px; height: 2px; background: #333; margin-top: 20px; position: relative; overflow: hidden; }
-    .loading-progress { position: absolute; left: 0; top: 0; height: 100%; width: 0%; background: var(--neon-blue); transition: width 0.2s; }
-    #error-log { color: #ff003c; margin-top: 20px; font-family: monospace; font-size: 12px; max-width: 80%; text-align: center; display: none; border: 1px solid #ff003c; padding: 10px; }
-
-    @media (max-width: 768px) {
-        #control-panel { top: auto; bottom: 0; width: 100%; border-left: none; border-top: 2px solid var(--neon-blue); padding: 15px; clip-path: none; }
-        #sidebar { width: 100%; top: auto; bottom: -100%; height: 70%; right: 0; border-radius: 16px 16px 0 0; }
-        #sidebar.open { bottom: 0; right: 0; }
-    }
+    
+    .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
+    .data-box { background: rgba(255,255,255,0.05); padding: 10px; }
+    .val { font-size: 18px; font-weight: bold; color: #fff; }
+    .lbl { font-size: 10px; color: #888; }
 </style>
 </head>
 <body>
 
 <div id="loader">
-    <div style="font-size: 24px; letter-spacing: 5px; color: #fff;">SYSTEM INITIALIZING</div>
-    <div class="loading-bar"><div class="loading-progress" id="progress"></div></div>
-    <div id="status-text" style="color: #666; font-size: 10px; margin-top: 10px;">CONNECTING TO CDN...</div>
-    <div id="error-log"></div>
+    <div style="font-size: 24px; letter-spacing: 5px;">SYSTEM INITIALIZING</div>
+    <div class="status-text" id="status">CONNECTING TO NETWORK...</div>
+    
+    <div class="error-box" id="error-box">
+        <div style="color:#ff003c; font-size:16px; margin-bottom:10px;">⚠️ 自动加载失败 (AUTO LOAD FAILED)</div>
+        <div style="color:#aaa; font-size:12px; margin-bottom:15px;">
+            原因：浏览器拦截了跨域请求 (CORS Blocked) 或 网络超时。<br>
+            解决方案：请点击下方按钮，手动选择下载好的 <b>tokyo.geojson</b> 文件。
+        </div>
+        
+        <label class="upload-btn">
+            📂 点击加载本地地图文件 (LOAD LOCAL FILE)
+            <input type="file" id="file-input" style="display: none;" accept=".json,.geojson">
+        </label>
+    </div>
 </div>
 
-<div id="tooltip"></div>
 <div id="canvas-container"></div>
 
 <div id="ui-layer">
     <div id="control-panel">
-        <h1>TOKYO RE:VIEW</h1>
-        <div class="subtitle">REAL ESTATE INVESTMENT ANALYTICS</div>
-        <div id="metrics-container"></div>
-        <div style="margin-top: 20px; font-size: 10px; color: #555;">* 左键旋转 / 右键平移 / 滚轮缩放</div>
+        <h2 style="margin:0 0 10px 0; color:#00f3ff; font-size:18px;">TOKYO RE:VIEW</h2>
+        <div id="btn-container"></div>
     </div>
 
     <div id="sidebar">
-        <div style="position:absolute; top:20px; right:20px; cursor:pointer; font-size:24px;" onclick="closeSidebar()">×</div>
-        <div class="ward-title" id="detail-name">--</div>
-        <div style="margin: 10px 0;" id="detail-tags"></div>
-        <div class="data-grid" id="detail-stats"></div>
-        <div style="height: 180px; width: 100%;"><canvas id="radarChart"></canvas></div>
-        <div style="border-top: 1px solid #333; margin-top: 20px;">
-            <div class="section-title">ANALYSIS</div>
-            <div class="analysis-text" id="detail-desc"></div>
-            <div class="section-title">RECOMMENDATION</div>
-            <div class="analysis-text" id="detail-rec" style="color: var(--neon-blue);"></div>
-            <div class="section-title">RISKS</div>
-            <div class="analysis-text" id="detail-risk" style="color: var(--neon-orange);"></div>
+        <div style="text-align:right; cursor:pointer; font-size:24px;" onclick="closeSidebar()">×</div>
+        <h1 id="ward-name" style="margin:0; background:linear-gradient(90deg,#fff,#888); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">--</h1>
+        <div id="ward-tags" style="margin:10px 0; display:flex; gap:5px; flex-wrap:wrap;"></div>
+        
+        <div class="data-grid" id="ward-stats"></div>
+        
+        <div style="height:200px;"><canvas id="radarChart"></canvas></div>
+        
+        <div style="margin-top:20px; border-top:1px solid #333; padding-top:10px;">
+            <div style="color:#00f3ff; font-size:12px; font-weight:bold;">ANALYSIS</div>
+            <p id="ward-desc" style="font-size:13px; color:#ccc; line-height:1.5;"></p>
+            <div style="color:#ff9100; font-size:12px; font-weight:bold; margin-top:15px;">RECOMMENDATION</div>
+            <p id="ward-rec" style="font-size:13px; color:#ccc; line-height:1.5;"></p>
+            <div style="color:#ff003c; font-size:12px; font-weight:bold; margin-top:15px;">RISKS</div>
+            <p id="ward-risk" style="font-size:13px; color:#ccc; line-height:1.5;"></p>
         </div>
     </div>
 </div>
 
 <script>
-    // 1. 数据定义 (完整保留您的文档数据)
+    // === 配置数据 ===
     const METRICS = {
         growth: { label: 'LAND GROWTH', color: '#d600ff', max: 10 },
         yield:  { label: 'RENTAL YIELD', color: '#ff9100', max: 6 },
@@ -112,49 +114,52 @@
         future: { label: 'FUTURE POT.', color: '#ff003c', max: 10 }
     };
 
+    // 数据库 (完整)
     const DB = {
-        [cite_start]"千代田区": { growth: 9.5, yield: 3.0, airbnb: 4.0, future: 9.0, tags: ["核心", "保值", "政企"], desc: "东京心脏，2025年地价涨幅近双位数 [cite: 3][cite_start]。租金极高但房价更高，回报率偏低(约3%) [cite: 4][cite_start]。", rec: "适合豪宅、写字楼、五星酒店 [cite: 6][cite_start]。资产保值首选。", risk: "门槛极高，初期投入巨大 [cite: 7][cite_start]。民宿受限严重 [cite: 5]。" },
-        [cite_start]"中央区": { growth: 9.8, yield: 3.2, airbnb: 5.0, future: 9.2, tags: ["银座", "金融", "再开发"], desc: "地价全国最高点之一 [cite: 9][cite_start]。银座、晴海再开发动力强。租客以金融高管为主 [cite: 10][cite_start]。", rec: "高端公寓、商业地产 [cite: 12][cite_start]。", risk: "房价泡沫风险，民宿180天限制严格 [cite: 13]。" },
-        [cite_start]"港区": { growth: 10.0, yield: 3.4, airbnb: 3.5, future: 9.5, tags: ["六本木", "外企", "超豪宅"], desc: "全东京最顶级涨幅 [cite: 15][cite_start]。外资与富人聚集。租金全东京最高 [cite: 16][cite_start]。", rec: "奢侈楼盘、A级写字楼 [cite: 18][cite_start]。", risk: "特区民宿政策未覆盖，短租难做 [cite: 17]。" },
-        [cite_start]"新宿区": { growth: 8.5, yield: 4.0, airbnb: 9.0, future: 8.0, tags: ["枢纽", "高流转", "歌舞伎町"], desc: "三大副都心之一。民宿回报率极高，部分整栋公寓可达30%回报 [cite: 23][cite_start]。", rec: "整栋公寓出租、商业综合体 [cite: 24][cite_start]。", risk: "过度开发竞争激烈，歌舞伎町治安问题 [cite: 25]。" },
-        [cite_start]"文京区": { growth: 8.0, yield: 3.8, airbnb: 3.0, future: 7.0, tags: ["教育", "治安", "东大"], desc: "治安东京第一，教育资源顶尖 [cite: 32][cite_start]。租户极其稳定（学者、家庭） [cite: 33][cite_start]。", rec: "学区房、家庭型长租公寓 [cite: 35][cite_start]。", risk: "纯住宅区多，民宿几乎无法经营 [cite: 34]。" },
-        [cite_start]"台东区": { growth: 9.0, yield: 4.8, airbnb: 9.5, future: 7.5, tags: ["浅草", "旅游", "高收益"], desc: "商业地价涨幅最大 [cite: 38][cite_start]。旅游业支柱，Airbnb入住率极高 [cite: 40][cite_start]。", rec: "简易旅馆、民宿改造 [cite: 41][cite_start]。", risk: "居民对民宿有反弹情绪 [cite: 42]。" },
-        [cite_start]"墨田区": { growth: 7.5, yield: 4.5, airbnb: 8.0, future: 7.8, tags: ["晴空塔", "下町", "潜力"], desc: "依托晴空塔，从老工业区转型旅游区 [cite: 45][cite_start]。房价亲民，升值快 [cite: 44][cite_start]。", rec: "押上周边高层公寓、民宿运营 [cite: 47][cite_start]。", risk: "部分区域仍有老旧工业感 [cite: 48]。" },
-        [cite_start]"江东区": { growth: 7.0, yield: 4.5, airbnb: 6.0, future: 8.0, tags: ["湾岸", "塔楼", "奥运"], desc: "丰洲、有明湾岸开发。年轻家庭流入多 [cite: 50][cite_start]。", rec: "大户型家庭公寓、商办结合项目 [cite: 53][cite_start]。", risk: "填海区地基担忧，区域太大位置差异明显 [cite: 54]。" },
-        [cite_start]"品川区": { growth: 6.8, yield: 4.2, airbnb: 5.5, future: 8.8, tags: ["新干线", "商务", "磁悬浮"], desc: "交通枢纽，磁悬浮始发站预期 [cite: 56][cite_start]。", rec: "写字楼、商务酒店 [cite: 59][cite_start]。", risk: "可开发用地减少，商业氛围浓导致居住舒适度参差 [cite: 60]。" },
-        [cite_start]"目黑区": { growth: 7.2, yield: 3.6, airbnb: 4.5, future: 6.5, tags: ["时尚", "宜居", "品牌"], desc: "深受高收入年轻人喜爱，品牌价值高 [cite: 62][cite_start]。", rec: "精品设计公寓、高端长租 [cite: 65][cite_start]。", risk: "房价已高，租金增长空间有限 [cite: 66]。" },
-        [cite_start]"大田区": { growth: 6.5, yield: 5.2, airbnb: 9.8, future: 7.0, tags: ["特区民宿", "机场", "高回报"], desc: "国家战略特区，唯一允许全年365天民宿的区域 [cite: 68][cite_start]。", rec: "特区民宿、机场相关物流 [cite: 72][cite_start]。", risk: "部分区域工厂多环境一般 [cite: 73]。" },
-        [cite_start]"世田谷区": { growth: 5.5, yield: 4.2, airbnb: 2.0, future: 5.0, tags: ["富人居住", "家庭", "稳定"], desc: "人口最多，环境优美。适合家族居住，民宿难做 [cite: 75][cite_start]。", rec: "独栋住宅、家庭型公寓 [cite: 77][cite_start]。", risk: "人口老龄化，缺乏大型开发爆点 [cite: 78]。" },
-        [cite_start]"涩谷区": { growth: 9.2, yield: 3.5, airbnb: 8.5, future: 9.8, tags: ["IT", "潮流", "再开发"], desc: "IT企业聚集，百年一遇大开发 [cite: 27][cite_start]。", rec: "创意办公、精品公寓 [cite: 29][cite_start]。", risk: "入手成本极高 [cite: 30]。" },
-        [cite_start]"中野区": { growth: 6.0, yield: 4.5, airbnb: 5.0, future: 6.0, tags: ["次文化", "单身", "高需"], desc: "单身租赁需求极大 [cite: 80][cite_start]。", rec: "单身公寓、小户型 [cite: 81][cite_start]。", risk: "除了车站周边外发展平缓 [cite: 83]。" },
-        [cite_start]"杉并区": { growth: 5.0, yield: 5.0, airbnb: 1.0, future: 4.5, tags: ["住宅", "避险", "中央线"], desc: "安静的高级住宅区。资产极稳，短租极弱 [cite: 85][cite_start]。", rec: "长期收租型住宅 [cite: 86][cite_start]。", risk: "增值爆发力弱 [cite: 88]。" },
-        [cite_start]"丰岛区": { growth: 8.0, yield: 4.5, airbnb: 8.0, future: 7.0, tags: ["池袋", "动漫", "洼地"], desc: "动漫吸引全球游客。相比新宿价格仍是洼地 [cite: 90][cite_start]。", rec: "池袋周边民宿、商业地产 [cite: 91][cite_start]。", risk: "商圈竞争激烈 [cite: 92]。" },
-        [cite_start]"北区": { growth: 5.5, yield: 4.8, airbnb: 3.0, future: 6.5, tags: ["赤羽", "交通", "性价比"], desc: "赤羽交通极便利。适合实利主义投资 [cite: 94][cite_start]。", rec: "中高层公寓、通勤刚需房 [cite: 95][cite_start]。", risk: "缺乏核心高端商业 [cite: 96]。" },
-        [cite_start]"荒川区": { growth: 5.8, yield: 5.2, airbnb: 4.0, future: 5.5, tags: ["日暮里", "下町", "低价"], desc: "交通枢纽日暮里非常方便。价格洼地 [cite: 98][cite_start]。", rec: "中小户型公寓 [cite: 99][cite_start]。", risk: "人口有减少趋势 [cite: 100]。" },
-        [cite_start]"板桥区": { growth: 4.5, yield: 5.3, airbnb: 1.5, future: 4.5, tags: ["睡城", "稳健", "家庭"], desc: "典型睡城，家庭租赁需求大 [cite: 102][cite_start]。", rec: "家庭型租赁公寓 [cite: 102][cite_start]。", risk: "远离市中心，基本无民宿价值 [cite: 104]。" },
-        [cite_start]"练马区": { growth: 4.0, yield: 5.5, airbnb: 1.0, future: 4.8, tags: ["绿化", "农业", "自住"], desc: "绿化最好，适合自住 [cite: 106][cite_start]。", rec: "整栋木造公寓 [cite: 106][cite_start]。", risk: "交通限制客源 [cite: 108]。" },
-        [cite_start]"足立区": { growth: 5.0, yield: 5.8, airbnb: 4.5, future: 5.0, tags: ["高回报", "地板价", "门槛低"], desc: "表面回报率最高(5%以上) [cite: 110][cite_start]。", rec: "高现金流导向的公寓 [cite: 110][cite_start]。", risk: "治安名声一般 [cite: 112]。" },
-        [cite_start]"葛饰区": { growth: 3.5, yield: 6.0, airbnb: 2.0, future: 4.0, tags: ["老街", "低成本", "养老"], desc: "房价极低，租客多为老年人 [cite: 114][cite_start]。", rec: "低成本吸纳长租房 [cite: 116][cite_start]。", risk: "升值空间有限 [cite: 114]。" },
-        [cite_start]"江户川区": { growth: 4.0, yield: 5.8, airbnb: 1.5, future: 4.5, tags: ["公园", "育儿", "水灾"], desc: "育儿环境好，房价亲民 [cite: 118][cite_start]。", rec: "家庭刚需房 [cite: 118][cite_start]。", risk: "部分低洼地区有洪水风险 [cite: 120]。" }
+        "千代田区": { growth: 9.5, yield: 3.0, airbnb: 4.0, future: 9.0, tags: ["核心", "保值"], desc: "东京心脏，2025年地价涨幅近双位数。租金极高但房价更高，回报率偏低。", rec: "豪宅、写字楼、五星酒店。资产保值首选。", risk: "门槛极高，初期投入巨大。" },
+        "中央区": { growth: 9.8, yield: 3.2, airbnb: 5.0, future: 9.2, tags: ["银座", "金融"], desc: "地价全国最高点之一。银座、晴海再开发动力强。", rec: "高端公寓、商业地产。", risk: "房价泡沫风险，民宿限制严格。" },
+        "港区": { growth: 10.0, yield: 3.4, airbnb: 3.5, future: 9.5, tags: ["六本木", "豪宅"], desc: "全东京最顶级涨幅。外资与富人聚集。", rec: "奢侈楼盘、A级写字楼。", risk: "短租难做，回报率被高地价稀释。" },
+        "新宿区": { growth: 8.5, yield: 4.0, airbnb: 9.0, future: 8.0, tags: ["枢纽", "歌舞伎町"], desc: "民宿回报率极高，部分整栋公寓可达30%回报。", rec: "整栋公寓出租、商业综合体。", risk: "竞争激烈，治安及噪音问题。" },
+        "文京区": { growth: 8.0, yield: 3.8, airbnb: 3.0, future: 7.0, tags: ["教育", "治安"], desc: "治安东京第一，教育资源顶尖。", rec: "学区房、家庭型长租公寓。", risk: "民宿几乎无法经营。" },
+        "台东区": { growth: 9.0, yield: 4.8, airbnb: 9.5, future: 7.5, tags: ["浅草", "旅游"], desc: "商业地价涨幅最大。旅游业支柱，Airbnb入住率极高。", rec: "简易旅馆、民宿改造。", risk: "居民对民宿有反弹情绪。" },
+        "墨田区": { growth: 7.5, yield: 4.5, airbnb: 8.0, future: 7.8, tags: ["晴空塔", "下町"], desc: "房价亲民，升值快。从老工业区转型旅游区。", rec: "押上周边高层公寓、民宿。", risk: "部分区域仍有老旧工业感。" },
+        "江东区": { growth: 7.0, yield: 4.5, airbnb: 6.0, future: 8.0, tags: ["湾岸", "奥运"], desc: "丰洲、有明湾岸开发。年轻家庭流入多。", rec: "大户型家庭公寓。", risk: "填海区地基担忧，位置差异大。" },
+        "品川区": { growth: 6.8, yield: 4.2, airbnb: 5.5, future: 8.8, tags: ["新干线", "商务"], desc: "交通枢纽，磁悬浮始发站预期。", rec: "写字楼、商务酒店。", risk: "居住舒适度参差不齐。" },
+        "目黑区": { growth: 7.2, yield: 3.6, airbnb: 4.5, future: 6.5, tags: ["时尚", "宜居"], desc: "中目黑、自由之丘。品牌价值高。", rec: "精品设计公寓。", risk: "房价已高，租金增长有限。" },
+        "大田区": { growth: 6.5, yield: 5.2, airbnb: 9.8, future: 7.0, tags: ["特区民宿", "机场"], desc: "唯一允许全年365天民宿的区域。", rec: "特区民宿、机场物流。", risk: "部分区域工厂多环境一般。" },
+        "世田谷区": { growth: 5.5, yield: 4.2, airbnb: 2.0, future: 5.0, tags: ["富人居住", "家庭"], desc: "人口最多，环境优美。但商业弱。", rec: "独栋住宅、家庭长租。", risk: "人口老龄化，缺乏爆点。" },
+        "涩谷区": { growth: 9.2, yield: 3.5, airbnb: 8.5, future: 9.8, tags: ["IT", "潮流"], desc: "百年一遇大开发。表参道地价暴涨。", rec: "创意办公、精品公寓。", risk: "入手成本极高。" },
+        "中野区": { growth: 6.0, yield: 4.5, airbnb: 5.0, future: 6.0, tags: ["次文化", "单身"], desc: "单身租赁需求极大。", rec: "单身公寓、小户型。", risk: "发展相对平缓。" },
+        "杉并区": { growth: 5.0, yield: 5.0, airbnb: 1.0, future: 4.5, tags: ["住宅", "避险"], desc: "安静的高级住宅区。资产极稳。", rec: "长期收租型住宅。", risk: "增值爆发力弱。" },
+        "丰岛区": { growth: 8.0, yield: 4.5, airbnb: 8.0, future: 7.0, tags: ["池袋", "动漫"], desc: "池袋副都心。相比新宿价格仍是洼地。", rec: "民宿、商业地产。", risk: "商圈竞争激烈。" },
+        "北区": { growth: 5.5, yield: 4.8, airbnb: 3.0, future: 6.5, tags: ["赤羽", "性价比"], desc: "赤羽交通极便利。适合实利主义投资。", rec: "通勤刚需房。", risk: "缺乏核心高端商业。" },
+        "荒川区": { growth: 5.8, yield: 5.2, airbnb: 4.0, future: 5.5, tags: ["日暮里", "下町"], desc: "交通枢纽日暮里非常方便。价格洼地。", rec: "中小户型公寓。", risk: "人口有减少趋势。" },
+        "板桥区": { growth: 4.5, yield: 5.3, airbnb: 1.5, future: 4.5, tags: ["睡城", "稳健"], desc: "家庭租赁需求大，空置风险低。", rec: "家庭型租赁公寓。", risk: "基本无民宿价值。" },
+        "练马区": { growth: 4.0, yield: 5.5, airbnb: 1.0, future: 4.8, tags: ["绿化", "农业"], desc: "绿化最好，适合自住。", rec: "整栋木造公寓。", risk: "交通限制客源。" },
+        "足立区": { growth: 5.0, yield: 5.8, airbnb: 4.5, future: 5.0, tags: ["高回报", "地板价"], desc: "表面回报率最高(5%以上)。", rec: "高现金流导向公寓。", risk: "治安名声一般。" },
+        "葛饰区": { growth: 3.5, yield: 6.0, airbnb: 2.0, future: 4.0, tags: ["老街", "低成本"], desc: "房价极低，租客多为老年人。", rec: "低成本吸纳长租房。", risk: "升值空间有限。" },
+        "江户川区": { growth: 4.0, yield: 5.8, airbnb: 1.5, future: 4.5, tags: ["公园", "育儿"], desc: "育儿环境好，房价亲民。", rec: "家庭刚需房。", risk: "部分低洼地区有洪水风险。" }
     };
 
-    // 2. 3D 核心
+    // 3D 引擎变量
     let scene, camera, renderer, raycaster, mouse;
     let wardsGroup = new THREE.Group();
     let currentMetric = 'growth';
-    let hoveredObject = null;
-    let selectedWardName = null;
     let myChart = null;
-    
-    // 使用 jsDelivr 全球 CDN (支持跨域) - 解决卡死问题的关键
-    const GEOJSON_URL = "https://cdn.jsdelivr.net/gh/dataofjapan/land@master/tokyo.geojson";
+
+    // 默认尝试 NII 源
+    const DATA_URL = "https://geoshape.ex.nii.ac.jp/city/geojson/2020/13.geojson";
+
+    // 初始化
+    init();
 
     function init() {
+        // 场景搭建
         scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x050505, 0.002);
+        scene.fog = new THREE.FogExp2(0x000000, 0.001);
         
-        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 5000);
-        camera.position.set(0, 800, 800);
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 1, 10000);
+        camera.position.set(0, 1000, 1000);
         camera.lookAt(0, 0, 0);
 
         renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -162,226 +167,225 @@
         document.getElementById('canvas-container').appendChild(renderer.domElement);
 
         // 灯光
-        scene.add(new THREE.AmbientLight(0x404040, 1.5));
-        const dl = new THREE.DirectionalLight(0xffffff, 0.8);
+        scene.add(new THREE.AmbientLight(0x404040, 2)); 
+        const dl = new THREE.DirectionalLight(0xffffff, 1);
         dl.position.set(100, 200, 100);
         scene.add(dl);
-        const pl = new THREE.PointLight(0x00f3ff, 1, 800);
-        pl.position.set(-200, 100, -200);
+        const pl = new THREE.PointLight(0x00f3ff, 1, 1000);
+        pl.position.set(-200, 200, -200);
         scene.add(pl);
 
-        // 网格
-        scene.add(new THREE.GridHelper(3000, 100, 0x333333, 0x111111));
-
+        // 交互
         raycaster = new THREE.Raycaster();
         mouse = new THREE.Vector2();
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth/window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('click', onClick);
 
-        window.addEventListener('resize', onResize, false);
-        document.addEventListener('mousemove', onMouseMove, false);
-        document.addEventListener('click', onClick, false);
-
+        // UI
         initUI();
-        loadGeoData();
+        
+        // 尝试自动加载
+        attemptAutoLoad();
+        
+        // 渲染循环
         animate();
     }
 
-    // 3. 数据加载与处理
-    function loadGeoData() {
-        const pBar = document.getElementById('progress');
-        const sText = document.getElementById('status-text');
-        
-        pBar.style.width = '30%';
-        sText.innerText = "FETCHING DATA...";
-
-        fetch(GEOJSON_URL)
+    function attemptAutoLoad() {
+        fetch(DATA_URL)
             .then(res => {
-                if(!res.ok) throw new Error(`HTTP ${res.status}`);
+                if(!res.ok) throw new Error("Net Error");
                 return res.json();
             })
             .then(json => {
-                pBar.style.width = '60%';
-                sText.innerText = "BUILDING 3D MODELS...";
-
-                // D3 投影
-                const projection = d3.geoMercator().center([139.75, 35.68]).scale(60000).translate([0, 0]);
-
-                json.features.forEach(feature => {
-                    // 模糊匹配名字 (解决 NII vs DataOfJapan 名字差异)
-                    const rawName = feature.properties.N03_004 || feature.properties.name || "";
-                    let dbKey = null;
-                    
-                    // 尝试匹配 DB
-                    if(DB[rawName]) dbKey = rawName;
-                    else {
-                        // 反向查找
-                        for(let k in DB) {
-                            if(rawName.includes(k) || (rawName.includes("Chiyoda") && k==="千代田区")) { // 示例补丁
-                                dbKey = k; break;
-                            }
-                        }
-                    }
-
-                    if(dbKey) {
-                        const shapes = createShapes(feature, projection);
-                        shapes.forEach(shape => {
-                            const height = getHeight(dbKey);
-                            const color = getColor(dbKey);
-                            
-                            const geo = new THREE.ExtrudeGeometry(shape, { depth: height, bevelEnabled: true, bevelSize:0.5, bevelThickness:0.5 });
-                            const matTop = new THREE.MeshPhongMaterial({ color: color, emissive: color, emissiveIntensity: 0.4 });
-                            const matSide = new THREE.MeshLambertMaterial({ color: color, transparent: true, opacity: 0.8 });
-                            
-                            const mesh = new THREE.Mesh(geo, [matTop, matSide]);
-                            mesh.rotation.x = Math.PI/2;
-                            mesh.scale.y = -1; 
-                            
-                            // 绑定数据
-                            mesh.userData = { name: dbKey, ...DB[dbKey], baseH: height };
-                            wardsGroup.add(mesh);
-                        });
-                    }
-                });
-
-                // 居中
-                new THREE.Box3().setFromObject(wardsGroup).getCenter(wardsGroup.position).multiplyScalar(-1);
-                scene.add(wardsGroup);
-
-                pBar.style.width = '100%';
-                setTimeout(() => { document.getElementById('loader').style.opacity = 0; setTimeout(()=>document.getElementById('loader').style.display='none', 800); }, 500);
+                document.getElementById('status').innerText = "PROCESSING GEOMETRY...";
+                processGeoJSON(json);
             })
             .catch(err => {
-                pBar.style.background = 'red';
-                sText.innerText = "LOAD FAILED";
-                const log = document.getElementById('error-log');
-                log.style.display = 'block';
-                log.innerText = `ERROR: ${err.message}\nTry checking your network connection or CORS settings.`;
+                console.error(err);
+                showManualUpload(); // 失败则显示手动上传
             });
-    }
-
-    function createShapes(feature, projection) {
-        const shapes = [];
-        const coords = feature.geometry.type === 'Polygon' ? [feature.geometry.coordinates] : feature.geometry.coordinates;
-        coords.forEach(poly => {
-            const shape = new THREE.Shape();
-            poly[0].forEach((pt, i) => {
-                const [x, y] = projection(pt);
-                i===0 ? shape.moveTo(x,y) : shape.lineTo(x,y);
-            });
-            for(let i=1; i<poly.length; i++) {
-                const hole = new THREE.Path();
-                poly[i].forEach((pt, j) => {
-                    const [x, y] = projection(pt);
-                    j===0 ? hole.moveTo(x,y) : hole.lineTo(x,y);
-                });
-                shape.holes.push(hole);
+            
+        // 3秒兜底：如果3秒还在转圈，也强制显示手动上传
+        setTimeout(() => {
+            if(document.getElementById('loader').style.display !== 'none') {
+                showManualUpload();
             }
-            shapes.push(shape);
-        });
-        return shapes;
+        }, 3000);
     }
 
-    // 4. 视觉与交互逻辑
-    function getHeight(name) { return (DB[name][currentMetric] / METRICS[currentMetric].max) * 60 + 5; }
-    function getColor(name) {
-        const r = DB[name][currentMetric] / METRICS[currentMetric].max;
-        const c = new THREE.Color(METRICS[currentMetric].color);
-        return r < 0.4 ? c.multiplyScalar(0.4) : c;
+    function showManualUpload() {
+        document.getElementById('status').style.display = 'none';
+        document.getElementById('error-box').style.display = 'block';
     }
 
-    function switchMetric(key) {
-        currentMetric = key;
-        document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.innerText.includes(METRICS[key].label)));
+    // 监听文件上传
+    document.getElementById('file-input').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if(!file) return;
         
-        wardsGroup.children.forEach(mesh => {
-            const h = getHeight(mesh.userData.name);
-            const c = getColor(mesh.userData.name);
-            mesh.scale.z = h / mesh.userData.baseH; // 动态缩放高度
-            mesh.material[0].color.set(c);
-            mesh.material[0].emissive.set(c);
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const json = JSON.parse(event.target.result);
+                processGeoJSON(json);
+            } catch(err) {
+                alert("文件格式错误，请确保是 .geojson 文件");
+            }
+        };
+        reader.readAsText(file);
+    });
+
+    function processGeoJSON(json) {
+        document.getElementById('status').style.display = 'block';
+        document.getElementById('error-box').style.display = 'none';
+        document.getElementById('status').innerText = "GENERATING 3D CITY...";
+
+        // D3 投影
+        const projection = d3.geoMercator().center([139.75, 35.68]).scale(55000).translate([0, 0]);
+
+        json.features.forEach(f => {
+            // 筛选23区 (根据行政代码 13101-13123 或 名字匹配)
+            let name = f.properties.N03_004 || f.properties.name;
+            let dbData = null;
+
+            // 模糊匹配
+            if(DB[name]) dbData = DB[name];
+            else {
+                for(let k in DB) {
+                    if(name && name.indexOf(k) > -1) { name = k; dbData = DB[k]; break; }
+                }
+            }
+
+            if(dbData) {
+                const shapes = [];
+                const coords = f.geometry.type==='Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
+                
+                coords.forEach(poly => {
+                    const shape = new THREE.Shape();
+                    poly[0].forEach((p, i) => {
+                        const [x, y] = projection(p);
+                        i===0 ? shape.moveTo(x,y) : shape.lineTo(x,y);
+                    });
+                    // Holes
+                    for(let i=1; i<poly.length; i++) {
+                        const hole = new THREE.Path();
+                        poly[i].forEach((p, j) => {
+                            const [x, y] = projection(p);
+                            j===0 ? hole.moveTo(x,y) : hole.lineTo(x,y);
+                        });
+                        shape.holes.push(hole);
+                    }
+                    shapes.push(shape);
+                });
+
+                shapes.forEach(s => {
+                    const h = (dbData[currentMetric] / METRICS[currentMetric].max) * 80 + 5;
+                    const c = new THREE.Color(METRICS[currentMetric].color);
+                    
+                    const geo = new THREE.ExtrudeGeometry(s, { depth: h, bevelEnabled: true, bevelSize: 0.5, bevelThickness: 0.5 });
+                    const mat = new THREE.MeshPhongMaterial({ color: c, transparent: true, opacity: 0.9, shininess: 100 });
+                    
+                    const mesh = new THREE.Mesh(geo, mat);
+                    mesh.rotation.x = Math.PI/2;
+                    mesh.scale.y = -1;
+                    mesh.userData = { name: name, data: dbData, baseH: h };
+                    wardsGroup.add(mesh);
+                });
+            }
         });
+
+        // Center
+        new THREE.Box3().setFromObject(wardsGroup).getCenter(wardsGroup.position).multiplyScalar(-1);
+        scene.add(wardsGroup);
+
+        // Done
+        setTimeout(() => {
+            document.getElementById('loader').style.display = 'none';
+        }, 500);
     }
 
     function animate() {
         requestAnimationFrame(animate);
-        if(!selectedWardName) wardsGroup.rotation.z += 0.0005; // 待机旋转
-        
+        wardsGroup.rotation.z += 0.0005;
+        renderer.render(scene, camera);
+    }
+
+    // 交互逻辑
+    let hovered = null;
+    function onMove(e) {
+        mouse.x = (e.clientX/window.innerWidth)*2-1;
+        mouse.y = -(e.clientY/window.innerHeight)*2+1;
         raycaster.setFromCamera(mouse, camera);
         const intersects = raycaster.intersectObjects(wardsGroup.children);
         
         if(intersects.length > 0) {
             const obj = intersects[0].object;
-            if(hoveredObject !== obj) {
-                if(hoveredObject) hoveredObject.material[0].emissiveIntensity = 0.4;
-                hoveredObject = obj;
-                hoveredObject.material[0].emissiveIntensity = 1.0;
-                
-                const tip = document.getElementById('tooltip');
-                tip.style.display = 'block';
-                tip.innerHTML = `${obj.userData.name}<br>${METRICS[currentMetric].label}: ${DB[obj.userData.name][currentMetric]}`;
+            if(hovered !== obj) {
+                if(hovered) hovered.material.emissive.setHex(0x000000);
+                hovered = obj;
+                hovered.material.emissive.setHex(0x555555);
             }
         } else {
-            if(hoveredObject) hoveredObject.material[0].emissiveIntensity = 0.4;
-            hoveredObject = null;
-            document.getElementById('tooltip').style.display = 'none';
+            if(hovered) hovered.material.emissive.setHex(0x000000);
+            hovered = null;
         }
-        renderer.render(scene, camera);
-    }
-
-    function onMouseMove(e) {
-        mouse.x = (e.clientX/window.innerWidth)*2-1;
-        mouse.y = -(e.clientY/window.innerHeight)*2+1;
-        const tip = document.getElementById('tooltip');
-        tip.style.left = e.clientX + 'px';
-        tip.style.top = e.clientY + 'px';
     }
 
     function onClick(e) {
-        if(hoveredObject) openSidebar(hoveredObject.userData.name);
+        if(hovered) openSidebar(hovered.userData.name);
     }
 
-    function onResize() {
-        camera.aspect = window.innerWidth/window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    }
-
-    // 5. UI 逻辑
+    // UI Logic
     function initUI() {
-        const c = document.getElementById('metrics-container');
+        const c = document.getElementById('btn-container');
         Object.keys(METRICS).forEach(k => {
             const d = document.createElement('div');
             d.className = `mode-btn ${k===currentMetric?'active':''}`;
-            d.style.setProperty('--color', METRICS[k].color);
+            d.style.setProperty('--c', METRICS[k].color);
             d.innerHTML = `<span>${METRICS[k].label}</span>`;
             d.onclick = () => switchMetric(k);
             c.appendChild(d);
         });
     }
 
+    function switchMetric(k) {
+        currentMetric = k;
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.innerText.includes(METRICS[k].label)));
+        
+        wardsGroup.children.forEach(m => {
+            const d = m.userData.data;
+            const targetH = (d[k] / METRICS[k].max) * 80 + 5;
+            const targetC = new THREE.Color(METRICS[k].color);
+            
+            m.scale.z = targetH / m.userData.baseH;
+            m.material.color.set(targetC);
+        });
+    }
+
     function openSidebar(name) {
         const d = DB[name];
-        selectedWardName = name;
         document.getElementById('sidebar').classList.add('open');
-        document.getElementById('detail-name').innerText = name;
-        document.getElementById('detail-tags').innerHTML = d.tags.map(t=>`<span class="tag">${t}</span>`).join('');
-        
-        document.getElementById('detail-stats').innerHTML = `
-            <div class="data-item"><span class="data-label">土地涨幅</span><span class="data-value" style="color:${METRICS.growth.color}">${d.growth}</span></div>
-            <div class="data-item"><span class="data-label">租金回报</span><span class="data-value" style="color:${METRICS.yield.color}">${d.yield}%</span></div>
-            <div class="data-item"><span class="data-label">民宿潜力</span><span class="data-value" style="color:${METRICS.airbnb.color}">${d.airbnb}</span></div>
-            <div class="data-item"><span class="data-label">未来潜力</span><span class="data-value" style="color:${METRICS.future.color}">${d.future}</span></div>
+        document.getElementById('ward-name').innerText = name;
+        document.getElementById('ward-tags').innerHTML = d.tags.map(t=>`<span style="background:#333; padding:2px 8px; font-size:10px;">${t}</span>`).join('');
+        document.getElementById('ward-stats').innerHTML = `
+            <div class="data-box"><div class="lbl">LAND GROWTH</div><div class="val" style="color:${METRICS.growth.color}">${d.growth}</div></div>
+            <div class="data-box"><div class="lbl">RENTAL YIELD</div><div class="val" style="color:${METRICS.yield.color}">${d.yield}%</div></div>
+            <div class="data-box"><div class="lbl">AIRBNB</div><div class="val" style="color:${METRICS.airbnb.color}">${d.airbnb}</div></div>
+            <div class="data-box"><div class="lbl">FUTURE</div><div class="val" style="color:${METRICS.future.color}">${d.future}</div></div>
         `;
-        document.getElementById('detail-desc').innerText = d.desc;
-        document.getElementById('detail-rec').innerText = d.rec;
-        document.getElementById('detail-risk').innerText = d.risk;
-
+        document.getElementById('ward-desc').innerText = d.desc;
+        document.getElementById('ward-rec').innerText = d.rec;
+        document.getElementById('ward-risk').innerText = d.risk;
         updateChart(name, d);
     }
 
-    function closeSidebar() {
-        document.getElementById('sidebar').classList.remove('open');
-        selectedWardName = null;
-    }
+    function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); }
 
     function updateChart(name, d) {
         const ctx = document.getElementById('radarChart').getContext('2d');
@@ -389,13 +393,13 @@
         myChart = new Chart(ctx, {
             type: 'radar',
             data: {
-                labels: ['涨幅', '回报', '民宿', '未来'],
+                labels: ['GROWTH', 'YIELD', 'AIRBNB', 'FUTURE'],
                 datasets: [{
                     label: name,
                     data: [d.growth, d.yield*1.5, d.airbnb, d.future],
                     backgroundColor: 'rgba(0,243,255,0.2)',
                     borderColor: '#00f3ff',
-                    borderWidth: 2,
+                    borderWidth: 1,
                     pointBackgroundColor: '#fff'
                 }]
             },
@@ -403,10 +407,10 @@
                 plugins: { legend: { display: false } },
                 scales: {
                     r: {
-                        angleLines: { color: 'rgba(255,255,255,0.1)' },
-                        grid: { color: 'rgba(255,255,255,0.1)' },
-                        ticks: { display: false, max: 10, min: 0 },
-                        pointLabels: { color: '#aaa', font: {size: 10} }
+                        angleLines: { color: '#333' },
+                        grid: { color: '#333' },
+                        pointLabels: { color: '#888', font: {size: 10} },
+                        ticks: { display: false, max: 10, min: 0 }
                     }
                 },
                 maintainAspectRatio: false
