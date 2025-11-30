@@ -3,157 +3,132 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>Tokyo Investment Map (Lite)</title>
+<title>Tokyo Investment Map (Stable)</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-    /* === 全局风格定义 (Cyberpunk Flat) === */
     :root {
-        --bg-color: #0a0a0a;
-        --panel-bg: rgba(18, 18, 24, 0.95);
-        --accent-cyan: #00f3ff;
-        --accent-purple: #bc13fe;
-        --accent-orange: #ff9100;
-        --text-main: #e0e0e0;
-        --text-dim: #888;
+        --bg: #0a0a0a;
+        --panel: rgba(20, 20, 25, 0.95);
+        --accent: #00f3ff;
+        --text: #e0e0e0;
     }
-
-    body { margin: 0; padding: 0; background: var(--bg-color); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; overflow: hidden; color: var(--text-main); }
+    body, html { margin: 0; padding: 0; height: 100%; width: 100%; background: var(--bg); font-family: sans-serif; overflow: hidden; color: var(--text); }
     
-    #map { position: absolute; top: 0; bottom: 0; width: 100%; z-index: 1; background: #0a0a0a; }
+    #map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; background: #0a0a0a; }
 
-    /* 自定义 Leaflet Popup 样式 */
-    .leaflet-popup-content-wrapper { background: rgba(0,0,0,0.9); border: 1px solid var(--accent-cyan); color: #fff; border-radius: 4px; }
-    .leaflet-popup-tip { background: rgba(0,0,0,0.9); }
-    
-    /* === 控制面板 (左上) === */
+    /* 控制面板 */
     #control-panel {
-        position: absolute; top: 20px; left: 20px; width: 220px;
-        background: var(--panel-bg); border-left: 2px solid var(--accent-cyan);
-        padding: 15px; border-radius: 0 8px 8px 0;
-        z-index: 1000; box-shadow: 0 4px 20px rgba(0,0,0,0.6);
-        transition: transform 0.3s ease;
+        position: absolute; top: 20px; left: 20px; width: 200px;
+        background: var(--panel); border-left: 3px solid var(--accent);
+        padding: 15px; border-radius: 0 8px 8px 0; z-index: 1000;
+        box-shadow: 0 4px 30px rgba(0,0,0,0.5);
     }
-    
-    h2 { margin: 0 0 15px 0; font-size: 14px; letter-spacing: 1px; color: var(--accent-cyan); text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 8px; }
-
     .metric-btn {
-        display: block; width: 100%; padding: 10px; margin-bottom: 8px;
+        display: block; width: 100%; padding: 10px; margin-bottom: 5px;
         background: rgba(255,255,255,0.05); border: 1px solid #333; color: #aaa;
-        font-size: 12px; cursor: pointer; text-align: left; border-radius: 4px;
-        transition: all 0.2s;
+        font-size: 12px; cursor: pointer; transition: 0.2s;
     }
-    .metric-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
-    .metric-btn.active { border-color: var(--accent-cyan); color: var(--accent-cyan); background: rgba(0, 243, 255, 0.1); font-weight: bold; }
+    .metric-btn:hover { color: #fff; background: rgba(255,255,255,0.1); }
+    .metric-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0, 243, 255, 0.15); font-weight: bold; }
 
-    /* === 详情侧边栏 (右侧) === */
+    /* 侧边栏 */
     #sidebar {
-        position: absolute; top: 0; right: -100%; bottom: 0; width: 350px;
-        background: var(--panel-bg); border-left: 1px solid #333;
-        z-index: 1001; transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        padding: 25px; overflow-y: auto; display: flex; flex-direction: column;
+        position: absolute; top: 0; right: -100%; bottom: 0; width: 320px;
+        background: var(--panel); border-left: 1px solid #333; z-index: 1001;
+        transition: right 0.3s ease; padding: 20px; box-sizing: border-box;
+        overflow-y: auto; display: flex; flex-direction: column;
     }
     #sidebar.open { right: 0; }
-
-    .close-btn { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: #666; }
-    .close-btn:hover { color: #fff; }
-
-    #ward-name { font-size: 28px; font-weight: 800; margin: 20px 0 5px 0; color: #fff; letter-spacing: 2px; }
-    #ward-rank { display: inline-block; font-size: 11px; background: #333; padding: 2px 6px; border-radius: 3px; color: var(--accent-cyan); margin-bottom: 15px; }
-
-    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-    .stat-item { background: rgba(255,255,255,0.03); padding: 10px; border-radius: 4px; }
-    .stat-label { font-size: 11px; color: #777; display: block; }
-    .stat-val { font-size: 16px; font-weight: bold; color: #eee; }
-    .val-high { color: var(--accent-cyan); text-shadow: 0 0 5px rgba(0,243,255,0.3); }
-
-    .chart-container { position: relative; height: 200px; width: 100%; margin-top: auto; }
     
-    .tags { margin: 15px 0; display: flex; flex-wrap: wrap; gap: 5px; }
-    .tag { font-size: 10px; padding: 3px 8px; background: #222; border: 1px solid #444; border-radius: 10px; color: #aaa; }
+    .close-btn { position: absolute; top: 15px; right: 15px; font-size: 24px; cursor: pointer; }
+    
+    #ward-name { font-size: 24px; font-weight: bold; margin-top: 20px; color: #fff; }
+    .stat-row { display: flex; justify-content: space-between; margin: 10px 0; border-bottom: 1px solid #333; padding-bottom: 5px; }
+    .val-high { color: var(--accent); font-weight: bold; }
 
-    /* === 移动端适配 === */
+    /* 移动端适配 */
     @media (max-width: 768px) {
-        #control-panel { top: 10px; left: 10px; width: auto; min-width: 150px; padding: 10px; }
-        .metric-btn { padding: 6px; font-size: 11px; }
-        
-        #sidebar { width: 100%; top: auto; bottom: -100%; height: 60%; right: 0; border-left: none; border-top: 1px solid var(--accent-cyan); border-radius: 16px 16px 0 0; transition: bottom 0.4s ease; }
+        #sidebar { width: 100%; top: auto; bottom: -100%; height: 60%; right: 0; border-radius: 15px 15px 0 0; transition: bottom 0.3s; }
         #sidebar.open { bottom: 0; right: 0; }
+        #control-panel { top: 10px; left: 10px; width: auto; }
     }
 
-    /* Loading */
-    #loader { position: fixed; inset: 0; background: #000; z-index: 2000; display: flex; justify-content: center; align-items: center; color: var(--accent-cyan); font-family: monospace; transition: opacity 0.5s; }
+    /* 加载与错误提示 */
+    #loader {
+        position: fixed; inset: 0; background: #000; z-index: 2000;
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        transition: opacity 0.5s;
+    }
+    #error-msg {
+        display: none; color: #ff4444; border: 1px solid #ff4444; padding: 20px;
+        background: rgba(50,0,0,0.8); max-width: 80%; text-align: center; margin-top: 20px;
+    }
 </style>
 </head>
 <body>
 
-<div id="loader">SYSTEM INITIALIZING...</div>
+<div id="loader">
+    <div style="color: var(--accent); font-family: monospace; font-size: 1.2em;">SYSTEM INITIALIZING...</div>
+    <div id="error-msg"></div>
+</div>
 
 <div id="control-panel">
-    <h2>数据视图</h2>
-    <div id="buttons-container"></div>
+    <div style="color:var(--accent); font-weight:bold; margin-bottom:10px; border-bottom:1px solid #333; padding-bottom:5px;">TOKYO DATA VIEW</div>
+    <div id="buttons"></div>
 </div>
 
 <div id="map"></div>
 
 <div id="sidebar">
     <div class="close-btn" onclick="closeSidebar()">×</div>
-    <div id="ward-rank">RANK --</div>
-    <h1 id="ward-name">Select Area</h1>
-    <div class="tags" id="ward-tags"></div>
-    
-    <div class="stat-grid" id="ward-stats"></div>
-    
-    <p id="ward-desc" style="font-size: 13px; line-height: 1.6; color: #999; margin-bottom: 20px;"></p>
-
-    <div class="chart-container">
-        <canvas id="radarChart"></canvas>
-    </div>
+    <div id="ward-name">--</div>
+    <div style="margin: 15px 0;" id="ward-tags"></div>
+    <div id="ward-stats"></div>
+    <p id="ward-desc" style="color:#888; font-size: 0.9em; line-height:1.5; margin: 20px 0;"></p>
+    <div style="height: 200px;"><canvas id="radarChart"></canvas></div>
 </div>
 
 <script>
-    // ================= 配置区域 =================
-    
-    // 投资数据源 (纯静态模拟)
-    const db = {
-        "千代田区": { growth: 4.5, airbnb: 6.0, rental: 3.5, future: 9.0, desc: "政治中心，资产极度安全但门槛高。", tags: ["核心", "办公"] },
-        "中央区": { growth: 6.8, airbnb: 8.5, rental: 4.2, future: 8.0, desc: "银座商圈，奥运后持续再开发。", tags: ["商业", "观光"] },
-        "港区": { growth: 5.5, airbnb: 7.5, rental: 3.5, future: 9.5, desc: "富人区，品牌溢价最高。", tags: ["豪宅", "外企"] },
-        "新宿区": { growth: 7.2, airbnb: 9.8, rental: 5.5, future: 7.5, desc: "枢纽站，民宿回报极高。", tags: ["高回报", "人流"] },
-        "文京区": { growth: 3.8, airbnb: 5.0, rental: 4.8, future: 6.5, desc: "文教区，治安好，长租稳定。", tags: ["学区", "稳定"] },
-        "台东区": { growth: 8.5, airbnb: 9.5, rental: 5.8, future: 7.0, desc: "浅草上野，旅游业支柱。", tags: ["旅游", "补涨"] },
-        "墨田区": { growth: 7.9, airbnb: 8.5, rental: 5.6, future: 7.2, desc: "晴空塔周边，性价比高。", tags: ["旅游", "下町"] },
-        "江东区": { growth: 6.2, airbnb: 6.0, rental: 5.0, future: 6.8, desc: "湾岸塔楼，家庭流入多。", tags: ["家庭", "奥运"] },
-        "品川区": { growth: 5.8, airbnb: 7.0, rental: 4.9, future: 8.5, desc: "新干线门户，商务需求强。", tags: ["商务", "交通"] },
-        "目黑区": { growth: 5.2, airbnb: 6.5, rental: 4.2, future: 8.2, desc: "时尚街区，品牌价值高。", tags: ["时尚", "高租金"] },
-        "大田区": { growth: 4.1, airbnb: 7.8, rental: 5.5, future: 5.5, desc: "羽田门户，特区民泊优势。", tags: ["机场", "民泊"] },
-        "世田谷区": { growth: 3.5, airbnb: 4.5, rental: 4.5, future: 6.0, desc: "最大居住区，环境优美。", tags: ["居住", "家族"] },
-        "涩谷区": { growth: 8.8, airbnb: 9.2, rental: 4.0, future: 9.8, desc: "IT与潮流中心，全能型。", tags: ["IT", "再开发"] },
-        "中野区": { growth: 5.0, airbnb: 6.5, rental: 5.3, future: 5.8, desc: "单身公寓圣地，租赁旺盛。", tags: ["单身", "次文化"] },
-        "杉并区": { growth: 3.9, airbnb: 4.8, rental: 4.7, future: 5.5, desc: "中央线沿线，资产稳定。", tags: ["住宅", "避险"] },
-        "丰岛区": { growth: 7.5, airbnb: 8.9, rental: 5.7, future: 7.0, desc: "池袋副都心，动漫文化。", tags: ["动漫", "高利回"] },
-        "北区": { growth: 4.5, airbnb: 5.5, rental: 5.8, future: 5.0, desc: "赤羽交通好，房价亲民。", tags: ["性价比", "交通"] },
-        "荒川区": { growth: 5.5, airbnb: 6.0, rental: 6.0, future: 5.2, desc: "日暮里枢纽，价格洼地。", tags: ["洼地", "下町"] },
-        "板桥区": { growth: 3.8, airbnb: 4.2, rental: 5.5, future: 4.5, desc: "睡城，家庭租赁稳定。", tags: ["睡城", "稳健"] },
-        "练马区": { growth: 3.2, airbnb: 3.5, rental: 5.2, future: 4.8, desc: "绿化好，适合自住。", tags: ["绿化", "自住"] },
-        "足立区": { growth: 4.2, airbnb: 4.5, rental: 6.5, future: 4.5, desc: "回报率全东京最高。", tags: ["高收益", "门槛低"] },
-        "葛饰区": { growth: 3.5, airbnb: 5.5, rental: 6.2, future: 4.2, desc: "老街风情，低价市场。", tags: ["老街", "低价"] },
-        "江户川区": { growth: 3.8, airbnb: 4.8, rental: 5.9, future: 4.5, desc: "公园多，育儿福利好。", tags: ["育儿", "公园"] }
-    };
-
-    // 指标定义
+    // 1. 数据配置
     const METRICS = {
-        growth: { label: '土地增长率', color: '#bc13fe' }, // 紫
-        airbnb: { label: '民宿回报率', color: '#00f3ff' }, // 青
-        rental: { label: '长租回报率', color: '#ff9100' }, // 橙
-        future: { label: '升值潜力', color: '#ff003c' }   // 红
+        growth: { label: '土地增长率', color: '#d600ff' },
+        airbnb: { label: '民宿回报率', color: '#00f3ff' },
+        rental: { label: '长租回报率', color: '#ff9100' },
+        future: { label: '升值潜力', color: '#ff003c' }
+    };
+    
+    // 模拟投资数据库
+    const db = {
+        "千代田区": { growth: 4.5, airbnb: 6.0, rental: 3.5, future: 9.0, desc: "皇居所在，日本政治经济核心。资产安全性极高。", tags: ["核心", "办公"] },
+        "中央区": { growth: 6.8, airbnb: 8.5, rental: 4.2, future: 8.0, desc: "银座与日本桥。商业价值极高，奥运后持续再开发。", tags: ["商业", "观光"] },
+        "港区": { growth: 5.5, airbnb: 7.5, rental: 3.5, future: 9.5, desc: "六本木/麻布。富人区代表，品牌溢价极高。", tags: ["豪宅", "外企"] },
+        "新宿区": { growth: 7.2, airbnb: 9.8, rental: 5.5, future: 7.5, desc: "世界最大枢纽站。民宿回报率极高，竞争激烈。", tags: ["高回报", "人流"] },
+        "文京区": { growth: 3.8, airbnb: 5.0, rental: 4.8, future: 6.5, desc: "文教地区，治安极好。适合家庭稳定长租。", tags: ["学区", "稳定"] },
+        "台东区": { growth: 8.5, airbnb: 9.5, rental: 5.8, future: 7.0, desc: "浅草/上野。旅游业支柱，投资性价比较高。", tags: ["旅游", "补涨"] },
+        "墨田区": { growth: 7.9, airbnb: 8.5, rental: 5.6, future: 7.2, desc: "晴空塔效应。房价相对亲民，升值潜力大。", tags: ["旅游", "下町"] },
+        "江东区": { growth: 6.2, airbnb: 6.0, rental: 5.0, future: 6.8, desc: "湾岸塔楼林立，年轻家庭流入多。", tags: ["家庭", "奥运"] },
+        "品川区": { growth: 5.8, airbnb: 7.0, rental: 4.9, future: 8.5, desc: "新干线门户，商务需求强劲。", tags: ["商务", "交通"] },
+        "目黑区": { growth: 5.2, airbnb: 6.5, rental: 4.2, future: 8.2, desc: "中目黑/自由之丘。受高收入年轻人喜爱。", tags: ["时尚", "高租金"] },
+        "大田区": { growth: 4.1, airbnb: 7.8, rental: 5.5, future: 5.5, desc: "羽田机场门户。特区民泊政策优势明显。", tags: ["机场", "民泊"] },
+        "世田谷区": { growth: 3.5, airbnb: 4.5, rental: 4.5, future: 6.0, desc: "最大居住区。环境优美，适合家族资产传承。", tags: ["居住", "家族"] },
+        "涩谷区": { growth: 8.8, airbnb: 9.2, rental: 4.0, future: 9.8, desc: "IT与潮流中心。百年一遇的再开发。", tags: ["IT", "再开发"] },
+        "中野区": { growth: 5.0, airbnb: 6.5, rental: 5.3, future: 5.8, desc: "新宿后花园，单身租赁需求极大。", tags: ["单身", "次文化"] },
+        "杉并区": { growth: 3.9, airbnb: 4.8, rental: 4.7, future: 5.5, desc: "中央线沿线，资产极其稳定。", tags: ["住宅", "避险"] },
+        "丰岛区": { growth: 7.5, airbnb: 8.9, rental: 5.7, future: 7.0, desc: "池袋副都心。动漫文化吸引全球年轻人。", tags: ["动漫", "高利回"] },
+        "北区": { growth: 4.5, airbnb: 5.5, rental: 5.8, future: 5.0, desc: "赤羽交通便利，房价相对较低。", tags: ["性价比", "交通"] },
+        "荒川区": { growth: 5.5, airbnb: 6.0, rental: 6.0, future: 5.2, desc: "日暮里枢纽。山手线价格洼地。", tags: ["洼地", "下町"] },
+        "板桥区": { growth: 3.8, airbnb: 4.2, rental: 5.5, future: 4.5, desc: "典型睡城。家庭租赁需求大，波动小。", tags: ["睡城", "稳健"] },
+        "练马区": { growth: 3.2, airbnb: 3.5, rental: 5.2, future: 4.8, desc: "绿化好，适合育儿自住。", tags: ["绿化", "自住"] },
+        "足立区": { growth: 4.2, airbnb: 4.5, rental: 6.5, future: 4.5, desc: "表面回报率全东京最高，需精选地段。", tags: ["高收益", "门槛低"] },
+        "葛饰区": { growth: 3.5, airbnb: 5.5, rental: 6.2, future: 4.2, desc: "柴又老街。低价长租市场为主。", tags: ["老街", "低价"] },
+        "江户川区": { growth: 3.8, airbnb: 4.8, rental: 5.9, future: 4.5, desc: "公园多，育儿福利好。注意洪水风险。", tags: ["育儿", "公园"] }
     };
 
-    // 完整的英日映射表 (解决 GeoJSON 名字不匹配问题)
+    // 映射表：确保 GeoJSON 里的名字能对应到数据库
     const NAME_MAP = {
         'Chiyoda': '千代田区', 'Chuo': '中央区', 'Minato': '港区', 'Shinjuku': '新宿区', 'Bunkyo': '文京区',
         'Taito': '台东区', 'Sumida': '墨田区', 'Koto': '江东区', 'Shinagawa': '品川区', 'Meguro': '目黑区',
@@ -162,185 +137,161 @@
         'Adachi': '足立区', 'Katsushika': '葛饰区', 'Edogawa': '江户川区'
     };
 
-    let currentMetric = 'growth';
-    let geoJsonLayer = null;
-    let myChart = null;
-
-    // ================= 1. 初始化地图 =================
+    // 2. 初始化地图
+    const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([35.685, 139.75], 11);
     
-    // 使用 CartoDB Dark Matter 免费底图
-    const map = L.map('map', { 
-        zoomControl: false,
-        attributionControl: false
-    }).setView([35.6895, 139.6917], 11);
-
+    // 使用 CartoDB 深色底图
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19,
-        subdomains: 'abcd'
+        maxZoom: 18, subdomains: 'abcd'
     }).addTo(map);
 
-    // ================= 2. 逻辑处理 =================
+    let currentMetric = 'growth';
+    let geoLayer = null;
+    let myChart = null;
 
-    // 生成控制按钮
-    const btnContainer = document.getElementById('buttons-container');
+    // 3. UI 初始化
+    const btnContainer = document.getElementById('buttons');
     Object.keys(METRICS).forEach(key => {
-        const btn = document.createElement('div');
-        btn.className = `metric-btn ${key === currentMetric ? 'active' : ''}`;
-        btn.innerText = METRICS[key].label;
-        btn.onclick = () => switchMetric(key);
-        btnContainer.appendChild(btn);
+        const div = document.createElement('div');
+        div.className = `metric-btn ${key===currentMetric?'active':''}`;
+        div.innerText = METRICS[key].label;
+        div.onclick = () => switchMetric(key);
+        btnContainer.appendChild(div);
     });
 
     function switchMetric(key) {
         currentMetric = key;
-        // 更新按钮状态
-        document.querySelectorAll('.metric-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll(`.metric-btn`).forEach(b => {
-            if(b.innerText === METRICS[key].label) b.classList.add('active');
+        document.querySelectorAll('.metric-btn').forEach(b => {
+            b.classList.toggle('active', b.innerText === METRICS[key].label);
         });
-        
-        // 重新渲染地图颜色
-        if(geoJsonLayer) geoJsonLayer.setStyle(styleFeature);
+        if (geoLayer) geoLayer.setStyle(styleFeature);
     }
 
-    // 颜色计算 (根据数值返回颜色透明度/亮度)
-    function getColor(d, metric) {
-        // 简单的阈值逻辑，实际可改为插值
-        const val = d[metric];
-        const baseColor = METRICS[metric].color;
-        
-        // 这里的透明度决定了颜色的深浅
-        if(val >= 8.0) return baseColor;
-        if(val >= 5.0) return adjustBrightness(baseColor, -20);
-        return '#333';
+    // 4. 数据获取 (使用 jsDelivr CDN)
+    // 这是修复的关键：使用稳定的 CDN 替代 raw.githubusercontent
+    const DATA_URL = "https://cdn.jsdelivr.net/gh/dataofjapan/land@master/tokyo.geojson";
+
+    fetch(DATA_URL)
+        .then(res => {
+            if (!res.ok) throw new Error("Network response was not ok");
+            return res.json();
+        })
+        .then(data => {
+            // 过滤数据：只保留 23 区
+            // 23区的行政代码通常以 131 开头 (13101 - 13123)
+            // 或者我们可以检查名字是否在我们的数据库中
+            const filteredFeatures = data.features.filter(f => {
+                const name = resolveName(f.properties);
+                return db.hasOwnProperty(name); // 只保留数据库里有的区
+            });
+            
+            const filteredData = { type: "FeatureCollection", features: filteredFeatures };
+
+            geoLayer = L.geoJson(filteredData, {
+                style: styleFeature,
+                onEachFeature: onEachFeature
+            }).addTo(map);
+
+            // 成功加载：飞到东京中心并移除 loading
+            map.fitBounds(geoLayer.getBounds(), { padding: [20, 20] });
+            document.getElementById('loader').style.opacity = 0;
+            setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
+        })
+        .catch(err => {
+            console.error(err);
+            const msg = document.getElementById('error-msg');
+            msg.style.display = 'block';
+            msg.innerHTML = `⚠️ 地图数据加载失败<br><br>原因: ${err.message}<br>请检查网络连接或稍后再试。`;
+        });
+
+    // 5. 辅助逻辑
+    function resolveName(props) {
+        // 兼容多种 GeoJSON 字段名
+        const raw = props.N03_004 || props.name || props.nam || "";
+        if (db[raw]) return raw;
+        // 尝试映射表
+        for (let k in NAME_MAP) {
+            if (raw.includes(k)) return NAME_MAP[k];
+        }
+        return raw;
     }
 
-    function adjustBrightness(col, amt) {
-        // 简化的颜色变暗处理，为了保持代码极其精简，这里直接返回原色或灰色
-        // 实际生产环境可以使用 tinycolor2 库
-        return col; 
-    }
-
-    // Leaflet 样式函数
     function styleFeature(feature) {
         const name = resolveName(feature.properties);
         const data = db[name];
-        const color = data ? getColor(data, currentMetric) : '#333';
-        const opacity = data ? (data[currentMetric] / 10) * 0.7 + 0.3 : 0.1;
+        if (!data) return { fillOpacity: 0, opacity: 0 }; // 不在库里的不显示
+
+        const val = data[currentMetric];
+        const color = METRICS[currentMetric].color;
+        
+        // 简单的透明度计算
+        let opacity = 0.3;
+        if (val >= 8) opacity = 0.8;
+        else if (val >= 5) opacity = 0.5;
 
         return {
             fillColor: color,
             weight: 1,
             opacity: 1,
-            color: '#000', // 边界线黑色
-            dashArray: '',
+            color: '#111',
             fillOpacity: opacity
         };
     }
 
-    // 名字解析 helper
-    function resolveName(props) {
-        const raw = props.N03_004 || props.name || props.nam; // 兼容多种 GeoJSON 格式
-        // 1. 直接匹配
-        if(db[raw]) return raw;
-        // 2. 映射表匹配
-        if(NAME_MAP[raw]) return NAME_MAP[raw];
-        // 3. 包含匹配 (如 "Chiyoda-ku" -> "Chiyoda")
-        for(let key in NAME_MAP) {
-            if(raw.includes(key)) return NAME_MAP[key];
-        }
-        return raw;
-    }
-
-    // 交互逻辑
     function onEachFeature(feature, layer) {
-        const name = resolveName(feature.properties);
-        
         layer.on({
             mouseover: (e) => {
-                const layer = e.target;
-                layer.setStyle({
-                    weight: 3,
-                    color: '#fff',
-                    fillOpacity: 0.9
-                });
-                layer.bringToFront();
+                e.target.setStyle({ weight: 2, color: '#fff', fillOpacity: 0.9 });
+                e.target.bringToFront();
             },
             mouseout: (e) => {
-                geoJsonLayer.resetStyle(e.target);
+                geoLayer.resetStyle(e.target);
             },
             click: (e) => {
-                const data = db[name];
-                if(data) {
-                    openSidebar(name, data);
-                    // 移动端/桌面端 适配的 FlyTo
-                    map.flyToBounds(e.target.getBounds(), { padding: [50, 50], maxZoom: 13 });
-                }
+                const name = resolveName(feature.properties);
+                if (db[name]) openSidebar(name, db[name]);
+                L.DomEvent.stopPropagation(e);
             }
         });
     }
 
-    // ================= 3. 数据加载 (GeoJSON) =================
-    
-    // 使用 fetch 加载远程数据，避免代码过大
-    fetch('https://raw.githubusercontent.com/dataofjapan/land/master/tokyo.geojson')
-        .then(res => res.json())
-        .then(data => {
-            document.getElementById('loader').style.opacity = 0;
-            setTimeout(() => document.getElementById('loader').remove(), 500);
-
-            geoJsonLayer = L.geoJson(data, {
-                style: styleFeature,
-                onEachFeature: onEachFeature
-            }).addTo(map);
-        })
-        .catch(err => {
-            document.getElementById('loader').innerText = "DATA LOAD FAILED";
-            console.error(err);
-        });
-
-
-    // ================= 4. UI & Chart =================
-
+    // 侧边栏逻辑
     function openSidebar(name, data) {
         const sb = document.getElementById('sidebar');
         sb.classList.add('open');
-        
         document.getElementById('ward-name').innerText = name;
         document.getElementById('ward-desc').innerText = data.desc;
         
-        // 填充 tags
-        document.getElementById('ward-tags').innerHTML = data.tags.map(t => `<span class="tag">${t}</span>`).join('');
+        // Tags
+        document.getElementById('ward-tags').innerHTML = data.tags.map(t => 
+            `<span style="background:#333; padding:2px 8px; border-radius:10px; font-size:12px; margin-right:5px; border:1px solid #555;">${t}</span>`
+        ).join('');
 
-        // 填充数据
-        let statsHtml = '';
+        // Stats
+        let html = '';
         Object.keys(METRICS).forEach(k => {
             const val = data[k];
-            const cls = val >= 7 ? 'val-high' : '';
-            statsHtml += `
-                <div class="stat-item">
-                    <span class="stat-label">${METRICS[k].label}</span>
-                    <span class="stat-val ${cls}">${val}</span>
-                </div>
-            `;
+            const style = val >= 7 ? `color:${METRICS[k].color}; font-weight:bold;` : '';
+            html += `<div class="stat-row"><span>${METRICS[k].label}</span><span style="${style}">${val}</span></div>`;
         });
-        document.getElementById('ward-stats').innerHTML = statsHtml;
+        document.getElementById('ward-stats').innerHTML = html;
 
         updateChart(name, data);
     }
 
     function closeSidebar() {
         document.getElementById('sidebar').classList.remove('open');
-        map.setView([35.6895, 139.6917], 11);
     }
+
+    // 点击地图空白处关闭侧边栏
+    map.on('click', closeSidebar);
 
     function updateChart(name, data) {
         const ctx = document.getElementById('radarChart').getContext('2d');
-        if(myChart) myChart.destroy();
-
-        // 动态获取当前主题色
-        const themeColor = METRICS[currentMetric].color;
-
+        if (myChart) myChart.destroy();
+        
+        const color = METRICS[currentMetric].color;
+        
         myChart = new Chart(ctx, {
             type: 'radar',
             data: {
@@ -348,10 +299,10 @@
                 datasets: [{
                     label: name,
                     data: Object.keys(METRICS).map(k => data[k]),
-                    backgroundColor: themeColor + '33', // 添加透明度
-                    borderColor: themeColor,
-                    pointBackgroundColor: '#fff',
-                    borderWidth: 2
+                    backgroundColor: color + '40', // hex + alpha
+                    borderColor: color,
+                    borderWidth: 2,
+                    pointBackgroundColor: '#fff'
                 }]
             },
             options: {
@@ -361,8 +312,8 @@
                     r: {
                         angleLines: { color: 'rgba(255,255,255,0.1)' },
                         grid: { color: 'rgba(255,255,255,0.1)' },
-                        pointLabels: { color: '#888', font: {size: 10} },
-                        ticks: { display: false, max: 10, min: 0 }
+                        ticks: { display: false, max: 10, min: 0 },
+                        pointLabels: { color: '#aaa', font: {size:10} }
                     }
                 },
                 plugins: { legend: { display: false } }
