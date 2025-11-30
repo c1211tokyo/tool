@@ -2,12 +2,13 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>TOKYO 3D INVESTMENT ANALYZER (v6.0 High-Perf)</title>
+<title>TOKYO 3D ANALYTICS (PRO)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script src="https://unpkg.com/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600&display=swap" rel="stylesheet">
 
 <style>
@@ -17,68 +18,56 @@
     #loader { 
         position: fixed; inset: 0; background: #000; z-index: 9999; 
         display: flex; flex-direction: column; justify-content: center; align-items: center; 
+        transition: opacity 0.5s; pointer-events: none;
     }
-    .status-text { color: #00f3ff; font-size: 14px; margin-top: 15px; letter-spacing: 2px; }
-    .error-box { 
-        display: none; border: 1px solid #ff003c; background: rgba(50,0,0,0.9); 
-        padding: 20px; text-align: center; margin-top: 20px; max-width: 80%;
-    }
-    .upload-btn {
-        background: #00f3ff; color: #000; border: none; padding: 12px 24px; 
-        font-weight: bold; cursor: pointer; letter-spacing: 1px; font-family: inherit; margin-top: 15px;
-        clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
-    }
-    .upload-btn:hover { background: #fff; }
+    .status-text { color: #00f3ff; font-size: 14px; margin-top: 15px; letter-spacing: 2px; text-transform: uppercase; }
+    .loading-bar { width: 200px; height: 2px; background: #222; margin-top: 15px; overflow: hidden; }
+    .bar-fill { height: 100%; background: #00f3ff; width: 0%; transition: width 0.3s; }
 
     /* UI 布局 */
     #ui-layer { position: absolute; inset: 0; pointer-events: none; z-index: 10; }
     #control-panel { 
         position: absolute; top: 20px; left: 20px; width: 220px; pointer-events: auto;
-        background: rgba(10, 15, 20, 0.9); border-left: 2px solid #00f3ff; padding: 15px;
+        background: rgba(8, 12, 16, 0.9); border-left: 2px solid #00f3ff; padding: 15px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.5);
     }
     .mode-btn { 
         padding: 10px; margin-bottom: 5px; background: rgba(255,255,255,0.05); 
         border: 1px solid #333; cursor: pointer; color: #888; display: flex; justify-content: space-between; transition: 0.2s;
     }
     .mode-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
-    .mode-btn.active { border-color: var(--c); color: var(--c); background: rgba(0,243,255,0.1); }
+    .mode-btn.active { border-color: var(--c); color: var(--c); background: rgba(0,243,255,0.1); box-shadow: inset 2px 0 0 var(--c); }
     
     #sidebar {
-        position: absolute; top: 0; right: -400px; bottom: 0; width: 380px;
-        background: rgba(10, 15, 20, 0.95); border-left: 1px solid #333; pointer-events: auto;
-        padding: 25px; transition: right 0.3s; display: flex; flex-direction: column; overflow-y: auto;
+        position: absolute; top: 0; right: -420px; bottom: 0; width: 380px;
+        background: rgba(8, 12, 16, 0.95); border-left: 1px solid #333; pointer-events: auto;
+        padding: 25px; transition: right 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); 
+        display: flex; flex-direction: column; overflow-y: auto;
+        box-shadow: -10px 0 30px rgba(0,0,0,0.8);
     }
     #sidebar.open { right: 0; }
     
-    .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
-    .data-box { background: rgba(255,255,255,0.05); padding: 10px; }
-    .val { font-size: 18px; font-weight: bold; color: #fff; }
-    .lbl { font-size: 10px; color: #888; }
+    .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 20px 0; }
+    .data-box { background: rgba(255,255,255,0.03); padding: 10px; border-radius: 4px; border: 1px solid #222; }
+    .val { font-size: 20px; font-weight: bold; color: #fff; }
+    .lbl { font-size: 10px; color: #666; letter-spacing: 1px; }
     
     #tooltip {
         position: absolute; display: none; background: rgba(0,0,0,0.9); border: 1px solid #fff;
         padding: 8px 15px; pointer-events: none; z-index: 20; font-size: 14px; font-weight: bold;
         transform: translate(-50%, -150%); white-space: nowrap; box-shadow: 0 0 15px rgba(0,0,0,0.8);
     }
+    
+    /* 图表容器 */
+    #chart-wrap { height: 200px; width: 100%; position: relative; }
 </style>
 </head>
 <body>
 
 <div id="loader">
-    <div style="font-size: 24px; letter-spacing: 5px;">SYSTEM INITIALIZING</div>
-    <div class="status-text" id="status">CONNECTING TO NETWORK...</div>
-    
-    <div class="error-box" id="error-box">
-        <div style="color:#ff003c; font-size:16px; margin-bottom:10px;">⚠️ 自动加载失败 (AUTO LOAD FAILED)</div>
-        <div style="color:#aaa; font-size:12px; margin-bottom:15px;">
-            原因：网络超时或 CORS 拦截。<br>
-            解决方案：请点击下方按钮，手动加载本地的 <b>tokyo.geojson</b> 文件。
-        </div>
-        <label class="upload-btn">
-            📂 加载本地地图文件
-            <input type="file" id="file-input" style="display: none;" accept=".json,.geojson">
-        </label>
-    </div>
+    <div style="font-size: 24px; letter-spacing: 5px; font-weight:bold;">TOKYO RE:VIEW</div>
+    <div class="loading-bar"><div class="bar-fill" id="progress"></div></div>
+    <div class="status-text" id="status">INITIALIZING ENGINE...</div>
 </div>
 
 <div id="tooltip"></div>
@@ -86,44 +75,77 @@
 
 <div id="ui-layer">
     <div id="control-panel">
-        <h2 style="margin:0 0 10px 0; color:#00f3ff; font-size:18px;">TOKYO RE:VIEW</h2>
+        <h2 style="margin:0 0 5px 0; color:#00f3ff; font-size:18px; letter-spacing:1px;">DATA METRICS</h2>
+        <div style="font-size:10px; color:#666; margin-bottom:15px;">SELECT INDICATOR TO VISUALIZE</div>
         <div id="btn-container"></div>
-        <div style="font-size:10px; color:#555; margin-top:15px;">
-            * 左键旋转 / 右键平移 / 滚轮缩放<br>
-            * 点击区域查看详细报告
+        <div style="font-size:10px; color:#555; margin-top:20px; line-height:1.4;">
+            * LEFT CLICK: ROTATE<br>
+            * RIGHT CLICK: PAN<br>
+            * SCROLL: ZOOM<br>
+            * CLICK AREA: DETAILS
         </div>
     </div>
 
     <div id="sidebar">
-        <div style="text-align:right; cursor:pointer; font-size:24px;" onclick="closeSidebar()">×</div>
-        <h1 id="ward-name" style="margin:0; background:linear-gradient(90deg,#fff,#888); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">--</h1>
+        <div style="text-align:right; cursor:pointer; font-size:24px; color:#666;" onclick="closeSidebar()">×</div>
+        <h1 id="ward-name" style="margin:0; background:linear-gradient(90deg,#fff,#aaa); -webkit-background-clip:text; -webkit-text-fill-color:transparent; font-size:32px;">--</h1>
         <div id="ward-tags" style="margin:10px 0; display:flex; gap:5px; flex-wrap:wrap;"></div>
         
         <div class="data-grid" id="ward-stats"></div>
         
-        <div style="height:200px;"><canvas id="radarChart"></canvas></div>
+        <div id="chart-wrap"><canvas id="radarChart"></canvas></div>
         
-        <div style="margin-top:20px; border-top:1px solid #333; padding-top:10px;">
-            <div style="color:#00f3ff; font-size:12px; font-weight:bold;">ANALYSIS</div>
-            <p id="ward-desc" style="font-size:13px; color:#ccc; line-height:1.5;"></p>
-            <div style="color:#ff9100; font-size:12px; font-weight:bold; margin-top:15px;">RECOMMENDATION</div>
-            <p id="ward-rec" style="font-size:13px; color:#ccc; line-height:1.5;"></p>
-            <div style="color:#ff003c; font-size:12px; font-weight:bold; margin-top:15px;">RISKS</div>
-            <p id="ward-risk" style="font-size:13px; color:#ccc; line-height:1.5;"></p>
+        <div style="margin-top:20px; border-top:1px solid #333; padding-top:15px;">
+            [cite_start]<div style="color:#00f3ff; font-size:11px; font-weight:bold; margin-bottom:5px;">MARKET ANALYSIS [cite:1-121]</div>
+            <p id="ward-desc" style="font-size:13px; color:#bbb; line-height:1.6; margin:0 0 15px 0;"></p>
+            
+            <div style="color:#ff9100; font-size:11px; font-weight:bold; margin-bottom:5px;">INVESTMENT STRATEGY</div>
+            <p id="ward-rec" style="font-size:13px; color:#bbb; line-height:1.6; margin:0 0 15px 0;"></p>
+            
+            <div style="color:#ff003c; font-size:11px; font-weight:bold; margin-bottom:5px;">RISK FACTORS</div>
+            <p id="ward-risk" style="font-size:13px; color:#bbb; line-height:1.6; margin:0;"></p>
         </div>
     </div>
 </div>
 
 <script>
-    // === 配置数据 ===
+    // ==========================================
+    // 1. 核心数据 (完整保留)
+    // ==========================================
     const METRICS = {
         growth: { label: 'LAND GROWTH', color: '#d600ff', max: 10 },
         yield:  { label: 'RENTAL YIELD', color: '#ff9100', max: 6 },
-        airbnb: { label: 'AIRBNB SCORE', color: '#00f3ff', max: 10 },
-        future: { label: 'FUTURE POT.', color: '#ff003c', max: 10 }
+        airbnb: { label: 'AIRBNB POT.', color: '#00f3ff', max: 10 },
+        future: { label: 'FUTURE DEV.', color: '#ff003c', max: 10 }
     };
 
-    // 完整的名称映射 (解决 Fix 4)
+    const DB = {
+        [cite_start]"千代田区": { growth: 9.5, yield: 3.0, airbnb: 4.0, future: 9.0, tags: ["核心", "保值", "政企"], desc: "东京心脏，2025年地价涨幅近双位数。租金极高但房价更高，回报率偏低(约3%) [cite:3,4][cite_start]。", rec: "适合豪宅、写字楼、五星酒店。资产保值首选 [cite:6][cite_start]。", risk: "门槛极高，初期投入巨大。民宿受限严重 [cite:5,7]。", pos: [0, 0] },
+        [cite_start]"中央区": { growth: 9.8, yield: 3.2, airbnb: 5.0, future: 9.2, tags: ["银座", "金融", "再开发"], desc: "地价全国最高点之一。银座、晴海再开发动力强。租客以金融高管为主 [cite:9,10][cite_start]。", rec: "高端公寓、商业地产。长线资金首选 [cite:12][cite_start]。", risk: "房价泡沫风险，民宿180天限制严格 [cite:11,13]。", pos: [2, -1] },
+        [cite_start]"港区": { growth: 10.0, yield: 3.4, airbnb: 3.5, future: 9.5, tags: ["六本木", "外企", "超豪宅"], desc: "全东京最顶级涨幅(13.7%)。外资与富人聚集。租金全东京最高 [cite:15,16][cite_start]。", rec: "奢侈楼盘、A级写字楼。身份象征型资产 [cite:18][cite_start]。", risk: "特区民宿政策未覆盖，短租难做。回报率被高地价稀释 [cite:17,19]。", pos: [-1, -2] },
+        [cite_start]"新宿区": { growth: 8.5, yield: 4.0, airbnb: 9.0, future: 8.0, tags: ["枢纽", "高流转", "歌舞伎町"], desc: "三大副都心之一。民宿回报率极高，部分整栋公寓可达30%回报 [cite:21,23][cite_start]。", rec: "整栋公寓出租、商业综合体、合法民宿 [cite:24][cite_start]。", risk: "过度开发竞争激烈，歌舞伎町治安问题 [cite:25]。", pos: [-3, 1] },
+        [cite_start]"文京区": { growth: 8.0, yield: 3.8, airbnb: 3.0, future: 7.0, tags: ["教育", "治安", "东大"], desc: "治安东京第一，教育资源顶尖。租户极其稳定（学者、家庭） [cite:32,33][cite_start]。", rec: "学区房、家庭型长租公寓 [cite:35][cite_start]。", risk: "纯住宅区多，民宿几乎无法经营 [cite:34]。", pos: [-1, 2] },
+        [cite_start]"台东区": { growth: 9.0, yield: 4.8, airbnb: 9.5, future: 7.5, tags: ["浅草", "旅游", "高收益"], desc: "商业地价涨幅最大。旅游业支柱，Airbnb入住率极高 [cite:38][cite_start]。", rec: "简易旅馆、民宿改造、旅游零售 [cite:41][cite_start]。", risk: "老旧街区改建难，居民对民宿有反弹情绪 [cite:42]。", pos: [2, 2] },
+        [cite_start]"墨田区": { growth: 7.5, yield: 4.5, airbnb: 8.0, future: 7.8, tags: ["晴空塔", "下町", "潜力"], desc: "依托晴空塔，从老工业区转型旅游区。房价亲民，升值快 [cite:44,45][cite_start]。", rec: "押上周边高层公寓、民宿运营 [cite:47][cite_start]。", risk: "部分区域仍有老旧工业感 [cite:48]。", pos: [4, 1] },
+        [cite_start]"江东区": { growth: 7.0, yield: 4.5, airbnb: 6.0, future: 8.0, tags: ["湾岸", "塔楼", "奥运"], desc: "丰洲、有明湾岸开发。年轻家庭流入多 [cite:50][cite_start]。", rec: "大户型家庭公寓、商办结合项目 [cite:53][cite_start]。", risk: "填海区地基担忧，区域太大位置差异明显 [cite:54]。", pos: [4, -3] },
+        [cite_start]"品川区": { growth: 6.8, yield: 4.2, airbnb: 5.5, future: 8.8, tags: ["新干线", "商务", "磁悬浮"], desc: "交通枢纽，磁悬浮始发站预期。商务需求强 [cite:56,57][cite_start]。", rec: "写字楼、商务酒店 [cite:59][cite_start]。", risk: "可开发用地减少，商业氛围浓导致居住舒适度参差 [cite:60]。", pos: [-1, -5] },
+        [cite_start]"目黑区": { growth: 7.2, yield: 3.6, airbnb: 4.5, future: 6.5, tags: ["时尚", "宜居", "品牌"], desc: "深受高收入年轻人喜爱，品牌价值高 [cite:62][cite_start]。", rec: "精品设计公寓、高端长租 [cite:65][cite_start]。", risk: "房价已高，租金增长空间有限 [cite:66]。", pos: [-4, -3] },
+        [cite_start]"大田区": { growth: 6.5, yield: 5.2, airbnb: 9.8, future: 7.0, tags: ["特区民宿", "机场", "高回报"], desc: "国家战略特区，唯一允许全年365天民宿的区域 [cite:68,71][cite_start]。", rec: "特区民宿、机场相关物流 [cite:72][cite_start]。", risk: "部分区域工厂多环境一般，通勤核心区时间稍长 [cite:73]。", pos: [-2, -7] },
+        [cite_start]"世田谷区": { growth: 5.5, yield: 4.2, airbnb: 2.0, future: 5.0, tags: ["富人居住", "家庭", "稳定"], desc: "人口最多，环境优美。适合家族居住，但民宿难做 [cite:75,76][cite_start]。", rec: "独栋住宅、家庭型公寓长租 [cite:77][cite_start]。", risk: "人口老龄化，租金增长缓慢 [cite:78]。", pos: [-6, -2] },
+        [cite_start]"涩谷区": { growth: 9.2, yield: 3.5, airbnb: 8.5, future: 9.8, tags: ["IT", "潮流", "再开发"], desc: "IT企业聚集，百年一遇大开发。表参道地价暴涨 [cite:27][cite_start]。", rec: "创意办公、精品公寓、零售铺位 [cite:29][cite_start]。", risk: "入手成本极高，夜生活区可能存在治安噪音问题 [cite:30]。", pos: [-3, -1] },
+        [cite_start]"中野区": { growth: 6.0, yield: 4.5, airbnb: 5.0, future: 6.0, tags: ["次文化", "单身", "高需"], desc: "新宿后花园，单身租赁需求极大 [cite:80][cite_start]。", rec: "单身公寓、针对年轻人的小户型 [cite:81][cite_start]。", risk: "住宅密集，商业辐射范围有限 [cite:83]。", pos: [-5, 2] },
+        [cite_start]"杉并区": { growth: 5.0, yield: 5.0, airbnb: 1.0, future: 4.5, tags: ["住宅", "避险", "中央线"], desc: "安静的高级住宅区。资产极稳，但几乎无短租市场 [cite:85,87][cite_start]。", rec: "长期收租型住宅 [cite:86][cite_start]。", risk: "增值爆发力弱，距离市中心较远 [cite:88]。", pos: [-7, 1] },
+        [cite_start]"丰岛区": { growth: 8.0, yield: 4.5, airbnb: 8.0, future: 7.0, tags: ["池袋", "动漫", "洼地"], desc: "池袋副都心。动漫吸引全球游客。相比新宿价格仍是洼地 [cite:90][cite_start]。", rec: "池袋周边民宿、商业地产 [cite:91][cite_start]。", risk: "商圈竞争激烈，部分区域夜生活混杂 [cite:92]。", pos: [-3, 4] },
+        [cite_start]"北区": { growth: 5.5, yield: 4.8, airbnb: 3.0, future: 6.5, tags: ["赤羽", "交通", "性价比"], desc: "赤羽交通极便利。房价中等偏上，适合实利主义投资 [cite:94][cite_start]。", rec: "中高层公寓、通勤刚需房 [cite:95][cite_start]。", risk: "缺乏核心高端商业，长期升值不如都心 [cite:96]。", pos: [-1, 5] },
+        [cite_start]"荒川区": { growth: 5.8, yield: 5.2, airbnb: 4.0, future: 5.5, tags: ["日暮里", "下町", "低价"], desc: "交通枢纽日暮里非常方便。价格洼地 [cite:98][cite_start]。", rec: "中小户型公寓、翻新房 [cite:99][cite_start]。", risk: "人口有减少趋势，区域形象较老旧 [cite:100]。", pos: [2, 4] },
+        [cite_start]"板桥区": { growth: 4.5, yield: 5.3, airbnb: 1.5, future: 4.5, tags: ["睡城", "稳健", "家庭"], desc: "典型睡城，家庭租赁需求大，空置风险极低 [cite:102][cite_start]。", rec: "家庭型租赁公寓 [cite:102][cite_start]。", risk: "远离市中心，发展缓慢，基本无民宿价值 [cite:104]。", pos: [-4, 6] },
+        [cite_start]"练马区": { growth: 4.0, yield: 5.5, airbnb: 1.0, future: 4.8, tags: ["绿化", "农业", "自住"], desc: "绿化最好，适合自住。投资属性较弱但回报率尚可 [cite:106][cite_start]。", rec: "整栋木造公寓 [cite:106][cite_start]。", risk: "交通限制客源，商业机遇少 [cite:108]。", pos: [-7, 4] },
+        [cite_start]"足立区": { growth: 5.0, yield: 5.8, airbnb: 4.5, future: 5.0, tags: ["高回报", "地板价", "门槛低"], desc: "东京房价地板，表面回报率最高(5%以上) [cite:110][cite_start]。", rec: "高现金流导向的公寓 [cite:110][cite_start]。", risk: "治安名声一般，需精选地段 [cite:112]。", pos: [1, 7] },
+        [cite_start]"葛饰区": { growth: 3.5, yield: 6.0, airbnb: 2.0, future: 4.0, tags: ["老街", "低成本", "养老"], desc: "房价极低，租客多为老年人或低收入群体 [cite:114][cite_start]。", rec: "低成本吸纳长租房 [cite:114][cite_start]。", risk: "升值空间有限，人口流失 [cite:116]。", pos: [5, 5] },
+        [cite_start]"江户川区": { growth: 4.0, yield: 5.8, airbnb: 1.5, future: 4.5, tags: ["公园", "育儿", "水灾"], desc: "育儿环境好，房价亲民。回报率高 [cite:118][cite_start]。", rec: "家庭刚需房 [cite:118][cite_start]。", risk: "部分低洼地区有洪水风险 [cite:120]。", pos: [6, -1] }
+    };
+
+    // 名称映射表
     const NAME_MAP = {
         'Chiyoda': '千代田区', 'Chuo': '中央区', 'Minato': '港区', 'Shinjuku': '新宿区', 'Bunkyo': '文京区',
         'Taito': '台东区', 'Sumida': '墨田区', 'Koto': '江东区', 'Shinagawa': '品川区', 'Meguro': '目黑区',
@@ -132,228 +154,270 @@
         'Adachi': '足立区', 'Katsushika': '葛饰区', 'Edogawa': '江户川区'
     };
 
-    [cite_start]// 数据库 (完整) [cite: 1]
-    const DB = {
-        [cite_start]"千代田区": { growth: 9.5, yield: 3.0, airbnb: 4.0, future: 9.0, tags: ["核心", "保值"], desc: "东京心脏，2025年地价涨幅近双位数 [cite: 3][cite_start]。租金极高但房价更高，回报率偏低 [cite: 4][cite_start]。", rec: "豪宅、写字楼、五星酒店。资产保值首选 [cite: 6][cite_start]。", risk: "门槛极高，初期投入巨大 [cite: 7]。" },
-        [cite_start]"中央区": { growth: 9.8, yield: 3.2, airbnb: 5.0, future: 9.2, tags: ["银座", "金融"], desc: "地价全国最高点之一 [cite: 9][cite_start]。银座、晴海再开发动力强。租客以金融高管为主 [cite: 10][cite_start]。", rec: "高端公寓、商业地产 [cite: 12][cite_start]。", risk: "房价泡沫风险，民宿限制严格 [cite: 13]。" },
-        [cite_start]"港区": { growth: 10.0, yield: 3.4, airbnb: 3.5, future: 9.5, tags: ["六本木", "豪宅"], desc: "全东京最顶级涨幅 [cite: 15][cite_start]。外资与富人聚集。租金全东京最高 [cite: 16][cite_start]。", rec: "奢侈楼盘、A级写字楼 [cite: 18][cite_start]。", risk: "短租难做，回报率被高地价稀释 [cite: 19]。" },
-        [cite_start]"新宿区": { growth: 8.5, yield: 4.0, airbnb: 9.0, future: 8.0, tags: ["枢纽", "歌舞伎町"], desc: "民宿回报率极高，部分整栋公寓可达30%回报 [cite: 23][cite_start]。", rec: "整栋公寓出租、商业综合体 [cite: 24][cite_start]。", risk: "竞争激烈，治安及噪音问题 [cite: 25]。" },
-        [cite_start]"文京区": { growth: 8.0, yield: 3.8, airbnb: 3.0, future: 7.0, tags: ["教育", "治安"], desc: "治安东京第一，教育资源顶尖 [cite: 32][cite_start]。租户极其稳定 [cite: 33][cite_start]。", rec: "学区房、家庭型长租公寓 [cite: 35][cite_start]。", risk: "民宿几乎无法经营 [cite: 34]。" },
-        [cite_start]"台东区": { growth: 9.0, yield: 4.8, airbnb: 9.5, future: 7.5, tags: ["浅草", "旅游"], desc: "商业地价涨幅最大 [cite: 38][cite_start]。旅游业支柱，Airbnb入住率极高 [cite: 40][cite_start]。", rec: "简易旅馆、民宿改造 [cite: 41][cite_start]。", risk: "居民对民宿有反弹情绪 [cite: 42]。" },
-        [cite_start]"墨田区": { growth: 7.5, yield: 4.5, airbnb: 8.0, future: 7.8, tags: ["晴空塔", "下町"], desc: "房价亲民，升值快 [cite: 44][cite_start]。从老工业区转型旅游区 [cite: 45][cite_start]。", rec: "押上周边高层公寓、民宿 [cite: 47][cite_start]。", risk: "部分区域仍有老旧工业感 [cite: 48]。" },
-        [cite_start]"江东区": { growth: 7.0, yield: 4.5, airbnb: 6.0, future: 8.0, tags: ["湾岸", "奥运"], desc: "丰洲、有明湾岸开发 [cite: 50][cite_start]。年轻家庭流入多。", rec: "大户型家庭公寓 [cite: 53][cite_start]。", risk: "填海区地基担忧，位置差异大 [cite: 54]。" },
-        [cite_start]"品川区": { growth: 6.8, yield: 4.2, airbnb: 5.5, future: 8.8, tags: ["新干线", "商务"], desc: "交通枢纽，磁悬浮始发站预期 [cite: 56][cite_start]。商务需求强 [cite: 57][cite_start]。", rec: "写字楼、商务酒店 [cite: 59][cite_start]。", risk: "居住舒适度参差不齐 [cite: 60]。" },
-        [cite_start]"目黑区": { growth: 7.2, yield: 3.6, airbnb: 4.5, future: 6.5, tags: ["时尚", "宜居"], desc: "深受高收入年轻人喜爱，品牌价值高 [cite: 62][cite_start]。", rec: "精品设计公寓 [cite: 65][cite_start]。", risk: "房价已高，租金增长有限 [cite: 66]。" },
-        [cite_start]"大田区": { growth: 6.5, yield: 5.2, airbnb: 9.8, future: 7.0, tags: ["特区民宿", "机场"], desc: "唯一允许全年365天民宿的区域 [cite: 68][cite_start]。", rec: "特区民宿、机场物流 [cite: 72][cite_start]。", risk: "部分区域工厂多环境一般 [cite: 73]。" },
-        [cite_start]"世田谷区": { growth: 5.5, yield: 4.2, airbnb: 2.0, future: 5.0, tags: ["富人居住", "家庭"], desc: "人口最多，环境优美 [cite: 75][cite_start]。但商业弱。", rec: "独栋住宅、家庭长租 [cite: 77][cite_start]。", risk: "人口老龄化，缺乏爆点 [cite: 78]。" },
-        [cite_start]"涩谷区": { growth: 9.2, yield: 3.5, airbnb: 8.5, future: 9.8, tags: ["IT", "潮流"], desc: "百年一遇大开发 [cite: 27][cite_start]。表参道地价暴涨。", rec: "创意办公、精品公寓 [cite: 29][cite_start]。", risk: "入手成本极高 [cite: 30]。" },
-        [cite_start]"中野区": { growth: 6.0, yield: 4.5, airbnb: 5.0, future: 6.0, tags: ["次文化", "单身"], desc: "单身租赁需求极大 [cite: 80][cite_start]。", rec: "单身公寓、小户型 [cite: 81][cite_start]。", risk: "发展相对平缓 [cite: 83]。" },
-        [cite_start]"杉并区": { growth: 5.0, yield: 5.0, airbnb: 1.0, future: 4.5, tags: ["住宅", "避险"], desc: "安静的高级住宅区。资产极稳 [cite: 85][cite_start]。", rec: "长期收租型住宅 [cite: 86][cite_start]。", risk: "增值爆发力弱 [cite: 88]。" },
-        [cite_start]"丰岛区": { growth: 8.0, yield: 4.5, airbnb: 8.0, future: 7.0, tags: ["池袋", "动漫"], desc: "池袋副都心。相比新宿价格仍是洼地 [cite: 90][cite_start]。", rec: "民宿、商业地产 [cite: 91][cite_start]。", risk: "商圈竞争激烈 [cite: 92]。" },
-        [cite_start]"北区": { growth: 5.5, yield: 4.8, airbnb: 3.0, future: 6.5, tags: ["赤羽", "性价比"], desc: "赤羽交通极便利 [cite: 94][cite_start]。适合实利主义投资。", rec: "通勤刚需房 [cite: 95][cite_start]。", risk: "缺乏核心高端商业 [cite: 96]。" },
-        [cite_start]"荒川区": { growth: 5.8, yield: 5.2, airbnb: 4.0, future: 5.5, tags: ["日暮里", "下町"], desc: "交通枢纽日暮里非常方便。价格洼地 [cite: 98][cite_start]。", rec: "中小户型公寓 [cite: 99][cite_start]。", risk: "人口有减少趋势 [cite: 100]。" },
-        [cite_start]"板桥区": { growth: 4.5, yield: 5.3, airbnb: 1.5, future: 4.5, tags: ["睡城", "稳健"], desc: "家庭租赁需求大，空置风险低 [cite: 102][cite_start]。", rec: "家庭型租赁公寓 [cite: 102][cite_start]。", risk: "基本无民宿价值 [cite: 103]。" },
-        [cite_start]"练马区": { growth: 4.0, yield: 5.5, airbnb: 1.0, future: 4.8, tags: ["绿化", "农业"], desc: "绿化最好，适合自住 [cite: 106][cite_start]。", rec: "整栋木造公寓 [cite: 106][cite_start]。", risk: "交通限制客源 [cite: 108]。" },
-        [cite_start]"足立区": { growth: 5.0, yield: 5.8, airbnb: 4.5, future: 5.0, tags: ["高回报", "地板价"], desc: "表面回报率最高(5%以上) [cite: 110][cite_start]。", rec: "高现金流导向公寓 [cite: 110][cite_start]。", risk: "治安名声一般 [cite: 112]。" },
-        [cite_start]"葛饰区": { growth: 3.5, yield: 6.0, airbnb: 2.0, future: 4.0, tags: ["老街", "低成本"], desc: "房价极低，租客多为老年人 [cite: 114][cite_start]。", rec: "低成本吸纳长租房 [cite: 114][cite_start]。", risk: "升值空间有限 [cite: 116]。" },
-        [cite_start]"江户川区": { growth: 4.0, yield: 5.8, airbnb: 1.5, future: 4.5, tags: ["公园", "育儿"], desc: "育儿环境好，房价亲民 [cite: 118][cite_start]。", rec: "家庭刚需房 [cite: 118][cite_start]。", risk: "部分低洼地区有洪水风险 [cite: 120]。" }
-    };
-
-    // 3D 变量
+    // ==========================================
+    // 2. 3D 引擎配置
+    // ==========================================
     let scene, camera, renderer, raycaster, mouse, controls;
     let wardsGroup = new THREE.Group();
     let currentMetric = 'growth';
     let myChart = null;
-
-    // 默认尝试 NII 源
-    const DATA_URL = "https://geoshape.ex.nii.ac.jp/city/geojson/2020/13.geojson";
 
     init();
 
     function init() {
         // 场景
         scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x000000, 0.001); // 迷雾
+        scene.fog = new THREE.FogExp2(0x000000, 0.0015);
 
         // 相机
         camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 1, 10000);
-        camera.position.set(0, 800, 1000);
+        camera.position.set(0, 900, 1100);
         camera.lookAt(0, 0, 0);
 
         // 渲染器
         renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // 性能优化
         document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-        // 🎮 控制器 OrbitControls (Fix 5)
+        // 控制器
         controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
         controls.autoRotate = true;
         controls.autoRotateSpeed = 0.5;
+        controls.maxPolarAngle = Math.PI / 2.2; // 限制不看底面
 
-        // 灯光
-        scene.add(new THREE.AmbientLight(0x404040, 2)); 
-        const dl = new THREE.DirectionalLight(0xffffff, 1);
-        dl.position.set(100, 200, 100);
+        // 灯光 (Cyberpunk Style)
+        scene.add(new THREE.AmbientLight(0x404040, 2));
+        const dl = new THREE.DirectionalLight(0xffffff, 0.8);
+        dl.position.set(50, 200, 100);
         scene.add(dl);
-        const pl = new THREE.PointLight(0x00f3ff, 1, 1000);
-        pl.position.set(-200, 200, -200);
-        scene.add(pl);
+        
+        // 装饰性点光源
+        const colors = [0x00f3ff, 0xff003c, 0xbc13fe];
+        colors.forEach((c, i) => {
+            const pl = new THREE.PointLight(c, 1, 1500);
+            pl.position.set(Math.sin(i)*500, 200, Math.cos(i)*500);
+            scene.add(pl);
+        });
+
+        // 网格地面
+        const grid = new THREE.GridHelper(4000, 100, 0x222222, 0x111111);
+        scene.add(grid);
 
         // 交互
         raycaster = new THREE.Raycaster();
         mouse = new THREE.Vector2();
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth/window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        window.addEventListener('resize', onResize);
         document.addEventListener('mousemove', onMove);
         document.addEventListener('click', onClick);
 
+        // UI 初始化
         initUI();
-        attemptAutoLoad();
+
+        // 核心：启动双模加载引擎
+        startDualEngine();
+
+        // 渲染循环
         animate();
     }
 
-    function attemptAutoLoad() {
-        fetch(DATA_URL)
+    // ==========================================
+    // 3. 双模加载引擎 (Dual-Engine)
+    // ==========================================
+    
+    function startDualEngine() {
+        const status = document.getElementById('status');
+        const progress = document.getElementById('progress');
+        
+        // 模式 1: 尝试加载轻量级 TopoJSON (40KB)
+        // 这是一个压缩格式，比 GeoJSON 小 95%
+        const TOPO_URL = "https://raw.githubusercontent.com/deldersveld/topojson/master/countries/japan/tokyo-23-wards.json";
+        
+        // 设置 2 秒超时，如果网络慢直接切换到保底模式
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject("TIMEOUT"), 2000));
+        
+        status.innerText = "FETCHING MAP DATA...";
+        progress.style.width = "30%";
+
+        Promise.race([fetch(TOPO_URL), timeoutPromise])
             .then(res => {
                 if(!res.ok) throw new Error("Net Error");
                 return res.json();
             })
-            .then(json => {
-                document.getElementById('status').innerText = "PROCESSING GEOMETRY...";
-                processGeoJSON(json);
+            .then(topoData => {
+                status.innerText = "PARSING GEOMETRY...";
+                progress.style.width = "70%";
+                // 解析 TopoJSON
+                const geoJSON = topojson.feature(topoData, topoData.objects.tokyo_23_wards);
+                generateMapFromGeo(geoJSON);
             })
             .catch(err => {
-                console.error(err);
-                showManualUpload();
+                console.warn("Network failed or timeout, switching to ABSTRACT MODE.", err);
+                status.innerText = "SWITCHING TO ABSTRACT MODE...";
+                progress.style.width = "90%";
+                generateAbstractMap(); // 启动保底模式
             });
-        
-        setTimeout(() => {
-            if(document.getElementById('loader').style.display !== 'none') showManualUpload();
-        }, 3000);
     }
 
-    function showManualUpload() {
-        document.getElementById('status').style.display = 'none';
-        document.getElementById('error-box').style.display = 'block';
-    }
-
-    document.getElementById('file-input').addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if(!file) return;
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try { processGeoJSON(JSON.parse(event.target.result)); } 
-            catch(err) { alert("文件错误"); }
-        };
-        reader.readAsText(file);
-    });
-
-    function processGeoJSON(json) {
-        document.getElementById('status').style.display = 'block';
-        document.getElementById('error-box').style.display = 'none';
-        document.getElementById('status').innerText = "GENERATING 3D CITY...";
-
-        // D3 投影
+    // 模式 A: 真实地图生成
+    function generateMapFromGeo(json) {
         const projection = d3.geoMercator().center([139.75, 35.68]).scale(55000).translate([0, 0]);
-
+        
         json.features.forEach(f => {
-            // Fix 1: 预过滤，只处理23区
-            const code = f.properties.N03_007; 
-            if(code && (parseInt(code) < 13101 || parseInt(code) > 13123)) return;
-
-            // Fix 4: 名字匹配
-            let raw = f.properties.N03_004 || f.properties.name || "";
-            let dbName = DB[raw] ? raw : (NAME_MAP[raw.replace(/-ku/i, '')] || null);
+            // 名字匹配
+            let raw = f.properties.NAME_2 || f.properties.name || ""; // TopoJSON 常见字段
+            let dbName = null;
             
-            // 兜底匹配
-            if(!dbName) {
-                for(let k in DB) if(raw.includes(k)) { dbName = k; break; }
+            // 匹配逻辑
+            for(let k in DB) {
+                if(raw.includes(k) || (NAME_MAP[raw] === k)) {
+                    dbName = k; break;
+                }
             }
 
-            if(dbName && DB[dbName]) {
-                const shapes = [];
-                const coords = f.geometry.type==='Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
-                coords.forEach(poly => {
-                    const shape = new THREE.Shape();
-                    poly[0].forEach((p, i) => {
-                        const [x, y] = projection(p);
-                        i===0 ? shape.moveTo(x,y) : shape.lineTo(x,y);
-                    });
-                    for(let i=1; i<poly.length; i++) {
-                        const hole = new THREE.Path();
-                        poly[i].forEach((p, j) => {
-                            const [x, y] = projection(p);
-                            j===0 ? hole.moveTo(x,y) : hole.lineTo(x,y);
-                        });
-                        shape.holes.push(hole);
-                    }
-                    shapes.push(shape);
-                });
-
-                shapes.forEach(s => {
-                    // Fix 3: 统一基准高度为 1
-                    // Fix 2: 关闭倒角 bevelEnabled: false
-                    const geo = new THREE.ExtrudeGeometry(s, { depth: 1, bevelEnabled: false });
-                    const c = new THREE.Color(METRICS[currentMetric].color);
-                    const mat = new THREE.MeshPhongMaterial({ color: c, transparent: true, opacity: 0.9, shininess: 100 });
-                    
-                    const mesh = new THREE.Mesh(geo, mat);
-                    mesh.rotation.x = Math.PI/2;
-                    mesh.scale.y = -1; // 修正镜像
-                    
-                    // 计算目标高度
-                    const targetH = (DB[dbName][currentMetric] / METRICS[currentMetric].max) * 80 + 5;
-                    mesh.scale.z = targetH; // Fix 3: 正确缩放
-
-                    mesh.userData = { name: dbName, data: DB[dbName] };
-                    wardsGroup.add(mesh);
-                });
+            if(dbName) {
+                const shapes = createShapes(f, projection);
+                createWardMesh(shapes, dbName);
             }
         });
-
-        // Center
-        new THREE.Box3().setFromObject(wardsGroup).getCenter(wardsGroup.position).multiplyScalar(-1);
-        scene.add(wardsGroup);
-
-        setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
+        finishLoading();
     }
 
+    // 模式 B: 抽象地图生成 (保底，永不卡死)
+    function generateAbstractMap() {
+        const hexShape = new THREE.Shape();
+        const r = 40; // 半径
+        for(let i=0; i<6; i++) {
+            const angle = (Math.PI/3) * i;
+            const x = Math.cos(angle) * r;
+            const y = Math.sin(angle) * r;
+            i===0 ? hexShape.moveTo(x, y) : hexShape.lineTo(x, y);
+        }
+
+        Object.keys(DB).forEach(name => {
+            const pos = DB[name].pos || [0, 0];
+            // 相对坐标转 3D 坐标 (Hex 布局)
+            const spacing = 90;
+            const x = pos[0] * spacing + (pos[1]%2) * (spacing/2);
+            const y = pos[1] * (spacing * 0.866); // sin(60)
+
+            const shape = hexShape.clone();
+            // 偏移 Shape 顶点
+            // 注意：ExtrudeGeometry 不支持直接 position 偏移 shape，所以我们后面移动 Mesh
+            
+            const mesh = createSingleWardMesh(hexShape, name);
+            mesh.position.set(x, 0, y); // 修正位置
+            // 这里因为 createSingleWardMesh 里旋转了 -90度(x), 所以 y 变成了 z
+            // 我们手动纠正:
+            mesh.rotation.x = -Math.PI/2;
+            mesh.position.set(x, 0, -y); // Y is North in 3D map usually mapped to -Z
+
+            wardsGroup.add(mesh);
+        });
+        
+        // 中心化
+        scene.add(wardsGroup);
+        finishLoading();
+    }
+
+    // 通用：创建 Mesh
+    function createWardMesh(shapes, name) {
+        shapes.forEach(s => {
+            const mesh = createSingleWardMesh(s, name);
+            wardsGroup.add(mesh);
+        });
+        // 居中
+        new THREE.Box3().setFromObject(wardsGroup).getCenter(wardsGroup.position).multiplyScalar(-1);
+        scene.add(wardsGroup);
+    }
+
+    function createSingleWardMesh(shape, name) {
+        // 性能优化：bevelEnabled: false
+        const geo = new THREE.ExtrudeGeometry(shape, { depth: 1, bevelEnabled: false });
+        const c = new THREE.Color(METRICS[currentMetric].color);
+        const mat = new THREE.MeshPhongMaterial({ color: c, transparent: true, opacity: 0.9, shininess: 80 });
+        
+        const mesh = new THREE.Mesh(geo, mat);
+        
+        // 绑定数据
+        const d = DB[name];
+        mesh.userData = { name: name, data: d };
+        
+        // 初始状态
+        mesh.rotation.x = Math.PI/2; 
+        mesh.scale.y = -1;
+        
+        const h = (d[currentMetric] / METRICS[currentMetric].max) * 80 + 5;
+        mesh.scale.z = h;
+
+        return mesh;
+    }
+
+    function finishLoading() {
+        document.getElementById('progress').style.width = "100%";
+        setTimeout(() => {
+            document.getElementById('loader').style.opacity = 0;
+            setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
+        }, 500);
+    }
+
+    // D3 辅助函数
+    function createShapes(f, projection) {
+        const shapes = [];
+        const coords = f.geometry.type==='Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
+        coords.forEach(poly => {
+            const shape = new THREE.Shape();
+            poly[0].forEach((p, i) => {
+                const [x, y] = projection(p);
+                i===0 ? shape.moveTo(x,y) : shape.lineTo(x,y);
+            });
+            for(let i=1; i<poly.length; i++) {
+                const hole = new THREE.Path();
+                poly[i].forEach((p, j) => {
+                    const [x, y] = projection(p);
+                    j===0 ? hole.moveTo(x,y) : hole.lineTo(x,y);
+                });
+                shape.holes.push(hole);
+            }
+            shapes.push(shape);
+        });
+        return shapes;
+    }
+
+    // ==========================================
+    // 4. 交互与动画
+    // ==========================================
+    
     function animate() {
         requestAnimationFrame(animate);
-        controls.update(); // Fix 5: 更新控制器
+        controls.update();
         renderer.render(scene, camera);
     }
 
-    // 交互逻辑
     let hovered = null;
     function onMove(e) {
         mouse.x = (e.clientX/window.innerWidth)*2-1;
         mouse.y = -(e.clientY/window.innerHeight)*2+1;
         raycaster.setFromCamera(mouse, camera);
+        
+        // 忽略 GridHelper，只检测 Mesh
         const intersects = raycaster.intersectObjects(wardsGroup.children);
-        
-        // Tooltip
         const tip = document.getElementById('tooltip');
-        
+
         if(intersects.length > 0) {
             const obj = intersects[0].object;
             if(hovered !== obj) {
                 if(hovered) hovered.material.emissive.setHex(0x000000);
                 hovered = obj;
-                hovered.material.emissive.setHex(0x555555);
+                hovered.material.emissive.setHex(0x444444);
                 
-                // Show tooltip
                 tip.style.display = 'block';
-                tip.innerText = obj.userData.name;
+                tip.innerHTML = `${obj.userData.name}<br><span style="color:${METRICS[currentMetric].color}">${METRICS[currentMetric].label}: ${obj.userData.data[currentMetric]}</span>`;
             }
-            // Move tooltip
-            tip.style.left = e.clientX + 10 + 'px';
-            tip.style.top = e.clientY + 10 + 'px';
+            tip.style.left = e.clientX + 15 + 'px';
+            tip.style.top = e.clientY + 15 + 'px';
         } else {
             if(hovered) hovered.material.emissive.setHex(0x000000);
             hovered = null;
@@ -363,12 +427,18 @@
 
     function onClick(e) {
         if(hovered) {
-            controls.autoRotate = false; // 点击后停止自动旋转
+            controls.autoRotate = false;
             openSidebar(hovered.userData.name);
         }
     }
 
-    // UI Logic
+    function onResize() {
+        camera.aspect = window.innerWidth/window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    // UI 逻辑
     function initUI() {
         const c = document.getElementById('btn-container');
         Object.keys(METRICS).forEach(k => {
@@ -387,11 +457,9 @@
         
         wardsGroup.children.forEach(m => {
             const d = m.userData.data;
-            const targetH = (d[k] / METRICS[k].max) * 80 + 5; // 目标高度
+            const targetH = (d[k] / METRICS[k].max) * 80 + 5;
             const targetC = new THREE.Color(METRICS[k].color);
-            
-            // 简单的 Scale 动画 (Fix 3: 只有 scale.z 变化，不会变形)
-            m.scale.z = targetH; 
+            m.scale.z = targetH;
             m.material.color.set(targetC);
         });
     }
@@ -400,13 +468,15 @@
         const d = DB[name];
         document.getElementById('sidebar').classList.add('open');
         document.getElementById('ward-name').innerText = name;
-        document.getElementById('ward-tags').innerHTML = d.tags.map(t=>`<span style="background:#333; padding:2px 8px; font-size:10px;">${t}</span>`).join('');
+        document.getElementById('ward-tags').innerHTML = d.tags.map(t=>`<span style="background:#333; padding:3px 8px; border-radius:4px; font-size:10px; border:1px solid #444;">${t}</span>`).join('');
+        
         document.getElementById('ward-stats').innerHTML = `
             <div class="data-box"><div class="lbl">LAND GROWTH</div><div class="val" style="color:${METRICS.growth.color}">${d.growth}</div></div>
             <div class="data-box"><div class="lbl">RENTAL YIELD</div><div class="val" style="color:${METRICS.yield.color}">${d.yield}%</div></div>
             <div class="data-box"><div class="lbl">AIRBNB</div><div class="val" style="color:${METRICS.airbnb.color}">${d.airbnb}</div></div>
             <div class="data-box"><div class="lbl">FUTURE</div><div class="val" style="color:${METRICS.future.color}">${d.future}</div></div>
         `;
+        
         document.getElementById('ward-desc').innerText = d.desc;
         document.getElementById('ward-rec').innerText = d.rec;
         document.getElementById('ward-risk').innerText = d.risk;
@@ -415,7 +485,7 @@
 
     function closeSidebar() { 
         document.getElementById('sidebar').classList.remove('open'); 
-        controls.autoRotate = true; // 恢复旋转
+        controls.autoRotate = true; 
     }
 
     function updateChart(name, d) {
@@ -428,10 +498,11 @@
                 datasets: [{
                     label: name,
                     data: [d.growth, d.yield*1.5, d.airbnb, d.future],
-                    backgroundColor: 'rgba(0,243,255,0.2)',
+                    backgroundColor: 'rgba(0,243,255,0.1)',
                     borderColor: '#00f3ff',
-                    borderWidth: 1,
-                    pointBackgroundColor: '#fff'
+                    borderWidth: 2,
+                    pointBackgroundColor: '#fff',
+                    pointRadius: 3
                 }]
             },
             options: {
@@ -439,7 +510,7 @@
                 scales: {
                     r: {
                         angleLines: { color: '#333' },
-                        grid: { color: '#333' },
+                        grid: { color: '#222' },
                         pointLabels: { color: '#888', font: {size: 10} },
                         ticks: { display: false, max: 10, min: 0 }
                     }
